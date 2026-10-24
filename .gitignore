@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Local agent settings and secrets
+.claude/settings.local.json
+.env
+.env.*
+
+# Build output
+build/
+dist/
+node_modules/
+.pio/
+sdkconfig.old
+*.elf
+*.bin

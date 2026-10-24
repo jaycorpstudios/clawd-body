@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "clawd-buddy/events.schema.json",
+  "title": "Clawd Buddy event envelope (draft v1)",
+  "type": "object",
+  "required": [
+    "v",
+    "id",
+    "ts",
+    "type",
+    "data"
+  ],
+  "properties": {
+    "v": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "description": "ULID, unique per message"
+    },
+    "ts": {
+      "type": "integer",
+      "description": "Unix seconds"
+    },
+    "host": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]{1,16}$",
+      "description": "Short, user-configured name of the sending Mac (e.g. work, home)"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "snapshot",
+        "session.start",
+        "session.end",
+        "agent.needs_permission",
+        "agent.question",
+        "agent.permission_resolved",
+        "agent.task_done",
+        "agent.error",
+        "agent.step",
+        "usage.update",
+        "usage.window_reset",
+        "hilo.task_changed",
+        "media.now_playing",
+        "permission.decision",
+        "question.answer",
+        "device.ack",
+        "device.snooze",
+        "device.battery",
+        "device.sleep",
+        "device.wake",
+        "device.pet_accessory"
+      ]
+    },
+    "data": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "agent.needs_permission"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "request_id",
+              "session",
+              "project",
+              "tool",
+              "detail",
+              "risk",
+              "remote_allowed",
+              "expires_at"
+            ],
+            "properties": {
+              "request_id": {
+                "type": "string"
+              },
+              "session": {
+                "type": "string"
+              },
+              "project": {
+                "type": "string"
+              },
+              "tool": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "why": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "diff": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "enum": [
+                        "a",
+                        "r"
+                      ]
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "maxItems": 12
+              },
+              "cwd": {
+                "type": "string"
+              },
+              "risk": {
+                "enum": [
+                  "low",
+                  "high"
+                ]
+              },
+              "remote_allowed": {
+                "type": "boolean"
+              },
+              "expires_at": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "agent.question"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "request_id",
+              "session",
+              "project",
+              "detail",
+              "options",
+              "expires_at"
+            ],
+            "properties": {
+              "options": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 2,
+                "maxItems": 4
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "permission.decision"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "request_id",
+              "decision"
+            ],
+            "properties": {
+              "request_id": {
+                "type": "string"
+              },
+              "decision": {
+                "enum": [
+                  "approve",
+                  "deny"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "usage.update"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "session_pct",
+              "weekly_pct",
+              "reset_in_min"
+            ],
+            "properties": {
+              "session_pct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "weekly_pct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "reset_in_min": {
+                "type": "integer"
+              },
+              "tokens_today": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

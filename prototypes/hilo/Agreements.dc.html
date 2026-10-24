@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hilo · Agreements</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+body{margin:0}
+a{color:#5fd0c3}a:hover{color:#8be3d8}
+</style>
+</helmet>
+<div style="min-height: 900px; background: #0c0b0a; padding: 24px; box-sizing: border-box; font-family: 'Hanken Grotesk', system-ui, sans-serif; color: #efe9df; font-size: 14px; line-height: 1.45">
+<div style="max-width: 1392px; margin: 0 auto; background: #161412; border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,.55); overflow: hidden; border: 1px solid #36322d">
+
+  <div style="min-height: 50px; display: flex; align-items: center; gap: 14px; padding: 8px 18px; border-bottom: 1px solid #2a2723; background: #1c1a17; flex-wrap: wrap; box-sizing: border-box">
+    <div style="display: flex; gap: 8px" aria-hidden="true"><span style="width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; display: block"></span><span style="width: 12px; height: 12px; border-radius: 50%; background: #febc2e; display: block"></span><span style="width: 12px; height: 12px; border-radius: 50%; background: #28c840; display: block"></span></div>
+    <div style="font-weight: 700; font-size: 14px; letter-spacing: .01em">Hilo</div>
+    <div style="flex: 1 1 20px"></div>
+    <label for="q" style="display: flex; align-items: center; gap: 8px; background: #1e1b18; border: 1px solid #34302b; border-radius: 8px; padding: 0 10px; height: 32px; color: #9c958a">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <input id="q" type="search" placeholder="Search tasks, sessions or agreements" style="border: 0; outline: none; background: transparent; font: inherit; width: 220px; max-width: 40vw; color: #efe9df">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; border: 1px solid #34302b; border-radius: 4px; padding: 1px 5px">⌘K</span>
+    </label>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #c2bbb0"><canvas width="64" height="64" ref="{{buddyMini}}" style="width: 26px; height: 26px; image-rendering: pixelated; flex: none" aria-hidden="true"></canvas>Buddy connected · BLE</div>
+    <div style="font-size: 12.5px; color: #c2bbb0; border: 1px solid #34302b; border-radius: 20px; padding: 3px 10px; background: #1e1b18">MacBook Pro · Work</div>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; min-height: 848px">
+    <nav aria-label="Sections" style="flex: 1 1 220px; background: #12100e; border-right: 1px solid #2a2723; padding: 16px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 22px">
+      <div style="display: flex; align-items: center; gap: 10px; background: #1e1b18; border: 1px solid #2a2723; border-radius: 12px; padding: 10px 12px">
+        <canvas width="64" height="64" ref="{{buddyCard}}" style="width: 52px; height: 52px; image-rendering: pixelated; flex: none" aria-hidden="true"></canvas>
+        <div style="min-width: 0"><div style="font-weight: 700; font-size: 13.5px">Your buddy</div><div style="font-size: 12px; color: #ffd27a">1 session needs you</div><div style="font-size: 12px; color: #9c958a">2 working</div></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <sc-for list="{{nav}}" as="n" hint-placeholder-count="5">
+          <a href="{{n.href}}" style="{{n.style}}">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.icon}}"></path></svg>
+            <span style="flex: 1">{{n.label}}</span>
+            <span style="font-size: 12px; color: #9c958a; font-variant-numeric: tabular-nums">{{n.badge}}</span>
+          </a>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <div style="font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #9c958a; padding: 0 10px 4px">Projects</div>
+        <sc-for list="{{projects}}" as="p" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: 7px; font-size: 13.5px">
+            <span style="width: 9px; height: 9px; border-radius: 3px; background: {{p.color}}; display: block"></span>
+            <span style="flex: 1">{{p.name}}</span>
+            <span style="font-size: 11.5px; color: #9c958a">{{p.meta}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top: auto; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: #9c958a; padding: 0 10px">
+        <div>Data from this Mac only · SQLite</div>
+        <div>CLI <span style="font-family: 'JetBrains Mono', monospace">hilo</span> and MCP active</div>
+        <a href="#export">Export to Markdown</a>
+      </div>
+    </nav>
+
+    <main style="flex: 999 1 560px; min-width: 0; padding: 28px 32px 36px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+        <div>
+          <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 32px; font-weight: 700; letter-spacing: -.01em">Agreements log</h1>
+          <div style="color: #9c958a; margin-top: 4px">What was decided, with whom and where, linked to tasks and sessions</div>
+        </div>
+        <div role="group" aria-label="Filter by project" style="display: flex; gap: 6px; flex-wrap: wrap">
+          <button type="button" style="height: 32px; padding: 0 12px; border-radius: 20px; border: 1px solid #0e7c72; background: #173a36; color: #8be3d8; font: inherit; font-weight: 600; cursor: pointer">All</button>
+          <button type="button" style="height: 32px; padding: 0 12px; border-radius: 20px; border: 1px solid #36322d; background: #1e1b18; color: #d8d1c6; font: inherit; cursor: pointer">acme</button>
+          <button type="button" style="height: 32px; padding: 0 12px; border-radius: 20px; border: 1px solid #36322d; background: #1e1b18; color: #d8d1c6; font: inherit; cursor: pointer">clawd-buddy</button>
+          <button type="button" style="height: 32px; padding: 0 12px; border-radius: 20px; border: 1px solid #36322d; background: #1e1b18; color: #d8d1c6; font: inherit; cursor: pointer">research</button>
+        </div>
+      </div>
+
+      <label for="newAgree" style="display: flex; align-items: center; gap: 10px; background: #1e1b18; border: 1px solid #34302b; border-radius: 10px; padding: 0 14px; min-height: 46px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0e7c72" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        <input id="newAgree" type="text" placeholder="Log an agreement… use @person and #project" style="flex: 1; min-width: 0; border: 0; outline: none; font: inherit; font-size: 15px; background: transparent">
+        <span style="font-size: 12.5px; color: #9c958a">or <span style="font-family: 'JetBrains Mono', monospace">hilo agree "…"</span></span>
+      </label>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start">
+        <section aria-label="Agreements" style="flex: 1.5 1 440px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+          <sc-for list="{{days}}" as="d" hint-placeholder-count="3">
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <div style="font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #9c958a">{{d.date}}</div>
+              <sc-for list="{{d.items}}" as="a" hint-placeholder-count="2">
+                <div style="background: #1e1b18; border: 1px solid #2a2723; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+                  <div style="font-size: 15.5px; font-weight: 600; line-height: 1.35">{{a.text}}</div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: 12.5px; color: #9c958a">
+                    <span style="display: inline-flex; align-items: center; gap: 5px"><span style="width: 7px; height: 7px; border-radius: 2px; background: {{a.pcolor}}; display: block"></span>{{a.project}}</span>
+                    <span>{{a.ctx}}</span>
+                    <span style="{{a.originStyle}}">{{a.origin}}</span>
+                    <span>Task: <a href="Main.dc.html">{{a.task}}</a></span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </section>
+
+        <section aria-label="To confirm" style="flex: 1 1 300px; min-width: 0; background: #201d19; border: 1px solid #2a2723; border-radius: 14px; padding: 18px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px"><canvas width="64" height="64" ref="{{confirmPet}}" style="width: 44px; height: 44px; image-rendering: pixelated; flex: none" aria-hidden="true"></canvas><h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px; font-weight: 700">To confirm · 2</h2></div>
+            <div style="font-size: 13px; color: #9c958a; margin-top: 2px">Claude detected these in your sessions. Nothing enters the log without your approval.</div>
+          </div>
+          <sc-for list="{{pending}}" as="p" hint-placeholder-count="2">
+            <div style="background: #1e1b18; border: 1px dashed #4a453f; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+              <div style="font-weight: 600">{{p.text}}</div>
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #9c958a"><canvas width="64" height="64" ref="{{p.ref}}" style="width: 26px; height: 26px; image-rendering: pixelated; flex: none" aria-hidden="true"></canvas>{{p.src}}</div>
+              <div style="display: flex; gap: 8px">
+                <button type="button" style="height: 32px; padding: 0 12px; border-radius: 7px; border: 0; background: #0e7c72; color: #fff; font: inherit; font-weight: 600; cursor: pointer">Confirm</button>
+                <button type="button" style="height: 32px; padding: 0 12px; border-radius: 7px; border: 1px solid #36322d; background: #1e1b18; font: inherit; cursor: pointer">Dismiss</button>
+              </div>
+            </div>
+          </sc-for>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  pet(key, opts) {
+    this.cvs = this.cvs || new Map();
+    return el => { if (el) this.cvs.set(key, { el, ...opts }); else this.cvs.delete(key); };
+  }
+  agentOpts(name, st) {
+    const A = { 'payments-api': [200, 'shades'], 'acme-dashboard': [280, 'headphones'], 'clawd-firmware': [150, 'wizard'], 'hilo-app': [45, 'crown'],
+      'ledger-svc': [330, 'party'], 'infra-terraform': [100, 'band'], 'research-notes': [260, 'heart'] };
+    const [hue, acc] = A[name] || [22, 'none'];
+    const state = { wait: 'alert', work: 'working', done: 'happy', err: 'error', idle: 'idle' }[st] || st;
+    return { hue, acc, state, seed: hue / 37 };
+  }
+  componentDidMount() {
+    const t0 = performance.now();
+    const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const loop = ts => {
+      const t = still ? 0.5 : (ts - t0) / 1000;
+      (this.cvs || new Map()).forEach(o => { if (o.el && o.el.isConnected) this.drawPet(o.el, o.state, t, o); });
+      this.raf = requestAnimationFrame(loop);
+    };
+    this.raf = requestAnimationFrame(loop);
+  }
+  componentWillUnmount() { cancelAnimationFrame(this.raf); }
+  drawAcc(px, acc, k) {
+    const { ey, tt, state } = k;
+    const PU = '#7b4fc9', PU2 = '#5e3aa3', YE = '#ffcc3d', BK = '#141210', WH = '#f5f1ea';
+    if (acc === 'shades') { px(7, ey - 1, 18, 1, BK); for (const x0 of [8, 18]) { px(x0, ey, 6, 2, BK); px(x0 + 1, ey + 2, 5, 1, BK); px(x0 + 2, ey + 3, 3, 1, BK); px(x0 + 1, ey, 1, 1, WH); px(x0 + 1, ey + 1, 2, 1, WH); } }
+    if (acc === 'heart') { for (const x0 of [9, 19]) { const c = '#ff4d7a'; px(x0, ey, 1, 1, c); px(x0 + 2, ey, 1, 1, c); px(x0, ey + 1, 3, 1, c); px(x0 + 1, ey + 2, 1, 1, c); } }
+    if (acc === 'wizard') {
+      px(5, 10, 22, 1, PU2); px(9, 9, 14, 1, YE);
+      [[10, 21], [11, 20], [12, 19], [13, 18], [14, 17], [15, 16]].forEach(([a, b], i) => px(a, 8 - i, b - a + 1, 1, i % 2 ? PU : PU2));
+      px(16, 2, 1, 1, PU);
+      const wy = state === 'working' ? Math.round(Math.sin(tt * 7)) : 0;
+      px(27, 9 + wy, 1, 11, '#3a3632'); px(26, 7 + wy, 3, 2, YE); px(27, 6 + wy, 1, 1, YE); px(25, 7 + wy, 1, 1, YE); px(29, 7 + wy, 1, 1, YE);
+    }
+    if (acc === 'headphones') { px(9, 9, 14, 1, '#4a4f58'); px(8, 10, 1, 3, '#4a4f58'); px(23, 10, 1, 3, '#4a4f58'); px(4, 14, 3, 5, '#2bb3a6'); px(25, 14, 3, 5, '#2bb3a6'); px(5, 15, 1, 3, '#1b7f76'); px(26, 15, 1, 3, '#1b7f76'); }
+    if (acc === 'crown') { px(11, 8, 10, 3, YE); px(11, 6, 1, 2, YE); px(15, 5, 2, 3, YE); px(20, 6, 1, 2, YE); px(13, 9, 1, 1, '#ff5d62'); px(18, 9, 1, 1, '#5ee3a8'); }
+    if (acc === 'party') { for (let i = 0; i < 7; i++) px(16 - Math.ceil(i / 2), 4 + i, 1 + Math.ceil(i / 2) * 2, 1, i % 2 ? '#ff7aa8' : '#7cc8ff'); px(15, 2, 2, 2, YE); }
+    if (acc === 'band') { px(7, 12, 18, 2, '#2bb3a6'); px(25, 12, 2, 1, '#2bb3a6'); px(25, 14, 2, 2, '#1b7f76'); px(27, 15, 1, 2, '#1b7f76'); }
+  }
+  drawPet(cv, state, t, opt) {
+    const C = { work: '#ff9a52', wait: '#ffc53d', done: '#5ee3a8', err: '#ff5d62', info: '#7cc8ff' };
+    const G = 32, ctx = cv.getContext('2d'), p = cv.width / G;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    const hue = opt.hue == null ? 22 : opt.hue, tt = t + (opt.seed || 0), acc = opt.acc || 'none';
+    const body = 'hsl(' + hue + ' 85% 58%)', light = 'hsl(' + hue + ' 95% 72%)', dark = 'hsl(' + hue + ' 70% 36%)', eye = '#1b0f0a';
+    let cx = 16, cy = 19, rx = 10, ry = 8, ox = 0, oy = 0;
+    if (state === 'idle') oy = Math.round(Math.sin(tt * 2) * .7);
+    if (state === 'working') oy = -Math.round(Math.abs(Math.sin(tt * 7)));
+    if (state === 'alert') oy = -Math.round(Math.abs(Math.sin(tt * 6)) * 3);
+    if (state === 'happy') oy = -Math.round(Math.abs(Math.sin(tt * 5)) * 3);
+    if (state === 'sleep') ry = Math.sin(tt * 1.3) > 0 ? 8 : 7.6;
+    if (state === 'error') ox = Math.round(Math.sin(tt * 28) * (Math.sin(tt * 2) > 0 ? 1 : 0));
+    const px = (x, y, w, h, c, fixed) => { ctx.fillStyle = c; ctx.fillRect(Math.round((x + (fixed ? 0 : ox)) * p), Math.round((y + (fixed ? 0 : oy)) * p), Math.ceil(w * p), Math.ceil(h * p)); };
+    const inB = (x, y) => { const dx = (x + .5 - cx) / rx, dy = (y + .5 - cy) / ry; return dx * dx + dy * dy <= 1; };
+    const step = state === 'working' ? (Math.sin(tt * 7) > 0 ? 1 : 0) : 0;
+    px(cx - 7, cy + ry - 1 - step, 4, 2, dark); px(cx + 3, cy + ry - 1 - (state === 'working' ? 1 - step : 0), 4, 2, dark);
+    if (state === 'alert' || state === 'happy') { const w = Math.sin(tt * 10) > 0 ? 1 : 0; px(cx - rx - 2, cy - 4 - w, 2, 3, dark); px(cx + rx, cy - 4 - (1 - w), 2, 3, dark); }
+    else { const tap = state === 'working' ? (Math.sin(tt * 14) > 0 ? 1 : 0) : 0; px(cx - rx - 1, cy + 1 + tap, 2, 2, dark); px(cx + rx - 1, cy + 1 + (state === 'working' ? 1 - tap : 0), 2, 2, dark); }
+    for (let y = 0; y < G; y++) for (let x = 0; x < G; x++) if (inB(x, y)) { let c = body; if (!inB(x, y - 1) || !inB(x - 1, y)) c = light; else if (!inB(x, y + 1) || !inB(x + 1, y)) c = dark; px(x, y, 1, 1, c); }
+    px(cx - 7, cy - 5, 2, 1, light); px(cx - 8, cy - 4, 1, 2, light);
+    const top = Math.floor(cy - ry), hat = ['wizard', 'crown', 'party', 'headphones'].indexOf(acc) >= 0;
+    const tipC = { idle: C.info, working: C.work, alert: C.wait, happy: C.done, error: C.err, sleep: '#4a4a5a' }[state] || C.info;
+    if (!hat) { px(15, top - 3, 2, 3, dark); ctx.save(); ctx.shadowColor = tipC; ctx.shadowBlur = p * (2 + Math.sin(tt * 4) * 1.2); px(14, top - 6, 4, 3, tipC); ctx.restore(); }
+    const ey = cy - 2, blink = (tt % 3.7) < .13;
+    const look = state === 'working' ? (Math.sin(tt * 1.1) > 0 ? 1 : -1) : 0, L = 10 + look, R = 20 + look;
+    const hideEyes = acc === 'shades' || (acc === 'heart' && state !== 'sleep' && state !== 'error' && !blink);
+    if (hideEyes) {}
+    else if (state === 'happy') { for (const ex of [L, R - 1]) { px(ex, ey + 1, 1, 1, eye); px(ex + 1, ey, 1, 1, eye); px(ex + 2, ey + 1, 1, 1, eye); } }
+    else if (state === 'error') { for (const ex of [10, 19]) { px(ex, ey, 1, 1, eye); px(ex + 2, ey, 1, 1, eye); px(ex + 1, ey + 1, 1, 1, eye); px(ex, ey + 2, 1, 1, eye); px(ex + 2, ey + 2, 1, 1, eye); } }
+    else if (state === 'sleep' || blink) { px(L, ey + 2, 2, 1, eye); px(R, ey + 2, 2, 1, eye); }
+    else if (state === 'alert') { px(9, ey - 1, 3, 4, eye); px(20, ey - 1, 3, 4, eye); px(9, ey - 1, 1, 1, '#fff'); px(20, ey - 1, 1, 1, '#fff'); }
+    else { px(L, ey, 2, 3, eye); px(R, ey, 2, 3, eye); px(L, ey, 1, 1, '#fff8'); px(R, ey, 1, 1, '#fff8'); }
+    const my = cy + 2;
+    if (state === 'happy') { px(14, my, 1, 1, eye); px(15, my + 1, 2, 1, eye); px(17, my, 1, 1, eye); }
+    else if (state === 'alert') px(15, my, 2, 2, eye);
+    else if (state === 'error') { px(13, my + 1, 1, 1, eye); px(14, my, 1, 1, eye); px(15, my + 1, 1, 1, eye); px(16, my, 1, 1, eye); px(17, my + 1, 1, 1, eye); }
+    else px(15, my, 2, 1, eye);
+    this.drawAcc(px, acc, { ey, tt, state });
+    if (state === 'happy' || state === 'idle') { px(7, cy + 1, 2, 1, '#ff7aa8'); px(23, cy + 1, 2, 1, '#ff7aa8'); }
+    if (state === 'alert' && acc !== 'wizard') { const b = Math.sin(tt * 8) > 0 ? 0 : 1; px(27, 2 + b, 3, 6, C.wait, true); px(27, 9 + b, 3, 2, C.wait, true); }
+    if (state === 'working') { for (let i = 0; i < 3; i++) { const ph = (tt * .9 + i / 3) % 1; px(4 + i * 11, Math.round(10 - ph * 8), 1, 1, 'rgba(255,154,82,' + (1 - ph) + ')', true); } }
+  }
+  navItems(active) {
+    const items = [
+      { key: 'today', label: 'Today', href: 'Main.dc.html', badge: '6', icon: 'M8 3v3M16 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z' },
+      { key: 'sessions', label: 'Sessions', href: 'Sessions.dc.html', badge: '3', icon: 'M4 5h16v14H4zM8 10l3 2-3 2M13 15h4' },
+      { key: 'week', label: 'Week', href: 'Week.dc.html', badge: '', icon: 'M5 19V11M12 19V5M19 19v-6' },
+      { key: 'agreements', label: 'Agreements', href: 'Agreements.dc.html', badge: '2', icon: 'M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2' },
+      { key: 'resume', label: 'Resume context', href: 'Resume.dc.html', badge: '', icon: 'M4 12a8 8 0 1 0 3-6.2M4 4v5h5' }
+    ];
+    return items.map(i => ({ ...i, style: 'display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; text-decoration: none; font-size: 14px; ' +
+      (i.key === active ? 'background: #173a36; color: #8be3d8; font-weight: 600' : 'color: #d8d1c6') }));
+  }
+  renderVals() {
+    const ORIG = {
+      'meeting': 'font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 20px; background: #16233d; color: #9fbdf5',
+      'session': 'font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 20px; background: #3a2210; color: #ffb07a',
+      'manual': 'font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 20px; background: #2a2826; color: #b9bcc4'
+    };
+    const P = { acme: '#5b8cff', 'clawd-buddy': '#0e7c72', 'research': '#b98ae0' };
+    const A = (text, project, ctx, origin, task) => ({ text, project, pcolor: P[project], ctx, origin, originStyle: ORIG[origin], task });
+    return {
+      buddyMini: this.pet('mini', { hue: 22, acc: 'wizard', state: 'working' }),
+      buddyCard: this.pet('card', { hue: 22, acc: 'wizard', state: 'alert' }),
+      nav: this.navItems('agreements'),
+      projects: [
+        { name: 'acme', color: '#5b8cff', meta: 'Jira DEMO' },
+        { name: 'clawd-buddy', color: '#0e7c72', meta: 'local' },
+        { name: 'research', color: '#b98ae0', meta: 'local' }
+      ],
+      confirmPet: this.pet('confirm', { hue: 22, acc: 'wizard', state: 'idle' }),
+      days: [
+        { date: 'Today · Saturday 24', items: [
+          A('Compact JSON BLE events, one message per event', 'clawd-buddy', 'Own decision', 'manual', 'Integrate BLE events into the daemon'),
+          A('High-risk actions are only approved on the Mac', 'clawd-buddy', 'Session with clawd-firmware', 'session', 'Integrate BLE events into the daemon')
+        ] },
+        { date: 'Thursday 22', items: [
+          A('p95 latency alarm threshold raised to 800 ms', 'acme', 'With @payments-team at the daily', 'meeting', 'Review CloudWatch alerts'),
+          A('Webhook retries must be idempotent by event_id', 'acme', 'PR #482 review', 'meeting', 'Payments webhook refactor')
+        ] },
+        { date: 'Tuesday 20', items: [
+          A('Deliver the paper summary on Wednesday', 'research', 'With @advisor by email', 'manual', 'Read multi-agent orchestration paper')
+        ] }
+      ],
+      pending: [
+        { ref: this.pet('p1', this.agentOpts('clawd-firmware', 'idle')), text: 'Use FreeRTOS queues instead of a ring buffer for events', src: 'clawd-firmware · today 10:58' },
+        { ref: this.pet('p2', this.agentOpts('hilo-app', 'idle')), text: 'Keep the Jira sync every 15 minutes', src: 'hilo-app · yesterday 18:20' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
