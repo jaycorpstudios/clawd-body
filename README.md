@@ -5,7 +5,7 @@ A desk companion that shows what your Claude Code sessions are doing, plus **Hil
 - **Buddy**: an ESP32-S3 board with a 480×480 AMOLED inside a 3D-printed figure (the screen is its belly). It shows session status, usage and extras, and lets you approve or deny low-risk permission prompts.
 - **Hilo**: a macOS app with a CLI and an MCP server. It includes `hilod`, the daemon that receives Claude Code hooks and talks to the buddy over BLE.
 
-> **Status:** phase 3 in progress. Contract in [`shared/`](shared/README.md); `hilod` handles Claude Code hooks and remote decisions in [`daemon/`](daemon/README.md), BLE not yet. Firmware and app not started.
+> **Status:** phase 3 in progress. Contract in [`shared/`](shared/README.md); `hilod` handles Claude Code hooks and remote decisions in [`daemon/`](daemon/README.md), BLE not yet. Firmware boots the display; app not started.
 
 ## Repository
 
@@ -15,6 +15,7 @@ A desk companion that shows what your Claude Code sessions are doing, plus **Hil
 | [`docs/`](docs/README.md) | Product, architecture, component specs, flows, security, open questions |
 | [`shared/`](shared/README.md) | Event contract schema, fixtures and `buddy-emit` terminal tool |
 | [`daemon/`](daemon/README.md) | `hilod` daemon and `hilo` CLI (Swift) |
+| [`firmware/`](firmware/README.md) | Buddy firmware (ESP-IDF + LVGL 9) |
 | [`prototypes/`](prototypes/README.md) | Approved UI references: device simulator and Hilo screens |
 
 ## See the device UI

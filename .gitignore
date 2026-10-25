@@ -22,3 +22,7 @@ sdkconfig.old
 *.bin
 .build/
 .swiftpm/
+firmware/build/
+firmware/managed_components/
+firmware/sdkconfig
+firmware/sdkconfig.old

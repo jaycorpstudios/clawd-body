@@ -2,7 +2,7 @@
 
 Visual and behavioral reference: `prototypes/buddy-sim.html` (approved). Views, states and sounds in detail: [device-ui.md](device-ui.md).
 
-Stack: **ESP-IDF + LVGL 9**, BLE through NimBLE.
+Stack: **ESP-IDF + LVGL 9**, BLE through NimBLE. Board bring-up uses the vendor BSP `waveshare/esp32_s3_touch_amoled_2_16` (pins: CO5300 QSPI on GPIO 4–7/12/38/39, I²C on 14/15, touch INT 11 / RST 40, I²S MCLK 42 · BCLK 9 · WS 45 · DOUT 8, PA enable 46, user button 18). Build notes: [`firmware/README.md`](../../firmware/README.md).
 
 ## Hardware
 

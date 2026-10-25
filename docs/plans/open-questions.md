@@ -38,7 +38,6 @@ Nothing pending.
 
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
-| Pins and drivers | ESP-IDF + LVGL 9 chosen | Confirm CO5300, CST9220, AXP2101, ES8311 drivers and pins against the Waveshare schematic and official ESP-IDF demos; ESP-IDF version to pin | 2 |
 | Sound playback | ES8311 codec | Simple synthesis vs. short PCM samples; volume range | 2 |
 | RTC time source | PCF85063 RTC on board | Who sets the clock (time sync message from the Mac?) | 2 |
 | Battery target | 1000 mAh Li-ion | Expected hours per charge; brightness/sleep policy to meet it | 2 |

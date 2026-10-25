@@ -15,7 +15,7 @@ Correct means: nothing high-risk is ever approved off the Mac, and the device ne
 | `docs/` | Product, architecture, component specs, flows, security (start at `docs/README.md`) |
 | `prototypes/` | Approved UI references: device simulator and Hilo screens |
 | `shared/` | Event schema (single source of truth for the contract), fixtures, `buddy-emit` tool |
-| `firmware/` | *(planned)* ESP32-S3 firmware: display, BLE peripheral, audio |
+| `firmware/` | ESP-IDF 5.5.6 + LVGL 9 firmware (display bring-up so far; views, BLE, audio next) |
 | `daemon/` | `hilod` and `hilo` CLI in Swift: contract types, risk policy, request registry, hook ingestion (BLE, SQLite, MCP planned) |
 | `hilo/` | *(planned)* macOS app UI |
 
@@ -28,7 +28,7 @@ Correct means: nothing high-risk is ever approved off the Mac, and the device ne
 5. Open decisions live in `docs/plans/open-questions.md`: present options with trade-offs, never decide silently.
 6. Repo content is English; keep docs and indexes in sync when adding files.
 
-Validate with `pnpm test` (contract, `shared/`) and `scripts/swift-test.sh` (daemon). Node version: `.nvmrc`.
+Validate with `pnpm test` (contract, `shared/`) and `scripts/swift-test.sh` (daemon), `scripts/idf.sh build` (firmware). Node version: `.nvmrc`.
 
 ## Start here
 
