@@ -8,7 +8,7 @@ What an agent may do freely vs. what needs explicit approval from the maintainer
 - Non-destructive code changes inside one component.
 - Local validation: lint, typecheck, test, build, firmware compile.
 - Open the prototypes in a browser.
-- Create a feature branch and commit.
+- Commit directly to `main` (no feature branches or PRs).
 
 ## Requires explicit approval
 
