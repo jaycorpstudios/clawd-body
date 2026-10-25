@@ -1,0 +1,20 @@
+{
+  "reason": "questions need 2–4 options",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000010",
+    "ts": 1792900000,
+    "host": "work",
+    "type": "agent.question",
+    "data": {
+      "request_id": "01K8F3Z9QW4Y6R2M7N5P8T0V1X",
+      "session": "7f3a9c1e-2b4d-4e8f-9a01-5c6d7e8f9a0b",
+      "project": "hilo-app",
+      "detail": "Where should I store Hilo history?",
+      "options": [
+        "Only one"
+      ],
+      "expires_at": 1792900600
+    }
+  }
+}

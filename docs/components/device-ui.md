@@ -29,7 +29,7 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 | :--- | ---: | :--- |
 | payments-api | 200 | shades |
 | acme-dashboard | 280 | headphones |
-| clawd-firmware | 150 | wizard |
+| buddy-firmware | 150 | wizard |
 | hilo-app | 45 | crown |
 | ledger-svc | 330 | party hat |
 | infra-terraform | 100 | headband |

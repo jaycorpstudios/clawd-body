@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "id": "01K8F400000000000000000001",
+  "ts": 1792900000,
+  "host": "work",
+  "type": "session.start",
+  "data": {
+    "session": "7f3a9c1e-2b4d-4e8f-9a01-5c6d7e8f9a0b",
+    "project": "payments-api",
+    "task": "Payments webhook refactor"
+  }
+}

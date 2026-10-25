@@ -1,0 +1,84 @@
+{
+  "reason": "a session has at most one pending request",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000000",
+    "ts": 1792900000,
+    "host": "work",
+    "type": "snapshot",
+    "data": {
+      "sessions": [
+        {
+          "session": "7f3a9c1e-2b4d-4e8f-9a01-5c6d7e8f9a0b",
+          "project": "payments-api",
+          "task": "Payments webhook refactor",
+          "status": "working",
+          "since": 1792899160,
+          "tokens": 118,
+          "steps": [
+            {
+              "ts": 1792899880,
+              "kind": "edit",
+              "text": "Edited src/webhooks/stripe.ts"
+            }
+          ],
+          "pending_permission": {
+            "request_id": "01K8F3Z9QW4Y6R2M7N5P8T0V1X",
+            "session": "7f3a9c1e-2b4d-4e8f-9a01-5c6d7e8f9a0b",
+            "project": "payments-api",
+            "tool": "Bash",
+            "detail": "npm run db:migrate",
+            "why": "Apply migration 0042 to the local database before running the tests.",
+            "cwd": "~/code/payments-api",
+            "risk": "low",
+            "remote_allowed": true,
+            "expires_at": 1792900600
+          },
+          "pending_question": {
+            "request_id": "01K8F3Z9QW4Y6R2M7N5P8T0V1X",
+            "session": "7f3a9c1e-2b4d-4e8f-9a01-5c6d7e8f9a0b",
+            "project": "hilo-app",
+            "detail": "Where should I store Hilo history?",
+            "options": [
+              "Local SQLite",
+              "Markdown files",
+              "Decide later"
+            ],
+            "expires_at": 1792900600
+          }
+        },
+        {
+          "session": "a1b2c3d4",
+          "project": "hilo-app",
+          "task": "SQLite v3 migration",
+          "status": "done",
+          "since": 1792899700,
+          "summary": "Migration applied; 128 tests passed."
+        }
+      ],
+      "usage": {
+        "session_pct": 42,
+        "weekly_pct": 31,
+        "reset_in_min": 134,
+        "tokens_today": 1840000
+      },
+      "hilo": {
+        "current": {
+          "title": "Integrate BLE events into the daemon",
+          "project": "hilo-buddy",
+          "started_at": 1792897108
+        },
+        "next": [
+          {
+            "title": "Review CloudWatch alerts",
+            "project": "acme",
+            "jira": "DEMO-1423"
+          }
+        ],
+        "agreements_today": [
+          "Compact JSON events"
+        ]
+      }
+    }
+  }
+}

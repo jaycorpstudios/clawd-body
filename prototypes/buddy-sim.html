@@ -1,4 +1,4 @@
-<title>Clawd Buddy Simulator</title>
+<title>Hilo Buddy Simulator</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -286,7 +286,7 @@ header.top p{margin:0;color:var(--muted);max-width:62ch}
   <header class="top">
     <div>
       <div class="tag">Prototype v3 · AMOLED 480 × 480</div>
-      <h1>Clawd Buddy</h1>
+      <h1>Hilo Buddy</h1>
     </div>
     <p>Everything is simulated. The buttons mimic the events your Macs would send over BLE. The screen and sounds react the way the firmware would.</p>
   </header>
@@ -386,7 +386,7 @@ header.top p{margin:0;color:var(--muted);max-width:62ch}
               <div class="now" data-act="hilo">
                 <div class="k"><span>Now</span><span>details ›</span></div>
                 <div class="t" id="hiloNow">Integrate BLE events into the daemon</div>
-                <div class="m"><span id="hiloProj">clawd-buddy</span><b id="hiloTime">0:48:12</b></div>
+                <div class="m"><span id="hiloProj">hilo-buddy</span><b id="hiloTime">0:48:12</b></div>
               </div>
               <div class="next" id="hiloNext"></div>
               <div class="agree">Agreements logged today: <b id="hiloAgree">2</b></div>
@@ -542,8 +542,8 @@ const STATUS = {
 const POOL = [
   {name:'payments-api', task:'Payments webhook refactor', hue:200, hp:'acme', acc:'shades'},
   {name:'acme-dashboard', task:'PR #482 review', hue:280, hp:'acme', acc:'headphones'},
-  {name:'clawd-firmware', task:'Agents screen in LVGL', hue:150, hp:'clawd-buddy', acc:'wizard'},
-  {name:'hilo-app', task:'SQLite v3 migration', hue:45, hp:'clawd-buddy', acc:'crown'},
+  {name:'buddy-firmware', task:'Agents screen in LVGL', hue:150, hp:'hilo-buddy', acc:'wizard'},
+  {name:'hilo-app', task:'SQLite v3 migration', hue:45, hp:'hilo-buddy', acc:'crown'},
   {name:'ledger-svc', task:'Reconciliation flow tests', hue:330, hp:'acme', acc:'party'},
   {name:'infra-terraform', task:'ECS rollout plan', hue:100, hp:'acme', acc:'band'},
   {name:'research-notes', task:'Chapter 3: literature review', hue:260, hp:'research', acc:'heart'},
@@ -570,10 +570,10 @@ const SONGS = [
   {t:'Night Build', a:'Tabstop', len:247, hue:280}, {t:'Rush Hour', a:'The Minibuses', len:199, hue:340}
 ];
 const HILO = [
-  {t:'Integrate BLE events into the daemon', p:'clawd-buddy', note:'Define the message format and reconnection when the Mac sleeps.', agree:['Compact JSON events','No credentials on the buddy']},
+  {t:'Integrate BLE events into the daemon', p:'hilo-buddy', note:'Define the message format and reconnection when the Mac sleeps.', agree:['Compact JSON events','No credentials on the buddy']},
   {t:'Review CloudWatch alerts', p:'acme', jira:'DEMO-1423', note:'Reduce latency alarm noise in payments.', agree:['p95 threshold at 800 ms']},
   {t:'Read multi-agent orchestration paper', p:'research', note:'Summary for the Thursday session.', agree:['Deliver summary on Wednesday']},
-  {t:'Define rotating views PRD', p:'clawd-buddy', note:'Views: home, agents, usage, Hilo, music.', agree:['Hold-to-approve']},
+  {t:'Define rotating views PRD', p:'hilo-buddy', note:'Views: home, agents, usage, Hilo, music.', agree:['Hold-to-approve']},
   {t:'Answer payments team questions', p:'acme', jira:'DEMO-1450', note:'Questions about webhook retries.', agree:[]}
 ];
 const FILAMENT = {
@@ -1006,7 +1006,7 @@ const EV = {
   resolve() {
     const a = agentWith('waiting'); if (!a) return toast('Nobody is waiting for a decision', C.idle);
     a.status = 'working'; a.since = now(); a.steps.push({t: now(), k:'ok', txt:'Resolved on the Mac'});
-    log('agent.permission_resolved', {session: a.id, decision: 'approved', via: 'mac', host: a.machine});
+    log('agent.request_resolved', {session: a.id, kind: a.perm.kind === 'q' ? 'question' : 'permission', outcome: a.perm.kind === 'q' ? 'answered' : 'approved', via: 'mac', host: a.machine});
     if (S.attnId === a.id) S.attnId = null;
     toast(`✓ Resolved on the ${machineName(a.machine)} Mac`, C.info); play('approved'); renderAll(); nextAttn();
   },

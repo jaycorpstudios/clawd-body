@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "id": "01K8F400000000000000000019",
+  "ts": 1792900000,
+  "type": "device.pet_accessory",
+  "data": {
+    "acc": "wizard"
+  }
+}

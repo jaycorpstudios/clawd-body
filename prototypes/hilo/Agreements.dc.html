@@ -71,7 +71,7 @@ a{color:#5fd0c3}a:hover{color:#8be3d8}
         <div role="group" aria-label="Filter by project" style="display: flex; gap: 6px; flex-wrap: wrap">
           <button type="button" style="height: 32px; padding: 0 12px; border-radius: 20px; border: 1px solid #0e7c72; background: #173a36; color: #8be3d8; font: inherit; font-weight: 600; cursor: pointer">All</button>
           <button type="button" style="height: 32px; padding: 0 12px; border-radius: 20px; border: 1px solid #36322d; background: #1e1b18; color: #d8d1c6; font: inherit; cursor: pointer">acme</button>
-          <button type="button" style="height: 32px; padding: 0 12px; border-radius: 20px; border: 1px solid #36322d; background: #1e1b18; color: #d8d1c6; font: inherit; cursor: pointer">clawd-buddy</button>
+          <button type="button" style="height: 32px; padding: 0 12px; border-radius: 20px; border: 1px solid #36322d; background: #1e1b18; color: #d8d1c6; font: inherit; cursor: pointer">hilo-buddy</button>
           <button type="button" style="height: 32px; padding: 0 12px; border-radius: 20px; border: 1px solid #36322d; background: #1e1b18; color: #d8d1c6; font: inherit; cursor: pointer">research</button>
         </div>
       </div>
@@ -131,7 +131,7 @@ class Component extends DCLogic {
     return el => { if (el) this.cvs.set(key, { el, ...opts }); else this.cvs.delete(key); };
   }
   agentOpts(name, st) {
-    const A = { 'payments-api': [200, 'shades'], 'acme-dashboard': [280, 'headphones'], 'clawd-firmware': [150, 'wizard'], 'hilo-app': [45, 'crown'],
+    const A = { 'payments-api': [200, 'shades'], 'acme-dashboard': [280, 'headphones'], 'buddy-firmware': [150, 'wizard'], 'hilo-app': [45, 'crown'],
       'ledger-svc': [330, 'party'], 'infra-terraform': [100, 'band'], 'research-notes': [260, 'heart'] };
     const [hue, acc] = A[name] || [22, 'none'];
     const state = { wait: 'alert', work: 'working', done: 'happy', err: 'error', idle: 'idle' }[st] || st;
@@ -225,7 +225,7 @@ class Component extends DCLogic {
       'session': 'font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 20px; background: #3a2210; color: #ffb07a',
       'manual': 'font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 20px; background: #2a2826; color: #b9bcc4'
     };
-    const P = { acme: '#5b8cff', 'clawd-buddy': '#0e7c72', 'research': '#b98ae0' };
+    const P = { acme: '#5b8cff', 'hilo-buddy': '#0e7c72', 'research': '#b98ae0' };
     const A = (text, project, ctx, origin, task) => ({ text, project, pcolor: P[project], ctx, origin, originStyle: ORIG[origin], task });
     return {
       buddyMini: this.pet('mini', { hue: 22, acc: 'wizard', state: 'working' }),
@@ -233,14 +233,14 @@ class Component extends DCLogic {
       nav: this.navItems('agreements'),
       projects: [
         { name: 'acme', color: '#5b8cff', meta: 'Jira DEMO' },
-        { name: 'clawd-buddy', color: '#0e7c72', meta: 'local' },
+        { name: 'hilo-buddy', color: '#0e7c72', meta: 'local' },
         { name: 'research', color: '#b98ae0', meta: 'local' }
       ],
       confirmPet: this.pet('confirm', { hue: 22, acc: 'wizard', state: 'idle' }),
       days: [
         { date: 'Today · Saturday 24', items: [
-          A('Compact JSON BLE events, one message per event', 'clawd-buddy', 'Own decision', 'manual', 'Integrate BLE events into the daemon'),
-          A('High-risk actions are only approved on the Mac', 'clawd-buddy', 'Session with clawd-firmware', 'session', 'Integrate BLE events into the daemon')
+          A('Compact JSON BLE events, one message per event', 'hilo-buddy', 'Own decision', 'manual', 'Integrate BLE events into the daemon'),
+          A('High-risk actions are only approved on the Mac', 'hilo-buddy', 'Session with buddy-firmware', 'session', 'Integrate BLE events into the daemon')
         ] },
         { date: 'Thursday 22', items: [
           A('p95 latency alarm threshold raised to 800 ms', 'acme', 'With @payments-team at the daily', 'meeting', 'Review CloudWatch alerts'),
@@ -251,7 +251,7 @@ class Component extends DCLogic {
         ] }
       ],
       pending: [
-        { ref: this.pet('p1', this.agentOpts('clawd-firmware', 'idle')), text: 'Use FreeRTOS queues instead of a ring buffer for events', src: 'clawd-firmware · today 10:58' },
+        { ref: this.pet('p1', this.agentOpts('buddy-firmware', 'idle')), text: 'Use FreeRTOS queues instead of a ring buffer for events', src: 'buddy-firmware · today 10:58' },
         { ref: this.pet('p2', this.agentOpts('hilo-app', 'idle')), text: 'Keep the Jira sync every 15 minutes', src: 'hilo-app · yesterday 18:20' }
       ]
     };

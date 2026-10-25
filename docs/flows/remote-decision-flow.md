@@ -17,14 +17,14 @@ sequenceDiagram
         B->>D: permission.decision {request_id, approve|deny}
         D->>D: validate (see below)
         D-->>H: allow / deny
-        D-->>B: agent.permission_resolved {via: buddy}
+        D-->>B: agent.request_resolved {outcome, via: buddy}
     else decided on the Mac first
         M->>D: resolved on the Mac
-        D-->>B: agent.permission_resolved {via: mac}
+        D-->>B: agent.request_resolved {outcome, via: mac}
         Note over B,D: a late buddy decision is ignored
     else expires
         D-->>H: no decision → fall back to the Mac prompt
-        D-->>B: agent.permission_resolved (real outcome when known)
+        D-->>B: agent.request_resolved {outcome: expired, via: timeout}
     end
     H-->>CC: result
 ```
@@ -36,7 +36,7 @@ flowchart TD
     In([permission.decision arrives]) --> Bonded{From a bonded,<br/>encrypted link?}
     Bonded -->|no| Drop([drop + log])
     Bonded -->|yes| Pending{request_id pending<br/>for this host?}
-    Pending -->|no| Reply([reply agent.permission_resolved<br/>with real state])
+    Pending -->|no| Reply([reply agent.request_resolved<br/>with real state])
     Pending -->|yes| Exp{expired?}
     Exp -->|yes| Reply
     Exp -->|no| Used{already used?}

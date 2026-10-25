@@ -1,0 +1,13 @@
+{
+  "reason": "buddy commands use the imperative",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000005",
+    "ts": 1792900000,
+    "type": "permission.decision",
+    "data": {
+      "request_id": "01K8F3Z9QW4Y6R2M7N5P8T0V1X",
+      "decision": "approved"
+    }
+  }
+}

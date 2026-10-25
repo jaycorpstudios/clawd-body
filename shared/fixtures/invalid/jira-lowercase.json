@@ -1,0 +1,16 @@
+{
+  "reason": "jira keys look like ABC-123",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000013",
+    "ts": 1792900000,
+    "host": "work",
+    "type": "hilo.task_changed",
+    "data": {
+      "title": "Review CloudWatch alerts",
+      "project": "acme",
+      "jira": "demo-1423",
+      "started_at": 1792900000
+    }
+  }
+}

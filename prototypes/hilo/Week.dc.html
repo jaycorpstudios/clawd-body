@@ -100,7 +100,7 @@ a{color:#5fd0c3}a:hover{color:#8be3d8}
             <p style="margin: 0; color: #d8d1c6; max-width: 68ch">The PR #482 review closed and the payments webhook refactor moved forward (DEMO-1431): it now verifies the signature before processing each event. Still pending: review the CloudWatch latency alerts (DEMO-1423).</p>
           </div>
           <div style="display: flex; flex-direction: column; gap: 6px">
-            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700"><span style="width: 9px; height: 9px; border-radius: 3px; background: #0e7c72; display: block"></span>clawd-buddy</div>
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700"><span style="width: 9px; height: 9px; border-radius: 3px; background: #0e7c72; display: block"></span>hilo-buddy</div>
             <p style="margin: 0; color: #d8d1c6; max-width: 68ch">The buddy screen prototype was approved and BLE event integration into the daemon started: JSON schema, GATT service and reconnection with backoff.</p>
           </div>
           <div style="display: flex; flex-direction: column; gap: 6px">
@@ -160,7 +160,7 @@ class Component extends DCLogic {
     return el => { if (el) this.cvs.set(key, { el, ...opts }); else this.cvs.delete(key); };
   }
   agentOpts(name, st) {
-    const A = { 'payments-api': [200, 'shades'], 'acme-dashboard': [280, 'headphones'], 'clawd-firmware': [150, 'wizard'], 'hilo-app': [45, 'crown'],
+    const A = { 'payments-api': [200, 'shades'], 'acme-dashboard': [280, 'headphones'], 'buddy-firmware': [150, 'wizard'], 'hilo-app': [45, 'crown'],
       'ledger-svc': [330, 'party'], 'infra-terraform': [100, 'band'], 'research-notes': [260, 'heart'] };
     const [hue, acc] = A[name] || [22, 'none'];
     const state = { wait: 'alert', work: 'working', done: 'happy', err: 'error', idle: 'idle' }[st] || st;
@@ -251,7 +251,7 @@ class Component extends DCLogic {
   renderVals() {
     const hrs = [6.1, 5.4, 4.8, 6.6, 3.9, 0.8, 0];
     const max = 7;
-    const projects = [['acme', 18.2, '#5b8cff'], ['clawd-buddy', 6.9, '#0e7c72'], ['research', 2.6, '#b98ae0']];
+    const projects = [['acme', 18.2, '#5b8cff'], ['hilo-buddy', 6.9, '#0e7c72'], ['research', 2.6, '#b98ae0']];
     const pmax = 20;
     return {
       buddyMini: this.pet('mini', { hue: 22, acc: 'wizard', state: 'working' }),
@@ -259,7 +259,7 @@ class Component extends DCLogic {
       nav: this.navItems('week'),
       projects: [
         { name: 'acme', color: '#5b8cff', meta: 'Jira DEMO' },
-        { name: 'clawd-buddy', color: '#0e7c72', meta: 'local' },
+        { name: 'hilo-buddy', color: '#0e7c72', meta: 'local' },
         { name: 'research', color: '#b98ae0', meta: 'local' }
       ],
       hero: this.pet('hero', { hue: 22, acc: 'wizard', state: 'happy' }),

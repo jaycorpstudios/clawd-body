@@ -1,0 +1,9 @@
+packages:
+  - shared
+
+minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - fast-uri@3.1.9
+
+overrides:
+  fast-uri: 3.1.9

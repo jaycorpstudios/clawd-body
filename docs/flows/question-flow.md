@@ -13,14 +13,17 @@ sequenceDiagram
         B->>D: question.answer {request_id, choice_index, choice}
         D->>D: validate pending, not expired, single use, choice in options
         D-->>CC: deliver answer
+        D-->>B: agent.request_resolved {outcome: answered, via: buddy}
     else answered on the Mac
-        D-->>B: resolution message (pending to define)
+        D-->>B: agent.request_resolved {outcome: answered, via: mac}
     else snoozed
         B->>D: device.snooze {request_id}
+    else expires
+        D-->>B: agent.request_resolved {outcome: expired, via: timeout}
     end
 ```
 
 ## Notes
 
 - Questions have no risk level; any validated answer from a bonded buddy is accepted.
-- **Pending to define** ([open questions › contract](../plans/open-questions.md#contract)): the message that tells the buddy a question was resolved elsewhere (today only `agent.permission_resolved` exists), and whether Claude Code hooks can inject an answer for a question at all — verify before committing to phase 4.
+- **Pending to define** ([open questions › daemon](../plans/open-questions.md#daemon)): whether Claude Code hooks can inject an answer for a question at all — verify before committing to phase 4.

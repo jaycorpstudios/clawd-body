@@ -1,0 +1,13 @@
+{
+  "reason": "usage.window_reset has an empty payload",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000020",
+    "ts": 1792900000,
+    "host": "work",
+    "type": "usage.window_reset",
+    "data": {
+      "session_pct": 0
+    }
+  }
+}

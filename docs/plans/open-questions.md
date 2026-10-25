@@ -7,23 +7,20 @@ Each row: **gap → context → what to fill**. "Phase" is the first [roadmap](.
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
 | Success criteria | No measurable targets yet | Hook-to-screen latency, battery life, idle CPU budget, "no high-risk approval from device" test | 1 |
-| Project name | "Clawd" is Anthropic's mascot name; repo is public | Keep with disclaimer or rename before publishing | 1 |
 
 ## Architecture
 
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
 | Daemon and app stack | Native Swift vs. TypeScript/Node + Tauri/Electron, etc. | Choice with trade-offs: CoreBluetooth stability, power, login-item packaging, MCP SDK availability | 3 |
-| Host naming | `host` is a short user-configured name | Where it is configured, allowed characters (schema: `^[a-z0-9-]{1,16}$`) | 1 |
+| Host naming | Allowed characters are fixed by the schema (`^[a-z0-9-]{1,16}$`) | Where the user configures it (daemon config file, Hilo settings) and the default | 3 |
 
 ## Contract
 
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
-| `snapshot` shape | Only top-level keys are listed | Full schema for `sessions`, `usage`, `hilo`, `media`; max size | 1 |
-| Question resolution | Only `agent.permission_resolved` exists | Message that closes a question answered on the Mac or expired | 1 |
-| Schema coverage | JSON Schema covers 4 of 21 types | Payload schema for every type; `host` required for Mac → buddy | 1 |
 | Replay window | "Stale messages are rejected" has no number | Accepted `ts` skew; clock source on the buddy (see RTC row) | 3 |
+| Byte budget per message | Schema caps item counts (8 sessions, 5 steps, 12 diff lines) but not bytes | Max encoded size per message once BLE framing is chosen; trim rules for `snapshot` | 3 |
 | Usage across Macs | Both Macs may report usage for the same account | Which value the buddy shows (latest, max, per host) | 2 |
 
 ## BLE
@@ -62,7 +59,7 @@ Each row: **gap → context → what to fill**. "Phase" is the first [roadmap](.
 | Session ↔ task linking | Sessions must attach to Hilo tasks | By directory, branch, or a prompt when the session starts | 5 |
 | Weekly summary drafting | "Drafted by Claude" | How, without storing API keys in Hilo (e.g. via Claude Code + MCP) | 5 |
 | Jira credentials | Optional per-project sync | Storage (macOS Keychain), scopes, sync interval | 5 |
-| Project hue/accessory | Fixed per project, same on buddy and Hilo | Assigned manually, from config, or derived from the name | 5 |
+| Project hue/accessory | Fixed per project, same on buddy and Hilo; the contract has no hue/accessory field yet | Assigned manually, from config, or derived from the name | 5 |
 | Music source | `media.now_playing` has no producer | Which player(s) and how `hilod` reads now-playing on macOS | 6 |
 | Distribution | Login item + app | Signing, notarization, install/update path | 5 |
 

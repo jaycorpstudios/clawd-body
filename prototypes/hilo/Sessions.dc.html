@@ -117,7 +117,7 @@ a{color:#5fd0c3}a:hover{color:#8be3d8}
       <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
         <section aria-label="Session detail" style="flex: 1.4 1 420px; min-width: 0; background: #1e1b18; border: 1px solid #2a2723; border-radius: 14px; padding: 20px 22px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
           <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: baseline">
-            <div style="display: flex; align-items: center; gap: 12px"><canvas width="64" height="64" ref="{{detailPet}}" style="width: 56px; height: 56px; image-rendering: pixelated; flex: none" aria-hidden="true"></canvas><h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; font-weight: 700">clawd-firmware</h2></div>
+            <div style="display: flex; align-items: center; gap: 12px"><canvas width="64" height="64" ref="{{detailPet}}" style="width: 56px; height: 56px; image-rendering: pixelated; flex: none" aria-hidden="true"></canvas><h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; font-weight: 700">buddy-firmware</h2></div>
             <span style="font-size: 13px; color: #9c958a">Linked to <a href="Main.dc.html">Integrate BLE events into the daemon</a></span>
           </div>
           <div style="display: flex; flex-direction: column; gap: 0">
@@ -157,7 +157,7 @@ class Component extends DCLogic {
     return el => { if (el) this.cvs.set(key, { el, ...opts }); else this.cvs.delete(key); };
   }
   agentOpts(name, st) {
-    const A = { 'payments-api': [200, 'shades'], 'acme-dashboard': [280, 'headphones'], 'clawd-firmware': [150, 'wizard'], 'hilo-app': [45, 'crown'],
+    const A = { 'payments-api': [200, 'shades'], 'acme-dashboard': [280, 'headphones'], 'buddy-firmware': [150, 'wizard'], 'hilo-app': [45, 'crown'],
       'ledger-svc': [330, 'party'], 'infra-terraform': [100, 'band'], 'research-notes': [260, 'heart'] };
     const [hue, acc] = A[name] || [22, 'none'];
     const state = { wait: 'alert', work: 'working', done: 'happy', err: 'error', idle: 'idle' }[st] || st;
@@ -256,14 +256,14 @@ class Component extends DCLogic {
       nav: this.navItems('sessions'),
       projects: [
         { name: 'acme', color: '#5b8cff', meta: 'Jira DEMO' },
-        { name: 'clawd-buddy', color: '#0e7c72', meta: 'local' },
+        { name: 'hilo-buddy', color: '#0e7c72', meta: 'local' },
         { name: 'research', color: '#b98ae0', meta: 'local' }
       ],
       bannerPet: this.pet('banner', this.agentOpts('hilo-app', 'wait')),
-      detailPet: this.pet('detail', this.agentOpts('clawd-firmware', 'work')),
+      detailPet: this.pet('detail', this.agentOpts('buddy-firmware', 'work')),
       rows: [
         R('hilo-app', 'wait', 'needs you', 'Integrate BLE events into the daemon', 'Warp · tab 3', '0:03', '41 k', 'Asking permission: npm run db:migrate'),
-        R('clawd-firmware', 'work', 'working', 'Integrate BLE events into the daemon', 'Warp · tab 2', '0:27', '118 k', 'Edited main/ui/agents.c', true),
+        R('buddy-firmware', 'work', 'working', 'Integrate BLE events into the daemon', 'Warp · tab 2', '0:27', '118 k', 'Edited main/ui/agents.c', true),
         R('payments-api', 'work', 'working', 'Payments webhook refactor', 'Warp · tab 1', '1:05', '203 k', 'Ran tests: 42 passed'),
         R('acme-dashboard', 'done', 'done', 'PR #482 review', 'closed', '0:38', '96 k', 'Left 6 comments on the PR'),
         R('ledger-svc', 'err', 'failed', 'No linked task', 'closed', '0:12', '22 k', 'Tool timeout (120 s)')

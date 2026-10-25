@@ -2,6 +2,7 @@
 
 | Term | Meaning |
 | :--- | :--- |
+| **Hilo Buddy** | Project name: the buddy plus Hilo. Not affiliated with Anthropic |
 | **Buddy** | The physical device: ESP32-S3 + AMOLED inside a 3D-printed figure |
 | **Pet** | The original pixel-art character drawn on the buddy and in Hilo |
 | **Accessory** | Item worn by the pet (wizard hat, shades, headphones, crown, party hat, headband, heart eyes) |

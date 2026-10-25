@@ -24,4 +24,5 @@ stateDiagram-v2
 
 - Two Macs are independent: losing one never affects the other's sessions.
 - The daemon recovers by itself after a Bluetooth restart.
-- **Pending to define** ([open questions › contract](../plans/open-questions.md#contract)): `snapshot` payload shape and size, backoff intervals, how usage/weekly values combine on screen when both Macs report them.
+- `snapshot` shape: [event contract](../architecture/event-contract.md#snapshot). Pending requests travel inside each session so they reappear after a reconnect.
+- **Pending to define** ([open questions › contract](../plans/open-questions.md#contract)): `snapshot` byte budget, backoff intervals, how usage/weekly values combine on screen when both Macs report them.

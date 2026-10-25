@@ -1,0 +1,16 @@
+{
+  "reason": "percentages are 0–100",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000012",
+    "ts": 1792900000,
+    "host": "work",
+    "type": "usage.update",
+    "data": {
+      "session_pct": 101,
+      "weekly_pct": 38,
+      "reset_in_min": 40,
+      "tokens_today": 2100000
+    }
+  }
+}

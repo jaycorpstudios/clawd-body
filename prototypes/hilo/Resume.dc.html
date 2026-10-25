@@ -137,7 +137,7 @@ class Component extends DCLogic {
     return el => { if (el) this.cvs.set(key, { el, ...opts }); else this.cvs.delete(key); };
   }
   agentOpts(name, st) {
-    const A = { 'payments-api': [200, 'shades'], 'acme-dashboard': [280, 'headphones'], 'clawd-firmware': [150, 'wizard'], 'hilo-app': [45, 'crown'],
+    const A = { 'payments-api': [200, 'shades'], 'acme-dashboard': [280, 'headphones'], 'buddy-firmware': [150, 'wizard'], 'hilo-app': [45, 'crown'],
       'ledger-svc': [330, 'party'], 'infra-terraform': [100, 'band'], 'research-notes': [260, 'heart'] };
     const [hue, acc] = A[name] || [22, 'none'];
     const state = { wait: 'alert', work: 'working', done: 'happy', err: 'error', idle: 'idle' }[st] || st;
@@ -214,7 +214,7 @@ class Component extends DCLogic {
     if (state === 'alert' && acc !== 'wizard') { const b = Math.sin(tt * 8) > 0 ? 0 : 1; px(27, 2 + b, 3, 6, C.wait, true); px(27, 9 + b, 3, 2, C.wait, true); }
     if (state === 'working') { for (let i = 0; i < 3; i++) { const ph = (tt * .9 + i / 3) % 1; px(4 + i * 11, Math.round(10 - ph * 8), 1, 1, 'rgba(255,154,82,' + (1 - ph) + ')', true); } }
   }
-  constructor(props) { super(props); this.state = { proj: 'clawd-buddy' }; }
+  constructor(props) { super(props); this.state = { proj: 'hilo-buddy' }; }
   navItems(active) {
     const items = [
       { key: 'today', label: 'Today', href: 'Main.dc.html', badge: '6', icon: 'M8 3v3M16 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z' },
@@ -228,11 +228,11 @@ class Component extends DCLogic {
   }
   renderVals() {
     const DATA = {
-      'clawd-buddy': { slug: 'clawd-buddy', color: '#0e7c72', when: 'today, 11:12', task: 'Integrate BLE events into the daemon',
+      'hilo-buddy': { slug: 'hilo-buddy', color: '#0e7c72', when: 'today, 11:12', task: 'Integrate BLE events into the daemon',
         summary: 'The JSON event schema and the first GATT service are defined. Reconnection with backoff works when the Mac sleeps. hilo-app is waiting for permission to run the local database migration.',
         next: 'Test passkey pairing between the daemon and the board',
         open: ['Pending permission in hilo-app: npm run db:migrate', 'Pick the side button GPIO on the schematic', 'Confirm the maximum BLE message size'],
-        cmds: [{ cmd: 'claude --resume 7f3a9c1e', note: 'clawd-firmware' }, { cmd: 'hilo resume clawd-buddy', note: 'prints this summary' }],
+        cmds: [{ cmd: 'claude --resume 7f3a9c1e', note: 'buddy-firmware' }, { cmd: 'hilo resume hilo-buddy', note: 'prints this summary' }],
         files: [{ p: 'main/ble/events.h', d: '14 min ago' }, { p: 'main/ui/agents.c', d: '20 min ago' }, { p: 'daemon/src/gatt.ts', d: '1 h ago' }, { p: 'docs/events.md', d: '1 h ago' }],
         agree: ['Compact JSON BLE events', 'High risk is only approved on the Mac'] },
       'acme': { slug: 'acme', color: '#5b8cff', when: 'yesterday, 18:40', task: 'Payments webhook refactor · DEMO-1431',
@@ -250,7 +250,7 @@ class Component extends DCLogic {
         files: [{ p: 'notes/chapter3.md', d: 'Tuesday' }, { p: 'notes/refs.bib', d: 'Tuesday' }],
         agree: ['Deliver the paper summary on Wednesday'] }
     };
-    const AG = { 'clawd-buddy': 'clawd-firmware', 'acme': 'payments-api', 'research': 'research-notes' };
+    const AG = { 'hilo-buddy': 'buddy-firmware', 'acme': 'payments-api', 'research': 'research-notes' };
     const cur = DATA[this.state.proj];
     const tabs = Object.keys(DATA).map(k => ({ ref: this.pet('tab-' + k, this.agentOpts(AG[k], k === this.state.proj ? 'happy' : 'idle')), name: k, color: DATA[k].color, when: DATA[k].when,
       pick: () => this.setState({ proj: k }),
@@ -262,7 +262,7 @@ class Component extends DCLogic {
       nav: this.navItems('resume'),
       projects: [
         { name: 'acme', color: '#5b8cff', meta: 'Jira DEMO' },
-        { name: 'clawd-buddy', color: '#0e7c72', meta: 'local' },
+        { name: 'hilo-buddy', color: '#0e7c72', meta: 'local' },
         { name: 'research', color: '#b98ae0', meta: 'local' }
       ],
       tabs, cur,

@@ -14,7 +14,7 @@ Runs on each Mac as a login item. Connects Claude Code, Hilo and the buddy.
 5. **Remote decisions** ([flow](../flows/remote-decision-flow.md)):
    - Only for requests marked `remote_allowed: true` by the [risk policy](../security/risk-policy.md) (allowlist per tool and command pattern, configurable per project).
    - Validates pending `request_id`, expiry (default 10 min) and single use.
-   - If the request was already resolved on the Mac, drops the decision and tells the buddy with `agent.permission_resolved`.
+   - If the request was already resolved on the Mac, drops the decision and tells the buddy with `agent.request_resolved`.
    - Logs every decision in the session timeline with `via: "buddy"` or `via: "mac"`.
 6. **MCP and CLI**: backend for Hilo ([hilo.md](hilo.md)).
 

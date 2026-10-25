@@ -1,0 +1,14 @@
+{
+  "reason": "payloads have no extra fields",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000016",
+    "ts": 1792900000,
+    "type": "device.battery",
+    "data": {
+      "pct": 14,
+      "charging": false,
+      "token": "x"
+    }
+  }
+}

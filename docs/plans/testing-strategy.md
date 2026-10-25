@@ -11,7 +11,7 @@ flowchart LR
 
 | Layer | What to test | Tool | Run |
 | :--- | :--- | :--- | :--- |
-| Contract | Every event type validates against `shared/events.schema.json`; simulator log as fixtures | {{tool}} | {{cmd}} |
+| Contract | Valid fixture per type passes; each invalid fixture fails; scenarios emit only valid events | `node:test` + ajv | `pnpm test` |
 | Unit (daemon) | Risk policy classification; decision validation (pending, expiry, single use, high-risk approve rejected) | {{tool}} | {{cmd}} |
 | Unit (firmware) | View state machine, sort order, timers (idle 60 s, reminder 25 s, hold 900 ms) | {{tool}} | {{cmd}} |
 | Integration | Hook payload → event → fake peripheral; reconnect sends `snapshot` | {{tool}} | {{cmd}} |

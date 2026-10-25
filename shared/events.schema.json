@@ -1,0 +1,315 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hilo-buddy/events.schema.json",
+  "title": "Hilo Buddy event envelope (v1)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "id", "ts", "type", "data"],
+  "properties": {
+    "v": { "const": 1 },
+    "id": { "$ref": "#/$defs/ulid" },
+    "ts": { "$ref": "#/$defs/unix" },
+    "host": { "$ref": "#/$defs/host" },
+    "type": { "enum": [
+      "snapshot", "session.start", "session.end",
+      "agent.needs_permission", "agent.question", "agent.request_resolved",
+      "agent.task_done", "agent.error", "agent.step",
+      "usage.update", "usage.window_reset", "hilo.task_changed", "media.now_playing",
+      "permission.decision", "question.answer",
+      "device.ack", "device.snooze", "device.battery", "device.sleep", "device.wake", "device.pet_accessory"
+    ] },
+    "data": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "enum": [
+        "snapshot", "session.start", "session.end",
+        "agent.needs_permission", "agent.question", "agent.request_resolved",
+        "agent.task_done", "agent.error", "agent.step",
+        "usage.update", "usage.window_reset", "hilo.task_changed", "media.now_playing"
+      ] } } },
+      "then": { "required": ["host"] }
+    },
+    { "if": { "properties": { "type": { "const": "snapshot" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/snapshot" } } } },
+    { "if": { "properties": { "type": { "const": "session.start" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/sessionStart" } } } },
+    { "if": { "properties": { "type": { "const": "session.end" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/sessionRef" } } } },
+    { "if": { "properties": { "type": { "const": "agent.needs_permission" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/permissionRequest" } } } },
+    { "if": { "properties": { "type": { "const": "agent.question" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/questionRequest" } } } },
+    { "if": { "properties": { "type": { "const": "agent.request_resolved" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/requestResolved" } } } },
+    { "if": { "properties": { "type": { "const": "agent.task_done" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/taskDone" } } } },
+    { "if": { "properties": { "type": { "const": "agent.error" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/agentError" } } } },
+    { "if": { "properties": { "type": { "const": "agent.step" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/agentStep" } } } },
+    { "if": { "properties": { "type": { "const": "usage.update" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/usage" } } } },
+    { "if": { "properties": { "type": { "const": "usage.window_reset" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/empty" } } } },
+    { "if": { "properties": { "type": { "const": "hilo.task_changed" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/hiloTask" } } } },
+    { "if": { "properties": { "type": { "const": "media.now_playing" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/media" } } } },
+    { "if": { "properties": { "type": { "const": "permission.decision" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/permissionDecision" } } } },
+    { "if": { "properties": { "type": { "const": "question.answer" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/questionAnswer" } } } },
+    { "if": { "properties": { "type": { "const": "device.ack" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/deviceAck" } } } },
+    { "if": { "properties": { "type": { "const": "device.snooze" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/requestRef" } } } },
+    { "if": { "properties": { "type": { "const": "device.battery" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/battery" } } } },
+    { "if": { "properties": { "type": { "const": "device.sleep" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/sleepWake" } } } },
+    { "if": { "properties": { "type": { "const": "device.wake" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/sleepWake" } } } },
+    { "if": { "properties": { "type": { "const": "device.pet_accessory" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/petAccessory" } } } }
+  ],
+  "$defs": {
+    "ulid": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
+    "unix": { "type": "integer", "minimum": 0 },
+    "host": { "type": "string", "pattern": "^[a-z0-9-]{1,16}$" },
+    "sessionId": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "project": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "task": { "type": "string", "maxLength": 120 },
+    "text": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "pct": { "type": "number", "minimum": 0, "maximum": 100 },
+    "empty": { "type": "object", "additionalProperties": false },
+
+    "sessionRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["session"],
+      "properties": { "session": { "$ref": "#/$defs/sessionId" } }
+    },
+    "requestRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["request_id"],
+      "properties": { "request_id": { "$ref": "#/$defs/ulid" } }
+    },
+    "sessionStart": {
+      "type": "object", "additionalProperties": false,
+      "required": ["session", "project", "task"],
+      "properties": {
+        "session": { "$ref": "#/$defs/sessionId" },
+        "project": { "$ref": "#/$defs/project" },
+        "task": { "$ref": "#/$defs/task" }
+      }
+    },
+    "diff": {
+      "type": "array", "maxItems": 12,
+      "items": {
+        "type": "array", "minItems": 2, "maxItems": 2,
+        "prefixItems": [{ "enum": ["a", "r"] }, { "type": "string", "maxLength": 120 }]
+      }
+    },
+    "permissionRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["request_id", "session", "project", "tool", "detail", "cwd", "risk", "remote_allowed", "expires_at"],
+      "properties": {
+        "request_id": { "$ref": "#/$defs/ulid" },
+        "session": { "$ref": "#/$defs/sessionId" },
+        "project": { "$ref": "#/$defs/project" },
+        "tool": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "detail": { "$ref": "#/$defs/text" },
+        "why": { "$ref": "#/$defs/text" },
+        "diff": { "$ref": "#/$defs/diff" },
+        "cwd": { "type": "string", "maxLength": 120 },
+        "risk": { "enum": ["low", "high"] },
+        "remote_allowed": { "type": "boolean" },
+        "expires_at": { "$ref": "#/$defs/unix" }
+      },
+      "if": { "properties": { "risk": { "const": "high" } } },
+      "then": { "properties": { "remote_allowed": { "const": false } } }
+    },
+    "questionRequest": {
+      "type": "object", "additionalProperties": false,
+      "required": ["request_id", "session", "project", "detail", "options", "expires_at"],
+      "properties": {
+        "request_id": { "$ref": "#/$defs/ulid" },
+        "session": { "$ref": "#/$defs/sessionId" },
+        "project": { "$ref": "#/$defs/project" },
+        "detail": { "$ref": "#/$defs/text" },
+        "options": {
+          "type": "array", "minItems": 2, "maxItems": 4,
+          "items": { "type": "string", "minLength": 1, "maxLength": 40 }
+        },
+        "expires_at": { "$ref": "#/$defs/unix" }
+      }
+    },
+    "requestResolved": {
+      "type": "object", "additionalProperties": false,
+      "required": ["request_id", "session", "kind", "outcome", "via"],
+      "properties": {
+        "request_id": { "$ref": "#/$defs/ulid" },
+        "session": { "$ref": "#/$defs/sessionId" },
+        "kind": { "enum": ["permission", "question"] },
+        "outcome": { "enum": ["approved", "denied", "answered", "expired"] },
+        "via": { "enum": ["mac", "buddy", "timeout"] },
+        "choice_index": { "type": "integer", "minimum": 0, "maximum": 3 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "outcome": { "enum": ["approved", "denied"] } } },
+          "then": { "properties": { "kind": { "const": "permission" } }, "not": { "required": ["choice_index"] } }
+        },
+        {
+          "if": { "properties": { "outcome": { "const": "answered" } } },
+          "then": { "properties": { "kind": { "const": "question" } }, "required": ["choice_index"] }
+        },
+        {
+          "if": { "properties": { "outcome": { "const": "expired" } } },
+          "then": { "properties": { "via": { "const": "timeout" } }, "not": { "required": ["choice_index"] } }
+        },
+        {
+          "if": { "properties": { "via": { "const": "timeout" } } },
+          "then": { "properties": { "outcome": { "const": "expired" } } }
+        }
+      ]
+    },
+    "taskDone": {
+      "type": "object", "additionalProperties": false,
+      "required": ["session", "summary"],
+      "properties": {
+        "session": { "$ref": "#/$defs/sessionId" },
+        "summary": { "$ref": "#/$defs/text" }
+      }
+    },
+    "agentError": {
+      "type": "object", "additionalProperties": false,
+      "required": ["session", "detail"],
+      "properties": {
+        "session": { "$ref": "#/$defs/sessionId" },
+        "detail": { "$ref": "#/$defs/text" }
+      }
+    },
+    "stepKind": { "enum": ["plan", "read", "edit", "run", "ask", "ok", "deny", "err"] },
+    "agentStep": {
+      "type": "object", "additionalProperties": false,
+      "required": ["session", "kind", "text"],
+      "properties": {
+        "session": { "$ref": "#/$defs/sessionId" },
+        "kind": { "$ref": "#/$defs/stepKind" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 120 }
+      }
+    },
+    "usage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["session_pct", "weekly_pct", "reset_in_min"],
+      "properties": {
+        "session_pct": { "$ref": "#/$defs/pct" },
+        "weekly_pct": { "$ref": "#/$defs/pct" },
+        "reset_in_min": { "type": "integer", "minimum": 0, "maximum": 300 },
+        "tokens_today": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "hiloTask": {
+      "type": "object", "additionalProperties": false,
+      "required": ["title", "project", "started_at"],
+      "properties": {
+        "title": { "$ref": "#/$defs/task" },
+        "project": { "$ref": "#/$defs/project" },
+        "jira": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{1,9}-[0-9]{1,7}$" },
+        "started_at": { "$ref": "#/$defs/unix" }
+      }
+    },
+    "hiloNext": {
+      "type": "object", "additionalProperties": false,
+      "required": ["title", "project"],
+      "properties": {
+        "title": { "$ref": "#/$defs/task" },
+        "project": { "$ref": "#/$defs/project" },
+        "jira": { "type": "string", "pattern": "^[A-Z][A-Z0-9]{1,9}-[0-9]{1,7}$" }
+      }
+    },
+    "media": {
+      "type": "object", "additionalProperties": false,
+      "required": ["title", "artist", "length_s", "position_s"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "artist": { "type": "string", "maxLength": 80 },
+        "length_s": { "type": "integer", "minimum": 0 },
+        "position_s": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "sessionState": {
+      "type": "object", "additionalProperties": false,
+      "required": ["session", "project", "task", "status", "since"],
+      "properties": {
+        "session": { "$ref": "#/$defs/sessionId" },
+        "project": { "$ref": "#/$defs/project" },
+        "task": { "$ref": "#/$defs/task" },
+        "status": { "enum": ["working", "waiting", "done", "error", "idle"] },
+        "since": { "$ref": "#/$defs/unix" },
+        "tokens": { "type": "integer", "minimum": 0 },
+        "summary": { "$ref": "#/$defs/text" },
+        "error": { "$ref": "#/$defs/text" },
+        "steps": {
+          "type": "array", "maxItems": 5,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["ts", "kind", "text"],
+            "properties": {
+              "ts": { "$ref": "#/$defs/unix" },
+              "kind": { "$ref": "#/$defs/stepKind" },
+              "text": { "type": "string", "minLength": 1, "maxLength": 120 }
+            }
+          }
+        },
+        "pending_permission": { "$ref": "#/$defs/permissionRequest" },
+        "pending_question": { "$ref": "#/$defs/questionRequest" }
+      },
+      "not": { "required": ["pending_permission", "pending_question"] }
+    },
+    "snapshot": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sessions", "usage", "hilo"],
+      "properties": {
+        "sessions": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/sessionState" } },
+        "usage": { "$ref": "#/$defs/usage" },
+        "hilo": {
+          "type": "object", "additionalProperties": false,
+          "required": ["current", "next", "agreements_today"],
+          "properties": {
+            "current": { "oneOf": [{ "$ref": "#/$defs/hiloTask" }, { "type": "null" }] },
+            "next": { "type": "array", "maxItems": 3, "items": { "$ref": "#/$defs/hiloNext" } },
+            "agreements_today": {
+              "type": "array", "maxItems": 3,
+              "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+            }
+          }
+        },
+        "media": { "$ref": "#/$defs/media" }
+      }
+    },
+    "permissionDecision": {
+      "type": "object", "additionalProperties": false,
+      "required": ["request_id", "decision"],
+      "properties": {
+        "request_id": { "$ref": "#/$defs/ulid" },
+        "decision": { "enum": ["approve", "deny"] }
+      }
+    },
+    "questionAnswer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["request_id", "choice_index", "choice"],
+      "properties": {
+        "request_id": { "$ref": "#/$defs/ulid" },
+        "choice_index": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "choice": { "type": "string", "minLength": 1, "maxLength": 40 }
+      }
+    },
+    "deviceAck": {
+      "type": "object", "additionalProperties": false,
+      "required": ["request_id", "seen"],
+      "properties": {
+        "request_id": { "$ref": "#/$defs/ulid" },
+        "seen": { "const": true }
+      }
+    },
+    "battery": {
+      "type": "object", "additionalProperties": false,
+      "required": ["pct", "charging"],
+      "properties": {
+        "pct": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "charging": { "type": "boolean" }
+      }
+    },
+    "sleepWake": {
+      "type": "object", "additionalProperties": false,
+      "required": ["by"],
+      "properties": { "by": { "enum": ["touch", "button", "long_press", "idle"] } }
+    },
+    "petAccessory": {
+      "type": "object", "additionalProperties": false,
+      "required": ["acc"],
+      "properties": { "acc": { "enum": ["none", "wizard", "shades", "headphones", "crown", "party", "band", "heart"] } }
+    }
+  }
+}

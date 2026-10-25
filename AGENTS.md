@@ -14,7 +14,7 @@ Correct means: nothing high-risk is ever approved off the Mac, and the device ne
 | :--- | :--- |
 | `docs/` | Product, architecture, component specs, flows, security (start at `docs/README.md`) |
 | `prototypes/` | Approved UI references: device simulator and Hilo screens |
-| `shared/` | *(planned)* event schema — single source of truth for the contract |
+| `shared/` | Event schema (single source of truth for the contract), fixtures, `buddy-emit` tool |
 | `firmware/` | *(planned)* ESP32-S3 firmware: display, BLE peripheral, audio |
 | `daemon/` | *(planned)* `hilod`: Claude Code hooks, BLE central, SQLite, MCP, CLI |
 | `hilo/` | *(planned)* macOS app UI |
@@ -27,6 +27,8 @@ Correct means: nothing high-risk is ever approved off the Mac, and the device ne
 4. For UI, the approved prototypes win over prose — match views, states, timings and sounds.
 5. Open decisions live in `docs/plans/open-questions.md`: present options with trade-offs, never decide silently.
 6. Repo content is English; keep docs and indexes in sync when adding files.
+
+Validate with `pnpm test` (contract suite in `shared/`). Node version: `.nvmrc`.
 
 ## Start here
 

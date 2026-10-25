@@ -29,6 +29,6 @@ The five screens approved as visual direction.
 | Secondary text | `#9c958a` |
 | Accent (teal) | `#0e7c72` (buttons) · `#5fd0c3` (links) · `#173a36` (selected) |
 | Status chips | working `#3a2210`/`#ffb07a` · needs you `#3a2c0c`/`#ffd27a` · done `#0f3324`/`#7ee2b0` · failed `#3a1416`/`#ff9a9d` |
-| Sample projects | acme `#5b8cff` · clawd-buddy `#0e7c72` · research `#b98ae0` |
+| Sample projects | acme `#5b8cff` · hilo-buddy `#0e7c72` · research `#b98ae0` |
 
 Fonts: Bricolage Grotesque (titles), Hanken Grotesk (body) and JetBrains Mono (commands, hashes, times).
