@@ -17,7 +17,6 @@ Nothing pending.
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
 | Replay window | "Stale messages are rejected" has no number | Accepted `ts` skew; clock source on the buddy (see RTC row) | 3 |
-| Snapshot trimming | Messages are capped at 8 KB ([framing](../architecture/ble-transport.md#framing)); a worst-case snapshot (8 sessions with pending diffs) exceeds it | Trim order (steps, then diffs, then idle sessions) and a test with the worst case | 3 |
 | Usage across Macs | Both Macs may report usage for the same account | Which value the buddy shows (latest, max, per host) | 2 |
 
 ## BLE
@@ -32,7 +31,7 @@ Nothing pending.
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
 | Presence signal | Remote-decision mode is presence-based (see [remote decision flow](../flows/remote-decision-flow.md#remote-decision-mode)) | Idle threshold before the Mac counts as "away"; verify on real hardware that the terminal prompt stays hidden while the hook waits | 4 |
-| Usage source | 5 h window, weekly %, tokens today | Claude Code local stats vs. hook payloads; never account credentials | 3 |
+| Usage source | 5 h window, weekly %, tokens today | Claude Code local stats vs. hook payloads; never account credentials ; until then `snapshot.usage` carries zeros | 3 |
 | Policy file | See [risk-policy.md](../security/risk-policy.md) | Location, format, rule syntax, per-project overrides | 4 |
 
 ## Firmware

@@ -29,6 +29,7 @@ public actor Coordinator {
     private let clock: Clock
     private let pollSeconds: Double
     private var registry = RequestRegistry()
+    private var store = SessionStore()
     private var waiting: [String: CheckedContinuation<Resolution?, Never>] = [:]
 
     public init(host: String, mapper: HookMapper, link: BuddyLink, presence: PresenceProbe,
@@ -105,7 +106,13 @@ public actor Coordinator {
         }
     }
 
+    /// Full state for this host; send it whenever a buddy link comes up.
+    public func sendSnapshot() async {
+        await send(.snapshot(store.snapshot(host: host)))
+    }
+
     private func send(_ message: Outbound) async {
+        store.apply(message, now: clock.now())
         guard let data = try? Wire.encode(message, host: host, ts: clock.now()) else { return }
         await link.send(data)
     }

@@ -47,6 +47,8 @@ Senders produce exactly the schema: no extra fields in the envelope or any paylo
 | `hilo` | `current` (a `hilo.task_changed` payload or `null`), `next` (up to 3 `{ title, project, jira? }`), `agreements_today` (up to 3 strings). |
 | `media` | Same as `media.now_playing`; omitted when nothing plays. |
 
+A snapshot must fit the 8 KB message cap ([framing](ble-transport.md#framing)). The daemon trims in this order until it fits: steps, then diffs, then `why` / `summary` / `error`, then whole sessions from the lowest priority (`waiting` > `error` > `working` > `done` > `idle`). The worst case (8 sessions, each with a pending permission) fits after the third step; see `SessionStoreTests`.
+
 ### `agent.request_resolved`
 
 | `outcome` | `kind` | `via` | Meaning |

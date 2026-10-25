@@ -128,3 +128,15 @@ private func behavior(_ reply: Data) -> String? {
         #expect(throws: Never.self) { try Wire.decodeOutbound(bytes) }
     }
 }
+
+@Test func snapshotCarriesHeldRequest() async throws {
+    let h = Harness()
+    let hook = Task { await h.coordinator.handleHook(try h.permission("npm test")) }
+    let id = try await h.pendingRequestId()
+    await h.coordinator.sendSnapshot()
+    let snapshot = try #require(await h.link.raw.last)
+    guard case .snapshot(let snap) = try Wire.decodeOutbound(snapshot).body else { Issue.record("not a snapshot"); return }
+    #expect(snap.sessions.first?.pendingPermission?.requestId == id)
+    try await h.buddy(id, "deny")
+    _ = try await hook.value
+}
