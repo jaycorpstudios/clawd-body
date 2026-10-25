@@ -6,3 +6,4 @@
 | [event-contract.md](event-contract.md) | Envelope and every Mac ⇄ buddy message |
 | [`shared/events.schema.json`](../../shared/events.schema.json) | JSON Schema of the contract (single source) |
 | [ble-transport.md](ble-transport.md) | BLE roles, security, GATT layout, framing |
+| [claude-code-hooks.md](claude-code-hooks.md) | Claude Code hook events → contract messages, blocking behavior, IPC proposal |

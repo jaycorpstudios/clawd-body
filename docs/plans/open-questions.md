@@ -35,10 +35,8 @@ Each row: **gap → context → what to fill**. "Phase" is the first [roadmap](.
 
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
-| Hook ↔ daemon IPC | Hooks run as short commands | Transport (e.g. user-only Unix socket), auth, fail-open behavior when `hilod` is down | 3 |
-| Hook event mapping | Contract types must map to real Claude Code hook events | Table hook event → contract type, verified against current Claude Code docs | 3 |
-| Blocking and timeout | Expiry default is 10 min | Whether a permission hook can wait that long; fallback to the Mac prompt on timeout; how the hook learns the terminal answered first | 4 |
-| Answering questions | Device answers `AskUserQuestion` | Whether a hook can inject the answer; if not, scope questions as display-only | 4 |
+| Hook ↔ daemon IPC | Proposed in [claude-code-hooks.md](../architecture/claude-code-hooks.md#transport-proposed): `hilo hook` command → user-only Unix socket, fail-open | Confirm; socket path; request framing | 3 |
+| Blocking and timeout | Hook timeout (600 s default) fits the 10 min expiry; unverified whether the terminal prompt shows while the hook waits | Remote-decision mode (how long the hook holds, when it returns no decision); verify the terminal behavior | 4 |
 | Usage source | 5 h window, weekly %, tokens today | Claude Code local stats vs. hook payloads; never account credentials | 3 |
 | Policy file | See [risk-policy.md](../security/risk-policy.md) | Location, format, rule syntax, per-project overrides | 4 |
 
