@@ -465,6 +465,10 @@ static void side_press(bm_model_t *m, uint32_t now_ms)
     }
     m->last_act_ms = now_ms;
     bm__sound(m, BM_SND_CLICK);
+    if (m->pairing) {
+        bm_pairing_end(m, BM_PAIR_CANCELLED, now_ms);
+        return;
+    }
     if (m->sheet != BM_SHEET_NONE) close_sheet(m);
     else if (m->attn >= 0) later(m, now_ms);
     else if (m->ov.type && m->ov.type != BM_OV_LIMIT) bm__close_overlay(m);
@@ -476,6 +480,8 @@ void bm_button(bm_model_t *m, bool pressed, uint32_t now_ms)
     if (pressed) {
         m->button_down = true;
         m->button_long_fired = false;
+        m->button_pairing_armed =
+            !m->sleeping && !m->pairing && m->view == BM_VIEW_HOME && m->attn < 0 && m->sheet == BM_SHEET_NONE;
         m->button_down_ms = now_ms;
         return;
     }
@@ -849,8 +855,15 @@ void bm_tick(bm_model_t *m, uint32_t now_ms)
     if (m->button_down && !m->button_long_fired && now_ms - m->button_down_ms >= BM_LONG_PRESS_MS) {
         m->button_long_fired = true;
         if (m->sleeping) bm__wake(m, false, BM_BY_LONG_PRESS, now_ms);
-        else go_sleep(m, BM_BY_LONG_PRESS, now_ms);
+        else if (!m->pairing) go_sleep(m, BM_BY_LONG_PRESS, now_ms);
     }
+
+    if (m->button_down && m->button_pairing_armed && now_ms - m->button_down_ms >= BM_PAIRING_HOLD_MS) {
+        m->button_pairing_armed = false;
+        bm__wake(m, false, BM_BY_LONG_PRESS, now_ms);
+        bm_pairing_start(m, now_ms);
+    }
+    if (m->pairing && due(now_ms, m->pairing_until_ms)) bm_pairing_end(m, BM_PAIR_TIMEOUT, now_ms);
 
     if (m->ov.type && m->ov.until_ms && due(now_ms, m->ov.until_ms)) bm__close_overlay(m);
 
@@ -880,7 +893,47 @@ void bm_tick(bm_model_t *m, uint32_t now_ms)
             m->sleep_dy = (int16_t)((int)(next_random(m) % 41) - 20);
             bm__touch(m);
         }
-    } else if (now_ms - m->last_act_ms > BM_IDLE_SLEEP_MS && m->attn < 0 && !any_live_request(m)) {
+    } else if (now_ms - m->last_act_ms > BM_IDLE_SLEEP_MS && m->attn < 0 && !m->pairing && !any_live_request(m)) {
         go_sleep(m, BM_BY_IDLE, now_ms);
     }
+}
+
+void bm_pairing_start(bm_model_t *m, uint32_t now_ms)
+{
+    m->pairing = true;
+    m->pairing_until_ms = now_ms + BM_PAIRING_MS;
+    m->passkey = 0;
+    m->passkey_shown = false;
+    m->sheet = BM_SHEET_NONE;
+    m->sheet_session = -1;
+    m->last_act_ms = now_ms;
+    bm__sound(m, BM_SND_CLICK);
+    bm__touch(m);
+}
+
+void bm_pairing_passkey(bm_model_t *m, uint32_t passkey, uint32_t now_ms)
+{
+    if (!m->pairing) return;
+    m->passkey = passkey % 1000000;
+    m->passkey_shown = true;
+    if ((int32_t)(m->pairing_until_ms - (now_ms + BM_PASSKEY_MS)) < 0) m->pairing_until_ms = now_ms + BM_PASSKEY_MS;
+    m->last_act_ms = now_ms;
+    bm__sound(m, BM_SND_PERM);
+    bm__touch(m);
+}
+
+void bm_pairing_end(bm_model_t *m, bm_pair_result_t result, uint32_t now_ms)
+{
+    if (!m->pairing) return;
+    m->pairing = false;
+    m->passkey = 0;
+    m->passkey_shown = false;
+    m->last_act_ms = now_ms;
+    switch (result) {
+    case BM_PAIR_OK: bm__toast(m, "Paired with a new Mac", BM_C_DONE, now_ms); break;
+    case BM_PAIR_FAILED: bm__toast(m, "Pairing failed", BM_C_ERR, now_ms); break;
+    case BM_PAIR_TIMEOUT: bm__toast(m, "Pairing timed out", BM_C_IDLE, now_ms); break;
+    case BM_PAIR_CANCELLED: break;
+    }
+    bm__touch(m);
 }

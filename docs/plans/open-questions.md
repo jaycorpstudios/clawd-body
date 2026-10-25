@@ -23,7 +23,7 @@ Nothing pending.
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
 | Two simultaneous Macs | Buddy may be bonded to both | Confirm concurrent links on ESP32-S3 and memory budget | 3 |
-| Pairing UX | See [pairing flow](../flows/ble-pairing-flow.md) | Pairing-mode gesture, forgetting a Mac on the device, macOS passkey dialog steps | 3 |
+| Pairing UX | See [pairing flow](../flows/ble-pairing-flow.md); pairing mode is a 5 s hold on Home | Forgetting a Mac on the device, macOS passkey dialog steps | 3 |
 
 ## Daemon
 

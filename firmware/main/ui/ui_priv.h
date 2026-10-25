@@ -79,6 +79,9 @@ typedef struct {
     ui_pet_t *sh_pet;
     int8_t sh_pet_session;
 
+    lv_obj_t *pair, *pair_hint, *pair_code, *pair_digits[2], *pair_left;
+    ui_pet_t *pair_pet;
+
     lv_obj_t *toast, *toast_lbl;
     lv_obj_t *sleep, *sleep_inner, *sleep_clock;
     ui_pet_t *sleep_pet;
@@ -120,6 +123,10 @@ void ui_attn_frame(uint32_t now_ms);
 void ui_sheet_create(lv_obj_t *scr);
 void ui_sheet_update(uint32_t now_ms);
 void ui_sheet_frame(void);
+
+void ui_pair_create(lv_obj_t *scr);
+void ui_pair_update(uint32_t now_ms);
+void ui_pair_frame(void);
 
 void ui_misc_create(lv_obj_t *scr);
 void ui_misc_update(uint32_t now_ms);

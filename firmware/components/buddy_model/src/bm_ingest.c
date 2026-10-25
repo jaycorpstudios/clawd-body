@@ -405,6 +405,20 @@ static void remember(bm_model_t *m, const char *id)
 
 bm_err_t bm_ingest(bm_model_t *m, const char *json, size_t len, uint32_t now_ms)
 {
+    return bm_ingest_bound(m, json, len, NULL, now_ms);
+}
+
+static bool bound_elsewhere(const bm_model_t *m, const int8_t *slot, const char *host)
+{
+    if (!slot) return false;
+    if (*slot >= 0) return strcmp(m->hosts[*slot].name, host) != 0;
+    for (int i = 0; i < BM_MAX_HOSTS; i++)
+        if (m->hosts[i].used && m->hosts[i].connected && strcmp(m->hosts[i].name, host) == 0) return true;
+    return false;
+}
+
+bm_err_t bm_ingest_bound(bm_model_t *m, const char *json, size_t len, int8_t *slot, uint32_t now_ms)
+{
     cJSON *root = cJSON_ParseWithLength(json, len);
     if (!root) return BM_E_JSON;
 
@@ -421,20 +435,28 @@ bm_err_t bm_ingest(bm_model_t *m, const char *json, size_t len, uint32_t now_ms)
         !req_str(root, "host", 1, 16, host, sizeof(host)) || !is_host(host) ||
         !req_str(root, "type", 1, 31, type, sizeof(type)) || !cJSON_IsObject(data))
         goto done;
+    if (bound_elsewhere(m, slot, host)) {
+        err = BM_E_HOST_BOUND;
+        goto done;
+    }
     if (seen(m, id)) {
         err = BM_E_DUPLICATE;
         goto done;
     }
-    int slot = bm__host_slot(m, host, true);
-    if (slot < 0) {
+    int host_slot = bm__host_slot(m, host, true);
+    if (host_slot < 0) {
         err = BM_E_HOSTS_FULL;
         goto done;
     }
     bool snapshot = strcmp(type, "snapshot") == 0;
-    err = apply(m, slot, type, data, ts, now_ms);
+    err = apply(m, host_slot, type, data, ts, now_ms);
     if (err == BM_OK) {
         remember(m, id);
         bm__observe_ts(m, ts, snapshot, now_ms);
+        if (slot && *slot < 0) {
+            *slot = (int8_t)host_slot;
+            bm_link(m, host, true, now_ms);
+        }
     }
 
 done:

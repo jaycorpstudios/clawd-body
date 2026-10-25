@@ -8,7 +8,7 @@ sequenceDiagram
     participant OS as macOS Bluetooth
     participant B as Buddy (peripheral)
 
-    U->>B: enter pairing mode (gesture pending to define)
+    U->>B: hold the side button 5 s on Home (pairing mode, 60 s)
     B->>B: advertise as pairable
     U->>A: "Add buddy"
     A->>D: start discovery
@@ -36,4 +36,4 @@ flowchart LR
 
 - Unbonded or unencrypted connections are always rejected.
 - Bonding keys are the only secret on the buddy.
-- **Pending to define** ([open questions › BLE](../plans/open-questions.md#ble)): pairing-mode gesture, how to forget a Mac from the device, exact macOS pairing UX (CoreBluetooth hands pairing to the system dialog), pairing a second Mac while the first stays connected.
+- **Pending to define** ([open questions › BLE](../plans/open-questions.md#ble)): how to forget a Mac from the device, exact macOS pairing UX (CoreBluetooth hands pairing to the system dialog), pairing a second Mac while the first stays connected.

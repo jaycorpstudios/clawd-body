@@ -27,6 +27,9 @@
 #define BM_TOAST_MS 2400
 #define BM_SLEEP_SHIFT_S 6
 #define BM_LOW_BATTERY_PCT 15
+#define BM_PAIRING_HOLD_MS 5000
+#define BM_PAIRING_MS 60000
+#define BM_PASSKEY_MS 30000
 
 #define BM_C_WORK 0xff9a52
 #define BM_C_WAIT 0xffc53d
@@ -77,6 +80,7 @@ typedef enum {
     BM_E_TYPE,
     BM_E_DATA,
     BM_E_HOSTS_FULL,
+    BM_E_HOST_BOUND,
 } bm_err_t;
 
 typedef struct {
@@ -225,6 +229,7 @@ typedef struct {
     uint32_t hold_start_ms;
     bool button_down;
     bool button_long_fired;
+    bool button_pairing_armed;
     uint32_t button_down_ms;
 
     bm_acc_t acc;
@@ -232,6 +237,11 @@ typedef struct {
     bool charging;
     bool battery_known;
     bool battery_warned;
+
+    bool pairing;
+    uint32_t pairing_until_ms;
+    uint32_t passkey;
+    bool passkey_shown;
 
     bm_session_t scratch;
 
@@ -256,6 +266,7 @@ typedef enum {
 
 void bm_init(bm_model_t *m, const bm_config_t *cfg, uint32_t now_ms);
 bm_err_t bm_ingest(bm_model_t *m, const char *json, size_t len, uint32_t now_ms);
+bm_err_t bm_ingest_bound(bm_model_t *m, const char *json, size_t len, int8_t *slot, uint32_t now_ms);
 void bm_link(bm_model_t *m, const char *host, bool connected, uint32_t now_ms);
 void bm_tick(bm_model_t *m, uint32_t now_ms);
 
@@ -269,6 +280,11 @@ void bm_hold_cancel(bm_model_t *m);
 float bm_hold_progress(const bm_model_t *m, uint32_t now_ms);
 void bm_set_battery(bm_model_t *m, uint8_t pct, bool charging, uint32_t now_ms);
 void bm_set_accessory(bm_model_t *m, bm_acc_t acc);
+
+typedef enum { BM_PAIR_CANCELLED, BM_PAIR_TIMEOUT, BM_PAIR_OK, BM_PAIR_FAILED } bm_pair_result_t;
+void bm_pairing_start(bm_model_t *m, uint32_t now_ms);
+void bm_pairing_end(bm_model_t *m, bm_pair_result_t result, uint32_t now_ms);
+void bm_pairing_passkey(bm_model_t *m, uint32_t passkey, uint32_t now_ms);
 
 bool bm_out_pop(bm_model_t *m, bm_out_t *out);
 bool bm_sound_pop(bm_model_t *m, bm_sound_t *out);

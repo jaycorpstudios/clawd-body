@@ -255,6 +255,7 @@ TEST(sleep_clock_shifts_every_6s_within_20px)
     bm_button(&M, true, now);
     advance(BM_LONG_PRESS_MS);
     CHECK(M.sleeping);
+    bm_button(&M, false, now);
     int shifts = 0;
     int16_t dx = M.sleep_dx, dy = M.sleep_dy;
     for (int i = 0; i < 60; i++) {
@@ -265,7 +266,6 @@ TEST(sleep_clock_shifts_every_6s_within_20px)
         CHECK(dx >= -20 && dx <= 20 && dy >= -20 && dy <= 20);
     }
     CHECK(shifts >= 8 && shifts <= 10);
-    bm_button(&M, false, now);
 }
 
 TEST(side_button_long_press_sleeps_and_click_cycles_views)
