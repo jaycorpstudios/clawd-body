@@ -304,3 +304,20 @@ void bm_pet_render(uint32_t argb[G * G], bm_pet_state_t state, float t, uint16_t
     }
 #undef IN_BODY
 }
+
+void bm_cover_render(uint32_t argb[BM_COVER_GRID * BM_COVER_GRID], const char *title)
+{
+    uint32_t h = 2166136261u;
+    for (const unsigned char *p = (const unsigned char *)title; *p; p++) h = (h ^ *p) * 16777619u;
+    float hue = (float)(h % 360);
+    uint32_t seed = h % 2147483646u + 1;
+    for (int y = 0; y < BM_COVER_GRID; y++)
+        for (int x = 0; x < BM_COVER_GRID; x++) {
+            seed = (uint32_t)((uint64_t)seed * 16807 % 2147483647);
+            float r1 = (float)seed / 2147483647.0f;
+            seed = (uint32_t)((uint64_t)seed * 16807 % 2147483647);
+            float r2 = (float)seed / 2147483647.0f;
+            float v = sinf(x * .5f + r1) + cosf(y * .45f) + r2 * .6f;
+            argb[y * BM_COVER_GRID + x] = hsl(fmodf(hue + v * 18 + 360, 360), (60 + v * 12) / 100, (22 + (v + 2) * 11) / 100);
+        }
+}

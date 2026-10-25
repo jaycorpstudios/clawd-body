@@ -1,2 +1,6 @@
 file(GLOB font_srcs "fonts/*.c")
-idf_component_register(SRCS "main.c" ${font_srcs} INCLUDE_DIRS "." PRIV_REQUIRES buddy_model)
+file(GLOB ui_srcs "ui/*.c")
+idf_component_register(
+    SRCS "main.c" "demo.c" ${ui_srcs} ${font_srcs}
+    INCLUDE_DIRS "."
+    PRIV_REQUIRES buddy_model esp_driver_gpio)

@@ -49,3 +49,12 @@ TEST(every_state_and_accessory_renders_something)
                 CHECK(opaque > 150);
             }
 }
+
+TEST(cover_is_opaque_and_depends_on_the_title)
+{
+    static uint32_t a[BM_COVER_GRID * BM_COVER_GRID], b[BM_COVER_GRID * BM_COVER_GRID];
+    bm_cover_render(a, "Low Tide");
+    bm_cover_render(b, "Fan Noise");
+    CHECK(memcmp(a, b, sizeof(a)) != 0);
+    for (int i = 0; i < BM_COVER_GRID * BM_COVER_GRID; i++) CHECK((a[i] >> 24) == 0xff);
+}

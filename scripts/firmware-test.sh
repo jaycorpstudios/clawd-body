@@ -15,8 +15,8 @@ san="-fsanitize=${SANITIZE:-undefined} -fno-sanitize-recover=all -fno-omit-frame
 clang -std=c11 -g -O1 -w $san -c "$cjson/cJSON.c" -o "$out/cJSON.o"
 clang -std=c11 -g -O1 -Wall -Wextra -Werror $san \
   -DFIXTURES_DIR="\"$root/shared/fixtures\"" \
-  -I"$model/include" -I"$model/src" -I"$cjson" -I"$root/firmware/test" \
-  "$model"/src/*.c "$root"/firmware/test/*.c "$out/cJSON.o" -lm -o "$out/model-tests"
+  -I"$model/include" -I"$model/src" -I"$cjson" -I"$root/firmware/test" -I"$root/firmware/main" \
+  "$model"/src/*.c "$root"/firmware/main/demo.c "$root"/firmware/test/*.c "$out/cJSON.o" -lm -o "$out/model-tests"
 
 "$out/model-tests" --emit "$out/outgoing.jsonl" "$@"
 

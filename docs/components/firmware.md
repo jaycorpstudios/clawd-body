@@ -43,6 +43,8 @@ Spare parts available: PAM8403 amplifiers and 8 Ω 0.5 W speakers, in case the o
 
 ## Model behavior
 
+The portable model (`firmware/components/buddy_model/`) holds all state and timing; `main/ui/` only draws it and forwards touch and button input. Until BLE exists a scripted demo feed (`main/demo.c`) plays the Mac and outgoing messages are logged.
+
 The portable model (`firmware/components/buddy_model/`) follows the prototype; where the prototype is silent:
 
 - **Usage per Mac.** Each Mac's `usage.update` is kept separately; the Usage view shows one ring per Mac. Home stats, the pet and the Home "Limit reached" message use the connected Mac with the highest 5 h value. The 80 % warning fires once per Mac per crossing.

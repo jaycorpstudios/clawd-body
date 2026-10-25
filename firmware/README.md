@@ -2,14 +2,16 @@
 
 ESP-IDF v5.5.6 + LVGL 9 for the Waveshare ESP32-S3-Touch-AMOLED-2.16. Spec: [docs/components/firmware.md](../docs/components/firmware.md).
 
-Status: portable model done and host-tested; LVGL views, BLE and sound are next.
+Status: all five views, pet, alerts, permission screen and sheets drawn with LVGL from the model, fed by a scripted demo (`main/demo.c`) until BLE lands. Outgoing messages go to the log. BLE, sound, battery (AXP2101) and RTC are next.
 
 ## Layout
 
 | Path | Role |
 | :--- | :--- |
 | `components/buddy_model/` | Portable C11 model, no ESP-IDF or LVGL includes: parses contract messages (cJSON), keeps per-Mac state, derives what each view shows, runs the timers and queues outgoing messages and sound cues. Also renders the 32×32 pet. |
-| `main/` | Board bring-up and LVGL drawing of the model |
+| `main/` | Board bring-up, side button, outbox pump (`main.c`) and the demo feed (`demo.c`, portable, also run by the host tests) |
+| `main/ui/` | LVGL drawing of the model: one file per area (views, overlay, permission screen, sheets, bar and sleep) |
+| `main/fonts/` | Generated LVGL fonts (do not edit) |
 | `test/` | Host tests for `buddy_model` |
 | `tools/fonts/` | Generates `main/fonts/` from the prototype fonts ([README](tools/fonts/README.md)) |
 
