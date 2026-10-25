@@ -43,7 +43,7 @@ Spare parts available: PAM8403 amplifiers and 8 Ω 0.5 W speakers, in case the o
 
 ## Model behavior
 
-The portable model (`firmware/components/buddy_model/`) holds all state and timing; `main/ui/` only draws it and forwards touch and button input. Until BLE exists a scripted demo feed (`main/demo.c`) plays the Mac and outgoing messages are logged.
+The portable model (`firmware/components/buddy_model/`) holds all state and timing; `main/ui/` only draws it and forwards touch and button input. BLE lives in `main/ble/` (NimBLE peripheral, see [BLE transport](../architecture/ble-transport.md)); it reassembles frames on the NimBLE task and hands whole messages and link events to the UI task, which owns the model. With `CONFIG_BUDDY_DEMO` a scripted demo feed (`main/demo.c`) plays both Macs instead of BLE.
 
 The portable model (`firmware/components/buddy_model/`) follows the prototype; where the prototype is silent:
 

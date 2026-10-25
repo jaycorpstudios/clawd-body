@@ -35,3 +35,14 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 - [ ] Confetti burst on "Task done" does not drop frames.
 - [ ] Heap after boot: model and pets live in PSRAM (`model … bytes` log line); no allocation failures over an hour of demo feed.
 - [ ] Not implemented yet, still demo values: battery from the AXP2101, writing the PCF85063 from the model clock, sound through the ES8311.
+- [ ] LVGL runs from flash (`LV_ATTRIBUTE_FAST_MEM_USE_IRAM` is off so NimBLE fits in IRAM); confirm the frame rate above still holds.
+
+### BLE peripheral
+
+- [ ] Hold the side button 5 s on Home: pairing screen appears and the buddy shows up as `Hilo Buddy` in a scan; it closes after 60 s or on Cancel / side button.
+- [ ] Pairing from macOS shows the system passkey dialog; the code on the buddy matches; the bond survives a reboot (NVS).
+- [ ] Outside pairing mode an unbonded central is disconnected within 10 s and never reaches `rx`; a bonded Mac reconnects on its own.
+- [ ] Bonded Macs using a resolvable private address are recognised after reconnecting.
+- [ ] Negotiated MTU (log `mtu`) and an 8 KB snapshot round trip; notifications do not fail with out-of-mbuf on a burst.
+- [ ] Two Macs connected at once; each only receives the messages for its host.
+- [ ] Non-discoverable connectable advertising is enough for CoreBluetooth to reconnect a known peripheral.

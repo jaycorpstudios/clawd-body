@@ -7,4 +7,8 @@ config BUDDY_TZ_OFFSET_MIN
     help
         The clock follows the envelope ts (UTC). Where the user sets the time zone is still pending.
 
+config BUDDY_DEMO
+    bool "Play a scripted demo Mac instead of starting BLE"
+    default n
+
 endmenu
