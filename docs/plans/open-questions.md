@@ -12,7 +12,6 @@ Each row: **gap → context → what to fill**. "Phase" is the first [roadmap](.
 
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
-| Daemon and app stack | Native Swift vs. TypeScript/Node + Tauri/Electron, etc. | Choice with trade-offs: CoreBluetooth stability, power, login-item packaging, MCP SDK availability | 3 |
 | Host naming | Allowed characters are fixed by the schema (`^[a-z0-9-]{1,16}$`) | Where the user configures it (daemon config file, Hilo settings) and the default | 3 |
 
 ## Contract
@@ -36,7 +35,7 @@ Each row: **gap → context → what to fill**. "Phase" is the first [roadmap](.
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
 | Hook ↔ daemon IPC | Proposed in [claude-code-hooks.md](../architecture/claude-code-hooks.md#transport-proposed): `hilo hook` command → user-only Unix socket, fail-open | Confirm; socket path; request framing | 3 |
-| Blocking and timeout | Hook timeout (600 s default) fits the 10 min expiry; unverified whether the terminal prompt shows while the hook waits | Remote-decision mode (how long the hook holds, when it returns no decision); verify the terminal behavior | 4 |
+| Presence signal | Remote-decision mode is presence-based (see [remote decision flow](../flows/remote-decision-flow.md#remote-decision-mode)) | Idle threshold before the Mac counts as "away"; verify on real hardware that the terminal prompt stays hidden while the hook waits | 4 |
 | Usage source | 5 h window, weekly %, tokens today | Claude Code local stats vs. hook payloads; never account credentials | 3 |
 | Policy file | See [risk-policy.md](../security/risk-policy.md) | Location, format, rule syntax, per-project overrides | 4 |
 
@@ -44,7 +43,7 @@ Each row: **gap → context → what to fill**. "Phase" is the first [roadmap](.
 
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
-| Framework | ESP-IDF + LVGL vs. Arduino + LVGL | Choice; confirm pins and drivers against the Waveshare schematic and official examples | 2 |
+| Pins and drivers | ESP-IDF + LVGL 9 chosen | Confirm CO5300, CST9220, AXP2101, ES8311 drivers and pins against the Waveshare schematic and official ESP-IDF demos; ESP-IDF version to pin | 2 |
 | Sound playback | ES8311 codec | Simple synthesis vs. short PCM samples; volume range | 2 |
 | RTC time source | PCF85063 RTC on board | Who sets the clock (time sync message from the Mac?) | 2 |
 | Battery target | 1000 mAh Li-ion | Expected hours per charge; brightness/sleep policy to meet it | 2 |

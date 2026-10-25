@@ -2,6 +2,8 @@
 
 Visual and behavioral reference: `prototypes/buddy-sim.html` (approved). Views, states and sounds in detail: [device-ui.md](device-ui.md).
 
+Stack: **ESP-IDF + LVGL 9**, BLE through NimBLE.
+
 ## Hardware
 
 **Waveshare ESP32-S3-Touch-AMOLED-2.16**
@@ -45,4 +47,4 @@ LED eyes, arms or moving parts, microphone and voice assistant. The simulator sh
 
 ## Pending to define
 
-See [open questions › firmware](../plans/open-questions.md#firmware): framework (ESP-IDF + LVGL vs. Arduino + LVGL) and pin/driver confirmation against the Waveshare schematic, OTA (signed images only, if at all), sound playback, battery-life target, clock source for the RTC.
+See [open questions › firmware](../plans/open-questions.md#firmware): pin and driver confirmation against the Waveshare schematic, OTA (signed images only, if at all), sound playback, battery-life target, clock source for the RTC.

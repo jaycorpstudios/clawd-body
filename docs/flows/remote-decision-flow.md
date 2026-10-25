@@ -6,10 +6,9 @@ sequenceDiagram
     participant H as Permission hook
     participant D as hilod
     participant B as Buddy
-    participant M as Mac prompt
 
     CC->>H: permission request (tool, command, cwd)
-    H->>D: forward and wait
+    H->>D: forward and wait (user away, see mode below)
     D->>D: classify with risk policy → risk, remote_allowed, expires_at
     D-->>B: agent.needs_permission
     B->>B: show screen (Hold to approve / Deny only if high risk)
@@ -18,16 +17,31 @@ sequenceDiagram
         D->>D: validate (see below)
         D-->>H: allow / deny
         D-->>B: agent.request_resolved {outcome, via: buddy}
-    else decided on the Mac first
-        M->>D: resolved on the Mac
-        D-->>B: agent.request_resolved {outcome, via: mac}
-        Note over B,D: a late buddy decision is ignored
-    else expires
-        D-->>H: no decision → fall back to the Mac prompt
+    else user returns to the Mac, or expires
+        D-->>H: no decision → terminal prompt appears
         D-->>B: agent.request_resolved {outcome: expired, via: timeout}
+        Note over B,D: a late buddy decision is ignored
     end
     H-->>CC: result
 ```
+
+## Remote-decision mode
+
+The permission hook holds only while the user is away from the Mac. While it holds, Claude Code shows no terminal prompt.
+
+```mermaid
+flowchart TD
+    R([PermissionRequest arrives]) --> P{User present at this Mac?<br/>input in the last N min, screen unlocked}
+    P -->|yes| Show[send agent.step kind ask<br/>no actionable request] --> Now([hook returns no decision at once<br/>terminal prompt appears])
+    P -->|no| Hold[send agent.needs_permission<br/>hook holds up to expires_at] --> W{first of}
+    W -->|buddy decision, validated| Out([hook returns allow / deny])
+    W -->|user returns to the Mac| Now
+    W -->|expires| Now
+```
+
+- Present: nothing on the buddy can be decided, because the hook has already handed the prompt to the terminal. The buddy only logs the step.
+- Away: the daemon polls presence while holding. Coming back to the Mac, or reaching `expires_at`, releases the hook to the terminal prompt and closes the request on the buddy with `agent.request_resolved { outcome: "expired", via: "timeout" }`.
+- The same mode applies to questions (`PreToolUse` on `AskUserQuestion`).
 
 ## Daemon validation
 
@@ -52,4 +66,4 @@ flowchart TD
 - A **deny** from the buddy is always safe to honor, even for high-risk requests; an **approve** is honored only for `remote_allowed` + `low`.
 - Default expiry: 10 min. "Later" on the device (`device.snooze`) keeps the request pending; the buddy reminds every 25 s.
 - Every outcome is logged in the session timeline with `via`.
-- **Pending to define** ([open questions › daemon](../plans/open-questions.md#daemon)): how the hook learns that the user answered in the terminal, whether the Claude Code hook timeout allows a 10-minute wait, and the exact fallback on expiry.
+- **Pending to define** ([open questions › daemon](../plans/open-questions.md#daemon)): idle threshold for "away", and a hardware check that the terminal prompt stays hidden while the hook holds.

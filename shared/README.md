@@ -37,5 +37,6 @@ Pinned exactly; `pnpm-workspace.yaml` enforces a 7-day minimum release age.
 | `ajv` | 8.20.0 | JSON Schema 2020-12 validation | No known compromise; past the `$data` ReDoS (CVE-2025-69873, ≤ 8.17.1), and `$data` is not used |
 | `fast-uri` (via ajv) | 3.1.9 | Patches GHSA-w74x-v6f9-j3xg and GHSA-xhq7-xmqj-769h | Exempt from the release-age rule: npm tarball diffed identical to the `v3.1.9` GitHub tag; no install scripts, network or `fs` use |
 | `typescript` (dev) | 7.0.2 | Typecheck only; Node runs the sources directly | No known incidents |
+| `@types/node` (dev) | 24.19.2 | Node built-in types for the typecheck | Published by the DefinitelyTyped `types` account; only dependency `undici-types` 7.24.6 (type definitions) |
 
 ULIDs, the test runner and argument parsing use Node built-ins instead of packages.

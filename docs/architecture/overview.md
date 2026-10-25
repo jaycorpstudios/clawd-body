@@ -32,7 +32,12 @@ flowchart LR
 | `docs/` | This documentation |
 | `prototypes/` | Approved visual references |
 
-## Pending to define
+## Stack
 
-- **Daemon and app stack** (native Swift vs. TypeScript/Node with Tauri/Electron, etc.). Criteria: stable BLE on macOS (CoreBluetooth), low power, easy packaging as a login item. See [open questions](../plans/open-questions.md#architecture).
-- **Local IPC** between the hook command, the CLI, the app and `hilod`. See [hook ingestion](../flows/hook-ingestion-flow.md).
+| Part | Choice | Why |
+| :--- | :--- | :--- |
+| `hilod`, `hilo` CLI, Hilo.app | Swift (SwiftPM; SwiftUI for the app) | Official CoreBluetooth API, low idle power, login item via `SMAppService`, no npm packages in the process that approves permissions |
+| Firmware | ESP-IDF + LVGL 9, NimBLE | Fine control of LE Secure Connections, two concurrent links, PSRAM and power |
+| `shared/` | TypeScript on Node 24 | Schema tooling, fixtures and `buddy-emit`; the Swift code is tested against the same fixtures |
+
+Local IPC between the hook command and `hilod`: [claude-code-hooks.md](claude-code-hooks.md#transport-proposed).
