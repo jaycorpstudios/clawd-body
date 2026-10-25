@@ -30,6 +30,12 @@ The run also pipes every message the model emits through `buddy-emit validate`, 
 scripts/idf.sh build        # from the repo root; loads ESP-IDF from ~/esp/esp-idf-v5.5.6 (override with IDF_PATH)
 ```
 
+Demo variant (scripted Mac instead of BLE, LVGL frame rate logged every second), built apart from the main config:
+
+```sh
+scripts/idf.sh -B build-demo -D SDKCONFIG=build-demo/sdkconfig -D 'SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.demo' build
+```
+
 Flashing (`scripts/idf.sh -p <port> flash monitor`) needs maintainer approval ([approval policy](../docs/approval-policy.md)).
 
 ## Toolchain setup (once)
