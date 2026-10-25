@@ -40,4 +40,4 @@ flowchart LR
 | Firmware | ESP-IDF + LVGL 9, NimBLE | Fine control of LE Secure Connections, two concurrent links, PSRAM and power |
 | `shared/` | TypeScript on Node 24 | Schema tooling, fixtures and `buddy-emit`; the Swift code is tested against the same fixtures |
 
-Local IPC between the hook command and `hilod`: [claude-code-hooks.md](claude-code-hooks.md#transport-proposed).
+Local IPC between the hook command and `hilod`: [claude-code-hooks.md](claude-code-hooks.md#transport).

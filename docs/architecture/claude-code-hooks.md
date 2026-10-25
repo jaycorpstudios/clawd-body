@@ -34,8 +34,8 @@ The buddy infers session status from the stream: `session.start` and `agent.step
 
 Usage (`usage.update`) has no hook source; see [open questions › daemon](../plans/open-questions.md#daemon).
 
-## Transport (proposed)
+## Transport
 
-`command` hooks run `hilo hook <event>`, which forwards stdin to `hilod` over a Unix socket in the user's home with `0600` permissions. If the socket is missing or the daemon does not answer, the command exits 0 with no output, which leaves Claude Code's normal flow untouched.
+`command` hooks run `hilo hook`, which forwards stdin to `hilod` over a Unix socket (`~/Library/Application Support/Hilo/hilod.sock`, directory `0700`, socket `0600`); `hilod` also drops connections whose peer UID is not the owner's. If the socket is missing or the daemon does not answer, the command exits 0 with no output, which leaves Claude Code's normal flow untouched.
 
 An `http` hook would remove the command, but a localhost port is reachable by every local user and process; the socket is limited to the owner by file permissions.

@@ -1,0 +1,13 @@
+{
+  "hooks": {
+    "SessionStart": [{ "hooks": [{ "type": "command", "command": "hilo hook" }] }],
+    "SessionEnd": [{ "hooks": [{ "type": "command", "command": "hilo hook" }] }],
+    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "hilo hook" }] }],
+    "PostToolUse": [{ "hooks": [{ "type": "command", "command": "hilo hook" }] }],
+    "PostToolUseFailure": [{ "hooks": [{ "type": "command", "command": "hilo hook" }] }],
+    "Stop": [{ "hooks": [{ "type": "command", "command": "hilo hook" }] }],
+    "StopFailure": [{ "hooks": [{ "type": "command", "command": "hilo hook" }] }],
+    "PermissionRequest": [{ "hooks": [{ "type": "command", "command": "hilo hook", "timeout": 660 }] }],
+    "PreToolUse": [{ "matcher": "AskUserQuestion", "hooks": [{ "type": "command", "command": "hilo hook", "timeout": 660 }] }]
+  }
+}

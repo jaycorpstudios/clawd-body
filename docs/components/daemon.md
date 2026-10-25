@@ -33,6 +33,10 @@ Threats and mitigations: [threat-model.md](../security/threat-model.md).
 - Low CPU and battery use when idle.
 - Starts with the user session and recovers by itself if Bluetooth restarts.
 
+## Implementation
+
+Code, build and local run: [`daemon/README.md`](../../daemon/README.md). Done: hook ingestion, risk policy defaults, request registry, presence-based hold, Unix socket IPC. Not yet: BLE bridge, SQLite, MCP, usage.
+
 ## Pending to define
 
 See [open questions › daemon](../plans/open-questions.md#daemon): usage data source, policy file location and format, hook ↔ daemon IPC and blocking behavior, hook timeout vs. `expires_at`, answering questions from a hook.

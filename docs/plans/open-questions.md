@@ -34,7 +34,6 @@ Each row: **gap → context → what to fill**. "Phase" is the first [roadmap](.
 
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
-| Hook ↔ daemon IPC | Proposed in [claude-code-hooks.md](../architecture/claude-code-hooks.md#transport-proposed): `hilo hook` command → user-only Unix socket, fail-open | Confirm; socket path; request framing | 3 |
 | Presence signal | Remote-decision mode is presence-based (see [remote decision flow](../flows/remote-decision-flow.md#remote-decision-mode)) | Idle threshold before the Mac counts as "away"; verify on real hardware that the terminal prompt stays hidden while the hook waits | 4 |
 | Usage source | 5 h window, weekly %, tokens today | Claude Code local stats vs. hook payloads; never account credentials | 3 |
 | Policy file | See [risk-policy.md](../security/risk-policy.md) | Location, format, rule syntax, per-project overrides | 4 |

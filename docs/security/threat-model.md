@@ -30,7 +30,7 @@
 | Approving high-risk work from the device | Daemon allowlist; approvals for `high` / `remote_allowed:false` rejected even if received | Specified |
 | Secret exfiltration from the buddy | No secrets sent to or stored on the buddy | Specified |
 | Physical access approves low-risk actions | Hold-to-approve only; reach limited by BLE range | **Pending**: device lock / PIN, auto-lock when away |
-| Local process forges hook input or decisions | User-only IPC permissions | **Pending**: IPC transport and auth |
+| Local process forges hook input or decisions | Unix socket `0600` in a `0700` directory plus peer-UID check; processes of the same user are inside the trust boundary (they can already drive Claude Code) | Implemented |
 | Sensitive data in logs | No full diffs, no environment variables | Specified |
 | Malicious firmware update | OTA disabled unless images are signed | **Pending**: OTA decision |
 | Supply-chain compromise | Pin versions, check CVEs, audit reference repos (deps, network, secret storage, OTA) before reuse | Process; see [approval policy](../approval-policy.md) |
