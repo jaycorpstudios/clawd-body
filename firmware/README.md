@@ -11,6 +11,7 @@ Status: portable model done and host-tested; LVGL views, BLE and sound are next.
 | `components/buddy_model/` | Portable C11 model, no ESP-IDF or LVGL includes: parses contract messages (cJSON), keeps per-Mac state, derives what each view shows, runs the timers and queues outgoing messages and sound cues. Also renders the 32×32 pet. |
 | `main/` | Board bring-up and LVGL drawing of the model |
 | `test/` | Host tests for `buddy_model` |
+| `tools/fonts/` | Generates `main/fonts/` from the prototype fonts ([README](tools/fonts/README.md)) |
 
 ## Host tests
 

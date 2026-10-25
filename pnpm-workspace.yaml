@@ -1,5 +1,6 @@
 packages:
   - shared
+  - firmware/tools/fonts
 
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
