@@ -20,3 +20,5 @@ node_modules/
 sdkconfig.old
 *.elf
 *.bin
+.build/
+.swiftpm/
