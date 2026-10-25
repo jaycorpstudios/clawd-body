@@ -14,7 +14,7 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 
 1. **Home**: large pet, a status message ("2 agents working", "<project> needs you"…), a summary line and three stats: 5 h session, week and reset.
 2. **Agents**: up to 5 rows ordered: needs you, failed, working, done, idle. Each row has avatar, name, Mac and task, status and time. Tapping a row opens its detail.
-3. **Usage**: 5 h window ring (orange; amber at 80 % or more; red at 100 %), countdown, weekly bar and token sparkline. Tapping the ring opens the breakdown.
+3. **Usage**: one ring per connected Mac (usage is kept per Mac): 5 h window ring (orange; amber at 80 % or more; red at 100 %), countdown, weekly bar and token sparkline. Tapping the ring opens the breakdown.
 4. **Hilo**: current task with a timer, next tasks and today's agreements. Tapping opens the detail.
 5. **Music**: generated pixel-art cover, title, artist and progress.
 

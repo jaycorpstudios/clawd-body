@@ -41,10 +41,21 @@ Spare parts available: PAM8403 amplifiers and 8 Ω 0.5 W speakers, in case the o
 - 30 fps or more on the active view; off-screen pets are not drawn.
 - Adjustable brightness and volume. Sound is off by default.
 
+## Model behavior
+
+The portable model (`firmware/components/buddy_model/`) follows the prototype; where the prototype is silent:
+
+- **Usage per Mac.** Each Mac's `usage.update` is kept separately; the Usage view shows one ring per Mac. Home stats, the pet and the Home "Limit reached" message use the connected Mac with the highest 5 h value. The 80 % warning fires once per Mac per crossing.
+- **Clock from the envelope.** A `snapshot` sets the clock to its `ts`; any other message only moves it forward. The PCF85063 is written from that clock. The time zone is a build setting until [pending](../plans/open-questions.md#firmware).
+- **Unknown fields are ignored** (minor-version rule), so `extra-envelope-field` and `window-reset-with-data` are accepted; every other invalid fixture is rejected.
+- **Expired requests.** `outcome: expired` (or the local clock passing `expires_at`) removes the decision but keeps the session in "needs you": the Mac prompt still waits for the user.
+- **Pending requests vs. status.** Reminders and the "no idle sleep" rule apply only to requests the buddy can answer; a "needs you" row with no request does neither.
+- **Agent hue and accessory** are derived from a hash of the project name until [Project hue/accessory](../plans/open-questions.md#hilo) is resolved.
+
 ## Out of scope for now
 
 LED eyes, arms or moving parts, microphone and voice assistant. The simulator shell still draws eyes and arms; ignore them.
 
 ## Pending to define
 
-See [open questions › firmware](../plans/open-questions.md#firmware): pin and driver confirmation against the Waveshare schematic, OTA (signed images only, if at all), sound playback, battery-life target, clock source for the RTC.
+See [open questions › firmware](../plans/open-questions.md#firmware): pin and driver confirmation against the Waveshare schematic, OTA (signed images only, if at all), sound playback, battery-life target, time zone.

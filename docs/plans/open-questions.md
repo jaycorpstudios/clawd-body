@@ -16,8 +16,7 @@ Nothing pending.
 
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
-| Replay window | "Stale messages are rejected" has no number | Accepted `ts` skew; clock source on the buddy (see RTC row) | 3 |
-| Usage across Macs | Both Macs may report usage for the same account | Which value the buddy shows (latest, max, per host) | 2 |
+| Replay window | "Stale messages are rejected" has no number | Accepted `ts` skew (the buddy clock follows the envelope `ts`, see [firmware model behavior](../components/firmware.md#model-behavior)) | 3 |
 
 ## BLE
 
@@ -39,7 +38,7 @@ Nothing pending.
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
 | Sound playback | ES8311 codec | Simple synthesis vs. short PCM samples; volume range | 2 |
-| RTC time source | PCF85063 RTC on board | Who sets the clock (time sync message from the Mac?) | 2 |
+| Time zone | The clock comes from the envelope `ts` (UTC); the offset is a build setting for now | Where the user sets it (Hilo settings sent in a message, or a fixed per-device setting) and DST handling | 2 |
 | Battery target | 1000 mAh Li-ion | Expected hours per charge; brightness/sleep policy to meet it | 2 |
 | OTA | Not decided | Skip, or signed images only (signing key custody, rollback) | 6 |
 

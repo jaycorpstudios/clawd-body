@@ -83,4 +83,4 @@ Flows that use these messages: [remote decision](../flows/remote-decision-flow.m
 
 ## Pending to define
 
-See [open questions › contract](../plans/open-questions.md#contract): replay window for `ts`, byte budget per message (depends on BLE framing), and usage across Macs.
+See [open questions › contract](../plans/open-questions.md#contract): replay window for `ts`. Usage from two Macs is kept per Mac ([firmware model behavior](../components/firmware.md#model-behavior)).

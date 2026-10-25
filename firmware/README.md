@@ -2,7 +2,23 @@
 
 ESP-IDF v5.5.6 + LVGL 9 for the Waveshare ESP32-S3-Touch-AMOLED-2.16. Spec: [docs/components/firmware.md](../docs/components/firmware.md).
 
-Status: boots the display through the vendor BSP and shows a title. Views, pet, BLE and sound are next.
+Status: portable model done and host-tested; LVGL views, BLE and sound are next.
+
+## Layout
+
+| Path | Role |
+| :--- | :--- |
+| `components/buddy_model/` | Portable C11 model, no ESP-IDF or LVGL includes: parses contract messages (cJSON), keeps per-Mac state, derives what each view shows, runs the timers and queues outgoing messages and sound cues. Also renders the 32×32 pet. |
+| `main/` | Board bring-up and LVGL drawing of the model |
+| `test/` | Host tests for `buddy_model` |
+
+## Host tests
+
+```sh
+scripts/firmware-test.sh   # clang + UBSan; uses cJSON from the ESP-IDF tree and the fixtures in shared/
+```
+
+The run also pipes every message the model emits through `buddy-emit validate`, so outgoing messages are checked against the schema.
 
 ## Build
 
