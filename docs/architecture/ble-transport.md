@@ -34,7 +34,7 @@ Each contract message (compact JSON, at most **8 KB**) is split into frames of u
 - The receiver drops a partial message on any gap, repeated `seq` mismatch or malformed header; a frame with `index` 0 starts a new message.
 - No extra CRC: the link layer already checks every packet (CRC + AES-CCM MIC on the encrypted link).
 - 255 frames × (size − 3) must hold 8 KB, so the frame size must be at least 36 bytes; macOS and the ESP32-S3 negotiate far more.
-- Implementations: `daemon/Sources/HiloCore/Framing.swift` (firmware port pending).
+- Implementations: `daemon/Sources/HiloCore/Framing.swift` and `firmware/components/buddy_model/src/bm_frame.c`; their tests (`FramingTests.swift`, `firmware/test/test_frame.c`) cover the same cases and change together.
 
 ## Pending to define
 
