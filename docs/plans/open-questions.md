@@ -17,14 +17,13 @@ Nothing pending.
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
 | Replay window | "Stale messages are rejected" has no number | Accepted `ts` skew; clock source on the buddy (see RTC row) | 3 |
-| Byte budget per message | Schema caps item counts (8 sessions, 5 steps, 12 diff lines) but not bytes | Max encoded size per message once BLE framing is chosen; trim rules for `snapshot` | 3 |
+| Snapshot trimming | Messages are capped at 8 KB ([framing](../architecture/ble-transport.md#framing)); a worst-case snapshot (8 sessions with pending diffs) exceeds it | Trim order (steps, then diffs, then idle sessions) and a test with the worst case | 3 |
 | Usage across Macs | Both Macs may report usage for the same account | Which value the buddy shows (latest, max, per host) | 2 |
 
 ## BLE
 
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
-| GATT layout and framing | See [ble-transport.md](../architecture/ble-transport.md) | UUIDs, characteristics, MTU strategy (write long vs. length + CRC framing) | 3 |
 | Two simultaneous Macs | Buddy may be bonded to both | Confirm concurrent links on ESP32-S3 and memory budget | 3 |
 | Pairing UX | See [pairing flow](../flows/ble-pairing-flow.md) | Pairing-mode gesture, forgetting a Mac on the device, macOS passkey dialog steps | 3 |
 
