@@ -20,6 +20,18 @@ flowchart TD
 - When in doubt: **high**.
 - The policy is an editable, versioned file with an allowlist per tool and command pattern, configurable per project.
 
+## Built-in defaults (until the policy file exists)
+
+Implemented in `daemon/Sources/HiloCore/RiskPolicy.swift`. Anything that does not match a rule is **high**.
+
+| Tool | Low only when |
+| :--- | :--- |
+| `Read`, `Edit` | `file_path` is absolute and, after resolving `..`, inside the session's git repo |
+| `Bash` | `cwd` is inside the repo and the command is exactly `npm test` or `npm install <pkg>@<x.y.z>`, with no shell syntax at all (`;` `&` `\|` `>` `$` backticks `=` quotes, newlines…) |
+| `WebFetch` | `https` and the host is in the rule's host list — **empty by default**, so every fetch is high until hosts are configured |
+
+`Write` is not allowlisted. Unknown repo root (not a git repo) means high.
+
 ## Pending to define
 
 See [open questions › daemon](../plans/open-questions.md#daemon): file location and format (e.g. `~/.config/hilo/policy.toml`), rule syntax, how "inside the repo" is determined (cwd vs. resolved paths), and what counts as a "new" network host.
