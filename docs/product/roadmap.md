@@ -15,7 +15,7 @@ flowchart LR
 
 | Phase | Outcome | Status |
 | :--- | :--- | :--- |
-| 1 | Event schema in `shared/` as single source of truth; a terminal tool that emits contract events | Done; success criteria pending |
+| 1 | Event schema in `shared/` as single source of truth; a terminal tool that emits contract events | Done |
 | 2 | Firmware renders all views and the pet from fake data, matching the simulator | Not started |
 | 3 | `hilod` turns Claude Code hooks into events and sends them over a bonded BLE link | Hook ingestion and risk policy done; BLE and pairing pending |
 | 4 | Permission and question decisions from the buddy, validated by the daemon | Daemon side done (registry, presence-based hold); buddy side pending |

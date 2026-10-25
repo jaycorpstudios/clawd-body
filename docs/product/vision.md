@@ -26,4 +26,9 @@ A developer works on several projects at once, with several Claude Code sessions
 
 ## Success criteria
 
-> **Pending to define.** See [open questions](../plans/open-questions.md#product). Candidates to confirm: latency from hook to device screen, battery life per charge, zero high-risk approvals possible from the device (tested), daemon idle CPU budget.
+| Target | Value | How it is checked |
+| :--- | :--- | :--- |
+| Hook to buddy screen | < 500 ms | Timestamp at `hilo hook` vs. render on the device (phase 3 hardware test) |
+| Battery | ≥ 8 h of normal use per charge | Manual run on the 1000 mAh cell |
+| `hilod` idle | < 1 % CPU, < 30 MB RAM | Activity Monitor / `top` with no session activity |
+| No remote high-risk approval | Never possible | Automated: `scripts/swift-test.sh` (registry and coordinator tests) |

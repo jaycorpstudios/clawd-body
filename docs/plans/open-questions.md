@@ -4,9 +4,7 @@ Each row: **gap → context → what to fill**. "Phase" is the first [roadmap](.
 
 ## Product
 
-| Gap | Context | What to fill | Phase |
-| :--- | :--- | :--- | :---: |
-| Success criteria | No measurable targets yet | Hook-to-screen latency, battery life, idle CPU budget, "no high-risk approval from device" test | 1 |
+Nothing pending.
 
 ## Architecture
 
