@@ -6,7 +6,7 @@
 | :--- | :--- |
 | `HiloContract` | Codable contract types; strict decoding of buddy → Mac messages |
 | `HiloCore` | Request registry (pending, expiry, single use), risk policy, hook → contract mapping, hook replies |
-| `HiloRuntime` | `Coordinator` (presence-based hold), macOS presence probe, Unix socket, stdout link |
+| `HiloRuntime` | `Coordinator` (presence-based hold), `BuddySession` (framing, ordered writes, snapshot on link up), `BLECentral` (CoreBluetooth), trusted buddies, macOS presence probe, Unix socket, stdout link |
 | `hilod` | Daemon executable |
 | `hilo` | CLI: `hilo hook` (called by Claude Code), `hilo buddy '<json>'` (inject a buddy message, development) |
 
@@ -19,12 +19,18 @@ swift build                 # from daemon/
 ../scripts/swift-test.sh    # tests; works with Xcode or Command Line Tools only
 ```
 
+## Pair a buddy
+
+Hold the side button 5 s on the buddy's Home view, then run `hilod --pair`. macOS shows its pairing dialog; type the code the buddy shows. The buddy's identifier is saved to `~/Library/Application Support/Hilo/buddies.json` (the bond keys stay in macOS). From then on plain `hilod` reconnects by itself and sends a `snapshot` on every link up.
+
+`hilod` embeds an `Info.plist` with `NSBluetoothAlwaysUsageDescription`; the first run asks for Bluetooth permission.
+
 ## Try it without a buddy
 
-Until BLE exists, `hilod` writes every Mac → buddy message to stdout, one per line.
+`--stdout` writes every Mac → buddy message to stdout, one per line, instead of using BLE.
 
 ```sh
-.build/debug/hilod --host work --always-away | node ../shared/src/cli.ts validate
+.build/debug/hilod --host work --always-away --stdout | node ../shared/src/cli.ts validate
 ```
 
 | Flag | Default | Meaning |
@@ -32,6 +38,8 @@ Until BLE exists, `hilod` writes every Mac → buddy message to stdout, one per 
 | `--host` | `work` | `host` sent on every message |
 | `--away-after` | `120` | Seconds without keyboard/mouse input before the user counts as away |
 | `--always-away` | off | Hold every permission for the buddy (development) |
+| `--pair` | off | Scan for a buddy in pairing mode and trust it once paired |
+| `--stdout` | off | No BLE; print outgoing messages (development) |
 | `--socket` | `~/Library/Application Support/Hilo/hilod.sock` | Socket path (max 103 bytes) |
 
 Answer a held request as the buddy would:

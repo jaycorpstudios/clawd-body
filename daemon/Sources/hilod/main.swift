@@ -13,17 +13,35 @@ let host = option("--host") ?? "work"
 let idle = Double(option("--away-after") ?? "120") ?? 120
 let socketPath = option("--socket") ?? LocalSocket.defaultPath
 let forceAway = arguments.contains("--always-away")
+let useStdout = arguments.contains("--stdout")
+let pair = arguments.contains("--pair")
+
+let log: @Sendable (String) -> Void = { FileHandle.standardError.write(Data("hilod: \($0)\n".utf8)) }
 
 struct AlwaysAway: PresenceProbe {
     func userIsPresent() -> Bool { false }
 }
 
+let central = useStdout ? nil : BLECentral(trusted: TrustedBuddies(), pairing: pair, log: log)
+let session = central.map { BuddySession(writer: $0) }
+
 let coordinator = Coordinator(
     host: host,
     mapper: HookMapper(repoRoot: GitRepo.root(of:)),
-    link: StdoutLink(),
+    link: session ?? StdoutLink() as BuddyLink,
     presence: forceAway ? AlwaysAway() : SystemPresence(idleThresholdSeconds: idle) as PresenceProbe
 )
+
+if let central, let session {
+    Task {
+        await session.setHandlers(
+            onUp: { await coordinator.sendSnapshot() },
+            onMessage: { data in
+                do { try await coordinator.handleBuddy(data) } catch { log("buddy message rejected: \(error)") }
+            })
+        for await event in central.events { await session.handle(event) }
+    }
+}
 
 do {
     try LocalSocket.serve(path: socketPath) { op, body in

@@ -9,7 +9,7 @@ stateDiagram-v2
     Syncing --> Live: snapshot sent, buddy replaces state for this host
     Live --> Live: incremental events
     Live --> Disconnected: link lost (Mac sleeps, out of range, BT restart)
-    Disconnected --> Connecting: retry with backoff
+    Disconnected --> Connecting: buddy advertises again (pending connect)
 ```
 
 ## On the buddy, per host
@@ -25,4 +25,5 @@ stateDiagram-v2
 - Two Macs are independent: losing one never affects the other's sessions.
 - The daemon recovers by itself after a Bluetooth restart.
 - `snapshot` shape: [event contract](../architecture/event-contract.md#snapshot). Pending requests travel inside each session so they reappear after a reconnect.
-- **Pending to define** ([open questions › contract](../plans/open-questions.md#contract)): `snapshot` byte budget, backoff intervals. Usage from both Macs is kept per Mac ([firmware model behavior](../components/firmware.md#model-behavior)).
+- No backoff timer on the Mac: `hilod` keeps a pending CoreBluetooth connect to the bonded buddy, which completes when it advertises again.
+- **Pending to define** ([open questions › contract](../plans/open-questions.md#contract)): `snapshot` byte budget. Usage from both Macs is kept per Mac ([firmware model behavior](../components/firmware.md#model-behavior)).

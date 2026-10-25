@@ -46,3 +46,5 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 - [ ] Negotiated MTU (log `mtu`) and an 8 KB snapshot round trip; notifications do not fail with out-of-mbuf on a burst.
 - [ ] Two Macs connected at once; each only receives the messages for its host.
 - [ ] Non-discoverable connectable advertising is enough for CoreBluetooth to reconnect a known peripheral.
+- [ ] `hilod` first run triggers the macOS Bluetooth permission prompt (embedded `Info.plist`); `hilod --pair` finds the buddy, pairs and writes `buddies.json`.
+- [ ] Plain `hilod` reconnects after the buddy reboots and after toggling Bluetooth on the Mac, and sends a `snapshot` each time.

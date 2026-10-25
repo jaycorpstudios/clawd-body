@@ -35,7 +35,7 @@ Threats and mitigations: [threat-model.md](../security/threat-model.md).
 
 ## Implementation
 
-Code, build and local run: [`daemon/README.md`](../../daemon/README.md). Done: hook ingestion, risk policy defaults, request registry, presence-based hold, Unix socket IPC. Not yet: BLE bridge, SQLite, MCP, usage.
+Code, build and local run: [`daemon/README.md`](../../daemon/README.md). Done: hook ingestion, risk policy defaults, request registry, presence-based hold, Unix socket IPC, BLE central (untested against the board). Not yet: SQLite, MCP, usage, revoking a buddy from Hilo.
 
 ## Pending to define
 

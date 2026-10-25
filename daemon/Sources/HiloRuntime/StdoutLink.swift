@@ -1,6 +1,6 @@
 import Foundation
 
-/// Stand-in for the BLE link until it exists: one contract message per line on stdout.
+/// Development link (`hilod --stdout`): one contract message per line on stdout.
 public actor StdoutLink: BuddyLink {
     public init() {}
 
