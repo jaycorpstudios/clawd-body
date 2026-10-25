@@ -66,3 +66,4 @@ Each row: **gap → context → what to fill**. "Phase" is the first [roadmap](.
 | :--- | :--- | :--- | :---: |
 | Device lock | Anyone at the desk can hold-to-approve | Whether low-risk approvals need a lock/PIN or auto-lock when the user is away | 4 |
 | High-risk deny | Contract said "never accepted"; the UI shows "Deny" | Confirm: deny from the buddy is always honored, approve never (current docs assume this) | 4 |
+| Secrets in `detail` | The buddy shows the full Bash command, which may include a token (`curl -H "Authorization: …"`, `export KEY=…`); unknown tools already send only their name | Redaction rules before sending (header values, `KEY=value`, long base64/hex strings) or show only the first word for high-risk commands | 3 |
