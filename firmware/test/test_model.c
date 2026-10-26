@@ -552,3 +552,47 @@ TEST(project_look_is_stable)
     bm_project_look("payments-api", &h2, &a2);
     CHECK(h1 == h2 && a1 == a2 && h1 < 360 && a1 < BM_ACC_COUNT);
 }
+
+static bool valid_utf8(const char *s)
+{
+    for (const unsigned char *p = (const unsigned char *)s; *p;) {
+        int extra = *p < 0x80 ? 0 : (*p & 0xE0) == 0xC0 ? 1 : (*p & 0xF0) == 0xE0 ? 2 : (*p & 0xF8) == 0xF0 ? 3 : -1;
+        if (extra < 0) return false;
+        p++;
+        for (int i = 0; i < extra; i++, p++)
+            if ((*p & 0xC0) != 0x80) return false;
+    }
+    return true;
+}
+
+static void repeat(char *out, const char *unit, int times, const char *tail)
+{
+    out[0] = '\0';
+    for (int i = 0; i < times; i++) strcat(out, unit);
+    strcat(out, tail);
+}
+
+TEST(text_at_the_character_limit_is_kept_even_when_it_needs_more_bytes)
+{
+    char text[1024];
+    fresh();
+    start_session("work", "a", "alpha");
+    bm_session_t *s = &M.sessions[session_index("work", "a")];
+
+    repeat(text, "a", 119, "\xE2\x80\xA6");
+    CHECK(send("work", "agent.step", "{\"session\":\"a\",\"kind\":\"run\",\"text\":\"%s\"}", text) == BM_OK);
+    const char *last = s->steps[s->n_steps - 1].text;
+    CHECK(valid_utf8(last));
+    CHECK(strncmp(last, "aaaa", 4) == 0);
+    CHECK(strcmp(last + strlen(last) - 3, "\xE2\x80\xA6") == 0);
+
+    repeat(text, "\xC3\xB1", 120, "");
+    CHECK(send("work", "agent.step", "{\"session\":\"a\",\"kind\":\"run\",\"text\":\"%s\"}", text) == BM_OK);
+    last = s->steps[s->n_steps - 1].text;
+    CHECK(valid_utf8(last));
+    CHECK(strncmp(last, "\xC3\xB1\xC3\xB1", 4) == 0);
+    CHECK(strcmp(last + strlen(last) - 3, "\xE2\x80\xA6") == 0);
+
+    repeat(text, "a", 121, "");
+    CHECK(send("work", "agent.step", "{\"session\":\"a\",\"kind\":\"run\",\"text\":\"%s\"}", text) == BM_E_DATA);
+}

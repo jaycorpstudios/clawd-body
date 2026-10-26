@@ -29,7 +29,10 @@ void bm__copy(char *dst, size_t n, const char *src)
 {
     if (!n) return;
     size_t len = src ? strlen(src) : 0;
-    if (len >= n) len = n - 1;
+    if (len >= n) {
+        len = n - 1;
+        while (len && ((unsigned char)src[len] & 0xC0) == 0x80) len--;
+    }
     if (len) memcpy(dst, src, len);
     dst[len] = '\0';
 }

@@ -50,8 +50,14 @@ static field_t get_str(const cJSON *obj, const char *key, size_t min, size_t max
     if (!it) return ABSENT;
     if (!cJSON_IsString(it)) return BAD;
     size_t len = utf8_len(it->valuestring);
-    if (len < min || len > max || strlen(it->valuestring) >= n) return BAD;
-    bm__copy(out, n, it->valuestring);
+    if (len < min || len > max) return BAD;
+    if (strlen(it->valuestring) < n) {
+        bm__copy(out, n, it->valuestring);
+    } else {
+        static const char ELLIPSIS[] = "\xE2\x80\xA6";
+        bm__copy(out, n - (sizeof(ELLIPSIS) - 1), it->valuestring);
+        strcat(out, ELLIPSIS);
+    }
     return PRESENT;
 }
 
