@@ -101,3 +101,12 @@ func otherQuestionsStayOnTheMac(_ input: String) throws {
     #expect(out["hookSpecificOutput"]?["updatedInput"]?["answers"]?["Which?"]?.string == "B")
     #expect(out["hookSpecificOutput"]?["updatedInput"]?["questions"] == input["questions"])
 }
+
+@Test func clippingCountsUnicodeScalarsLikeTheSchema() {
+    let combining = String(repeating: "e\u{301}", count: 100)
+    let clipped = Text.clip(combining, 120)
+    #expect(clipped.unicodeScalars.count == 120)
+    #expect(clipped.hasSuffix("…"))
+    #expect(Text.clipLeft(combining, 120).unicodeScalars.count == 120)
+    #expect(Text.clip("short", 120) == "short")
+}
