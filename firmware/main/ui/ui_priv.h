@@ -18,6 +18,8 @@
 typedef struct {
     lv_obj_t *img;
     lv_image_dsc_t dsc;
+    int32_t size;
+    uint32_t *scaled;
     uint32_t px[BM_PET_GRID * BM_PET_GRID];
 } ui_pet_t;
 

@@ -6,7 +6,9 @@
 #define BTN_H 58
 #define ATTN_W (SCREEN - 56)
 
-static lv_obj_t *frame;
+#define FRAME_W 5
+
+static lv_obj_t *frame[4];
 
 static lv_obj_t *button(lv_obj_t *parent, uint32_t border, uint32_t bg, uint32_t fg, const char *text, lv_obj_t **lbl)
 {
@@ -138,11 +140,17 @@ void ui_attn_create(lv_obj_t *scr)
     lv_obj_align(later, LV_ALIGN_RIGHT_MID, 0, 0);
     ui_on_tap(later, BM_TAP_LATER, 0);
 
-    frame = ui_box(ui.attn);
-    lv_obj_set_ignore_layout(frame, true);
-    lv_obj_set_size(frame, SCREEN, SCREEN);
-    lv_obj_set_pos(frame, -28, -26);
-    lv_obj_set_style_border_width(frame, 5, 0);
+    // Four edges instead of one bordered box: a box's style change invalidates the whole screen.
+    static const int16_t edges[4][4] = {{0, 0, SCREEN, FRAME_W},
+                                        {0, SCREEN - FRAME_W, SCREEN, FRAME_W},
+                                        {0, FRAME_W, FRAME_W, SCREEN - 2 * FRAME_W},
+                                        {SCREEN - FRAME_W, FRAME_W, FRAME_W, SCREEN - 2 * FRAME_W}};
+    for (int i = 0; i < 4; i++) {
+        frame[i] = ui_box(ui.attn);
+        lv_obj_set_ignore_layout(frame[i], true);
+        lv_obj_set_pos(frame[i], edges[i][0] - 28, edges[i][1] - 26);
+        lv_obj_set_size(frame[i], edges[i][2], edges[i][3]);
+    }
     ui_show(ui.attn, false);
 }
 
@@ -181,7 +189,7 @@ void ui_attn_update(uint32_t now_ms)
     ui_show(ui.ap_ok, !q && approvable);
     ui_show(ui.ap_locked, !q && !approvable);
     lv_label_set_text(ui.ap_locked_lbl, risk ? "High risk:\nMac only" : "Approve on\nthe Mac");
-    lv_obj_set_style_border_color(frame, ui_hex(accent), 0);
+    for (int i = 0; i < 4; i++) lv_obj_set_style_bg_color(frame[i], ui_hex(accent), 0);
 }
 
 void ui_attn_frame(uint32_t now_ms)
@@ -193,6 +201,7 @@ void ui_attn_frame(uint32_t now_ms)
     bm_project_look(s->project, &hue, &acc);
     ui_pet_draw(ui.ap_pet, BM_PET_ALERT, hue, acc, 0);
     float k = (cosf(ui.t * 2 * 3.14159f / 1.1f) + 1) / 2;
-    lv_obj_set_style_border_opa(frame, (lv_opa_t)(k * 255), 0);
-    lv_obj_set_width(ui.ap_ok_fill, (int32_t)(bm_hold_progress(ui.m, now_ms) * lv_obj_get_width(ui.ap_ok)));
+    for (int i = 0; i < 4; i++) lv_obj_set_style_bg_opa(frame[i], (lv_opa_t)(k * 255), 0);
+    int32_t fill = (int32_t)(bm_hold_progress(ui.m, now_ms) * lv_obj_get_width(ui.ap_ok));
+    if (fill != lv_obj_get_style_width(ui.ap_ok_fill, 0)) lv_obj_set_width(ui.ap_ok_fill, fill);
 }

@@ -124,31 +124,47 @@ void ui_symbolize(char *dst, size_t n, const char *src)
 
 static void pet_free_cb(lv_event_t *e)
 {
-    free(lv_event_get_user_data(e));
+    ui_pet_t *p = lv_event_get_user_data(e);
+    free(p->scaled);
+    free(p);
 }
 
 ui_pet_t *ui_pet_create(lv_obj_t *parent, int32_t size)
 {
     ui_pet_t *p = heap_caps_calloc_prefer(1, sizeof(*p), 2, MALLOC_CAP_SPIRAM, MALLOC_CAP_DEFAULT);
+    p->size = size;
+    p->scaled = heap_caps_calloc_prefer((size_t)size * size, 4, 2, MALLOC_CAP_SPIRAM, MALLOC_CAP_DEFAULT);
     p->dsc.header.magic = LV_IMAGE_HEADER_MAGIC;
     p->dsc.header.cf = LV_COLOR_FORMAT_ARGB8888;
-    p->dsc.header.w = BM_PET_GRID;
-    p->dsc.header.h = BM_PET_GRID;
-    p->dsc.header.stride = BM_PET_GRID * 4;
-    p->dsc.data_size = sizeof(p->px);
-    p->dsc.data = (const uint8_t *)p->px;
+    p->dsc.header.w = size;
+    p->dsc.header.h = size;
+    p->dsc.header.stride = size * 4;
+    p->dsc.data_size = (uint32_t)size * size * 4;
+    p->dsc.data = (const uint8_t *)p->scaled;
     p->img = lv_image_create(parent);
     lv_image_set_src(p->img, &p->dsc);
-    lv_image_set_inner_align(p->img, LV_IMAGE_ALIGN_STRETCH);
-    lv_image_set_antialias(p->img, false);
     lv_obj_set_size(p->img, size, size);
     lv_obj_add_event_cb(p->img, pet_free_cb, LV_EVENT_DELETE, p);
     return p;
 }
 
+// LVGL's software transform costs ~28 ms for the 224 px pet; a pre-scaled copy is a plain blit.
+static void pet_upscale(ui_pet_t *p)
+{
+    for (int32_t y = 0; y < p->size; y++) {
+        const uint32_t *src = &p->px[y * BM_PET_GRID / p->size * BM_PET_GRID];
+        uint32_t *dst = &p->scaled[y * p->size];
+        for (int32_t x = 0; x < p->size; x++) dst[x] = src[x * BM_PET_GRID / p->size];
+    }
+}
+
 void ui_pet_draw(ui_pet_t *p, bm_pet_state_t state, uint16_t hue, bm_acc_t acc, float seed)
 {
-    bm_pet_render(p->px, state, ui.t, hue, acc, seed);
+    static uint32_t px[BM_PET_GRID * BM_PET_GRID];
+    bm_pet_render(px, state, ui.t, hue, acc, seed);
+    if (memcmp(px, p->px, sizeof(px)) == 0) return;
+    memcpy(p->px, px, sizeof(px));
+    pet_upscale(p);
     lv_obj_invalidate(p->img);
 }
 
