@@ -65,7 +65,7 @@ static int64_t ts(const demo_t *d, uint32_t now_ms)
 
 static void send(demo_t *d, uint32_t now_ms, const char *host, const char *type, const char *fmt, ...)
 {
-    char data[2048], json[2400];
+    static char data[2048], json[2400];
     va_list ap;
     va_start(ap, fmt);
     vsnprintf(data, sizeof(data), fmt, ap);
