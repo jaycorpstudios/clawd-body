@@ -42,6 +42,10 @@ public struct StoreRecorder: Sendable {
         }
     }
 
+    public func attach(session: String, project: String) {
+        do { try store.setProjectIfMissing(session: session, project: project) } catch { log("store: \(error)") }
+    }
+
     public func buddyLink(up: Bool, now: Int) {
         do { try store.setBuddyConnected(up, now: now) } catch { log("store: \(error)") }
     }

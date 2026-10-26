@@ -34,6 +34,10 @@ public struct HookMapper: Sendable {
         self.repoRoot = repoRoot
     }
 
+    public func project(of hook: HookInput) -> String {
+        Self.project(root: repoRoot(hook.cwd), cwd: hook.cwd)
+    }
+
     public func map(_ hook: HookInput, now: Int, requestId: String = ULID.make()) -> HookAction {
         let root = repoRoot(hook.cwd)
         let project = Self.project(root: root, cwd: hook.cwd)

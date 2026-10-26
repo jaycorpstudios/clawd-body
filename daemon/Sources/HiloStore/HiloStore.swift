@@ -106,6 +106,12 @@ public final class HiloStore: @unchecked Sendable {
         }
     }
 
+    /// Fills in the project of a session first seen through a message that carries none.
+    public func setProjectIfMissing(session: String, project: String) throws {
+        guard try db.rows("SELECT 1 FROM session WHERE id = ? AND project_id IS NULL", [session]).first != nil else { return }
+        try db.run("UPDATE session SET project_id = ? WHERE id = ?", [try self.project(named: project).id, session])
+    }
+
     public func finishSession(_ session: String, status: SessionStatus, summary: String?, now: Int) throws {
         try db.run("UPDATE session SET status = ?, summary = coalesce(?, summary), waiting_on = NULL, updated_at = ? WHERE id = ?",
                    [status.rawValue, summary, now, session])

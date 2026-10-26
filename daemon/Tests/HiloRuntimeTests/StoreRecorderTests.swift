@@ -51,3 +51,12 @@ private func makeStore() throws -> HiloStore {
     #expect((hilo["current"] as? [String: Any])?["title"] as? String == "Ship the app")
     #expect(((hilo["next"] as? [[String: Any]])?.first)?["project"] as? String == "inbox")
 }
+
+@Test func sessionsSeenMidwayGetTheirProjectFromTheHook() async throws {
+    let store = try makeStore()
+    let coordinator = Coordinator(host: "work", mapper: HookMapper(repoRoot: { _ in "/home/dev/code/api" }), link: Sink(),
+                                  presence: Away(), recorder: StoreRecorder(store: store))
+    let prompt = try HookInput.decode(Data(#"{"hook_event_name":"UserPromptSubmit","session_id":"s9","cwd":"/home/dev/code/api"}"#.utf8))
+    _ = await coordinator.handleHook(prompt)
+    #expect(try store.sessions(since: 0).first?.project?.name == "api")
+}
