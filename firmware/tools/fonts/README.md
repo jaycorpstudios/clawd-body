@@ -7,7 +7,7 @@ pnpm install
 pnpm -F @hilo-buddy/firmware-fonts build
 ```
 
-Sizes and weights come from the `.screen` CSS of `prototypes/buddy-sim.html`. Sizes under 15 px are raised to 15 px ([device UI](../../../docs/components/device-ui.md#screen)). 4 bpp, uncompressed. The text fonts cover ASCII, Latin-1 and common punctuation. The 58 px and 92 px fonts carry digits, `:` and `%` only. JetBrains Mono has no ♪ glyph, so the toast font falls back to Montserrat 16, and the UI draws its audio and charge symbols from there.
+Sizes and weights come from the `.screen` CSS of `prototypes/buddy-sim.html`. Sizes under 15 px are raised to 15 px ([device UI](../../../docs/components/device-ui.md#screen)). 4 bpp, uncompressed. The text fonts cover ASCII, Latin-1 and common punctuation. The 58 px and 92 px fonts carry digits, `:`, `-` and `%` only. JetBrains Mono has no ♪ glyph, so the toast font falls back to Montserrat 16, and the UI draws its audio and charge symbols from there.
 
 ## Sources
 
