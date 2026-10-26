@@ -57,6 +57,6 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 - [x] Coming back to the Mac releases a held request to the terminal and closes it on the buddy. *2026-10-25: works. The buddy said "expired", which read like a timeout; it now says "Answer it on the Mac".*
 - [ ] Deny from the buddy returns `deny` to the hook.
 - [ ] A question (`AskUserQuestion`) answered on the buddy reaches Claude Code.
-- [ ] A real Claude Code session (not a synthetic payload) is held, approved on the buddy, and the tool runs with no terminal prompt.
+- [x] A real Claude Code session (not a synthetic payload) is held, approved on the buddy, and the tool runs with no terminal prompt. *2026-10-25: `claude --permission-mode default`, `npm test`, with `hilod --always-away`: no terminal prompt, approved on the board, the command ran. With presence detection the request was never held: see "Presence decided once" in [open questions](open-questions.md#daemon). In auto mode Claude Code sends no `PermissionRequest` at all.*
 - [ ] A held request expires after 600 s and the hook falls back to the terminal prompt.
 
