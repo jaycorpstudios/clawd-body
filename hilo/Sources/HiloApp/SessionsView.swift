@@ -51,7 +51,7 @@ struct SessionsView: View {
 
     private func banner(_ s: SessionRecord) -> some View {
         HStack(spacing: 14) {
-            PetView(hue: PetView.hue(of: s.project), state: .alert, size: 46)
+            PetView(look: PetView.look(of: s.project), state: .alert, size: 46)
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(s.project?.name ?? "A session") needs you").fontWeight(.bold)
                 HStack(spacing: 0) {
@@ -86,7 +86,7 @@ struct SessionsView: View {
                 let selected = s.id == model.selectedSession
                 HStack(spacing: 8) {
                     HStack(spacing: 10) {
-                        PetView(hue: PetView.hue(of: s.project), state: PetState(s.status), size: 32)
+                        PetView(look: PetView.look(of: s.project), state: PetState(s.status), size: 32)
                         Text(s.project?.name ?? String(s.id.prefix(8))).font(.system(size: 13, weight: .medium, design: .monospaced))
                     }
                     .frame(width: 220, alignment: .leading)
@@ -114,7 +114,7 @@ struct SessionDetail: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center) {
-                PetView(hue: PetView.hue(of: session.project), state: PetState(session.status), size: 54)
+                PetView(look: PetView.look(of: session.project), state: PetState(session.status), size: 54)
                 Text(session.project?.name ?? "Session").font(Theme.title(22)).lineLimit(1).fixedSize()
                 Spacer(minLength: 12)
                 Menu {
@@ -161,8 +161,9 @@ struct CapturePanel: View {
             Text("Automatic capture").font(Theme.title(18))
             item(model.daemonRunning, "Claude Code sessions", model.daemonRunning ? "hilod receives every hook from this Mac" : "Start hilod to capture sessions")
             item(model.buddyConnected, "Buddy", model.buddyConnected ? "Connected over BLE" : "Not connected")
-            item(false, "Git commits", "Not captured yet")
-            item(false, "Active time", "Not captured yet")
+            let commitsToday = model.weekCommits.filter { $0.ts >= AppModel.startOfToday }.count
+            item(model.daemonRunning, "Git commits", "\(commitsToday) today in this Mac's session repos")
+            item(model.daemonRunning, "Active time", "\(Format.duration(model.activeToday.values.reduce(0, +))) today · pauses after 5 min idle")
         }
         .padding(20).background(Theme.card, in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.line))

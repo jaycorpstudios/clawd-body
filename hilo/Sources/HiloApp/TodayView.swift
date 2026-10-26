@@ -29,7 +29,7 @@ struct TodayView: View {
     private var header: some View {
         HStack(alignment: .bottom) {
             HStack(spacing: 16) {
-                PetView(hue: 22, state: model.needsYou.isEmpty ? (model.working.isEmpty ? .idle : .working) : .alert, size: 76)
+                PetView(state: model.needsYou.isEmpty ? (model.working.isEmpty ? .idle : .working) : .alert, size: 76)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(Date().formatted(.dateTime.weekday(.wide).month(.wide).day())).font(Theme.title(32))
                     Text(summary).foregroundStyle(Theme.secondary)
@@ -235,7 +235,7 @@ struct SessionCard: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            PetView(hue: PetView.hue(of: session.project), state: PetState(session.status), size: 40)
+            PetView(look: PetView.look(of: session.project), state: PetState(session.status), size: 40)
             VStack(alignment: .leading, spacing: 2) {
                 Text(session.project?.name ?? String(session.id.prefix(8))).font(.system(size: 13, weight: .semibold, design: .monospaced)).lineLimit(1)
                 Text(session.lastAction).font(.system(size: 12.5)).foregroundStyle(Theme.secondary).lineLimit(1)

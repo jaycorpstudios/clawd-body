@@ -75,7 +75,7 @@ struct SetupView: View {
         let guide = PairingGuide.describe(buddy)
         return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                PetView(hue: 22, state: buddy.link == .connected ? .happy : guide.active ? .working : .sleep, size: 40)
+                PetView(state: buddy.link == .connected ? .happy : guide.active ? .working : .sleep, size: 40)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(model.daemonRunning ? guide.title : "Start hilod first").font(.system(size: 14, weight: .semibold))
                     Text(model.daemonRunning ? guide.detail : "Pairing runs inside hilod.").foregroundStyle(Theme.secondary)

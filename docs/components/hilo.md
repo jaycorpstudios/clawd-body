@@ -1,6 +1,6 @@
 # Hilo (macOS app, CLI and MCP)
 
-Visual reference approved as direction: `prototypes/hilo/`. Dark theme only, with the same animated characters as the buddy.
+Visual reference approved as direction: `prototypes/hilo/`. Dark theme only, with the same animated characters as the buddy: `PetView` ports `drawPet` and `drawAcc`, and a project's hue and accessory come from the same hash of its name as on the buddy (`PetLook`, matching `bm_project_look`).
 
 ## Decisions taken
 

@@ -82,7 +82,7 @@ struct TopBar: View {
             Text("Hilo").font(.system(size: 14, weight: .bold))
             Spacer()
             HStack(spacing: 8) {
-                PetView(hue: 22, state: buddyPet, size: 24)
+                PetView(state: buddyPet, size: 24)
                 Text(buddyText).font(.system(size: 13)).foregroundStyle(Color(hex: "#c2bbb0"))
             }
             Text((model.daemonStatus?.host ?? model.config.host ?? "This Mac").capitalized).font(.system(size: 12.5)).padding(.horizontal, 10).padding(.vertical, 4)
@@ -110,7 +110,7 @@ struct Sidebar: View {
         @Bindable var model = model
         VStack(alignment: .leading, spacing: 18) {
             HStack(spacing: 12) {
-                PetView(hue: 22, state: model.needsYou.isEmpty ? (model.working.isEmpty ? .idle : .working) : .alert, size: 50)
+                PetView(state: model.needsYou.isEmpty ? (model.working.isEmpty ? .idle : .working) : .alert, size: 50)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Your buddy").font(.system(size: 13.5, weight: .bold))
                     if !model.needsYou.isEmpty {

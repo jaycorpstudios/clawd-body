@@ -34,4 +34,4 @@ open .build/Hilo.app
 
 The window polls the store every 2 s. After a change it asks `hilod` (socket op `hilo`) to send the buddy a fresh snapshot, so the buddy's Hilo card follows.
 
-Commits and active time come from `hilod`'s automatic capture ([spec](../docs/components/hilo.md#stack-implemented)). Not yet: tokens per session, Warp tab, MCP, Jira, pet accessories, the prototype's fonts (system fonts for now).
+Commits and active time come from `hilod`'s automatic capture ([spec](../docs/components/hilo.md#stack-implemented)). Not yet: tokens per session, Warp tab, MCP, Jira, the prototype's fonts (system fonts for now).

@@ -8,7 +8,7 @@ public enum StepKind: String, Codable, Sendable { case plan, read, edit, run, as
 public enum SessionStatus: String, Codable, Sendable { case working, waiting, done, error, idle }
 public enum Decision: String, Codable, Sendable { case approve, deny }
 public enum WakeSource: String, Codable, Sendable { case touch, button, longPress = "long_press", idle }
-public enum Accessory: String, Codable, Sendable { case none, wizard, shades, headphones, crown, party, band, heart }
+public enum Accessory: String, Codable, Sendable, CaseIterable { case none, wizard, shades, headphones, crown, party, band, heart }
 
 public struct DiffLine: Codable, Equatable, Sendable {
     public enum Change: String, Codable, Sendable { case added = "a", removed = "r" }
