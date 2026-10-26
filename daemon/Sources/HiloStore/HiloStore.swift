@@ -7,7 +7,9 @@ public final class HiloStore: @unchecked Sendable {
 
     private let db: Database
 
+    /// `HILO_DB` overrides the location (tests, a scratch database).
     public static var defaultPath: String {
+        if let path = ProcessInfo.processInfo.environment["HILO_DB"] { return path }
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return base.appending(path: "Hilo/hilo.sqlite").path(percentEncoded: false)
     }
