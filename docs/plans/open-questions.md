@@ -32,6 +32,8 @@ Nothing pending.
 | Presence signal | Remote-decision mode is presence-based (see [remote decision flow](../flows/remote-decision-flow.md#remote-decision-mode)) | Idle threshold before the Mac counts as "away"; verify on real hardware that the terminal prompt stays hidden while the hook waits | 4 |
 | Usage source | 5 h window, weekly %, tokens today | Claude Code local stats vs. hook payloads; never account credentials; until then `snapshot.usage` carries zeros | 3 |
 | Policy file | See [risk-policy.md](../security/risk-policy.md) | Location, format, rule syntax, per-project overrides | 4 |
+| How `hilod` is launched | Started from a terminal (Warp, Terminal.app) macOS aborts it on first Bluetooth use: TCC checks the *responsible* app, and terminals declare no `NSBluetoothAlwaysUsageDescription`. Under launchd it is its own responsible process and the embedded `Info.plist` applies (verified 2026-10-25 with `launchctl submit`) | LaunchAgent plist and who installs it (`hilo install`?), log location, how `--pair` is run | 3 |
+| Stable code signature for `hilod` | Ad-hoc signing changes the binary's hash on every build, and macOS asks for Bluetooth permission again each time | Sign with a stable local identity, or rebuild the installed copy only on release | 3 |
 
 ## Firmware
 
