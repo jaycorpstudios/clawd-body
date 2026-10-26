@@ -17,7 +17,18 @@ No third-party packages.
 ```sh
 swift build                 # from daemon/
 ../scripts/swift-test.sh    # tests; works with Xcode or Command Line Tools only
+../scripts/build-hilod.sh   # signed release build (creates a local signing identity once)
 ```
+
+macOS ties the Bluetooth permission to the code signature. An ad-hoc signature changes on every build, so `build-hilod.sh` signs with a self-signed "Hilo Local Signing" identity in the login keychain. The first time, macOS asks for the keychain password so `codesign` can use the key.
+
+Run `hilod` under launchd; started from a terminal, macOS aborts it on first Bluetooth use:
+
+```sh
+launchctl submit -l dev.hilo.hilod -o ~/Library/Logs/Hilo/hilod.log -e ~/Library/Logs/Hilo/hilod.log -- "$PWD/.build/release/hilod"
+```
+
+The log records the buddy link, every held or released request and every buddy decision.
 
 ## Pair a buddy
 

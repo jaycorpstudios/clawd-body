@@ -29,7 +29,8 @@ let coordinator = Coordinator(
     host: host,
     mapper: HookMapper(repoRoot: GitRepo.root(of:)),
     link: session ?? StdoutLink() as BuddyLink,
-    presence: forceAway ? AlwaysAway() : SystemPresence(idleThresholdSeconds: idle) as PresenceProbe
+    presence: forceAway ? AlwaysAway() : SystemPresence(idleThresholdSeconds: idle) as PresenceProbe,
+    log: log
 )
 
 if let central, let session {

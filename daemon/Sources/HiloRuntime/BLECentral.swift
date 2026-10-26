@@ -86,7 +86,8 @@ extension BLECentral: CBCentralManagerDelegate {
                                advertisementData: [String: Any], rssi: NSNumber) {
         guard pairing, peripheral == nil, !trusted.load().contains(p.identifier) else { return }
         central.stopScan()
-        log("pairing: found \(p.name ?? "buddy"); confirm the passkey shown on it")
+        let name = advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? p.name ?? "buddy"
+        log("pairing: found \(name); confirm the passkey shown on it")
         connect(p)
     }
 
@@ -144,6 +145,7 @@ extension BLECentral: CBPeripheralDelegate {
             log("paired")
         }
         rx = c.service?.characteristics?.first { $0.uuid == Self.rx }
+        log("buddy connected, frame \(frameSize) bytes")
         continuation.yield(.up(frameSize: frameSize))
     }
 

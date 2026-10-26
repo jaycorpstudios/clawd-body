@@ -28,14 +28,15 @@ public actor Coordinator {
     private let presence: PresenceProbe
     private let clock: Clock
     private let pollSeconds: Double
+    private let log: @Sendable (String) -> Void
     private var registry = RequestRegistry()
     private var store = SessionStore()
     private var waiting: [String: CheckedContinuation<Resolution?, Never>] = [:]
 
     public init(host: String, mapper: HookMapper, link: BuddyLink, presence: PresenceProbe,
-                clock: Clock = SystemClock(), pollSeconds: Double = 2) {
+                clock: Clock = SystemClock(), pollSeconds: Double = 2, log: @escaping @Sendable (String) -> Void = { _ in }) {
         self.host = host; self.mapper = mapper; self.link = link
-        self.presence = presence; self.clock = clock; self.pollSeconds = pollSeconds
+        self.presence = presence; self.clock = clock; self.pollSeconds = pollSeconds; self.log = log
     }
 
     /// Returns what the hook command must print to stdout.
@@ -69,9 +70,11 @@ public actor Coordinator {
         }
         switch result {
         case .accepted(let resolution, let resolved):
+            log("request \(resolved.requestId): \(resolved.outcome.rawValue) on the buddy")
             waiting.removeValue(forKey: resolved.requestId)?.resume(returning: resolution)
             await send(.requestResolved(resolved))
-        case .rejected(_, let reply):
+        case .rejected(let rejection, let reply):
+            log("buddy decision rejected: \(rejection)")
             if let reply {
                 waiting.removeValue(forKey: reply.requestId)?.resume(returning: nil)
                 await send(.requestResolved(reply))
@@ -82,9 +85,11 @@ public actor Coordinator {
     private func hold(id: String, session: String, expiresAt: Int, body: PendingRequest.Body,
                       message: Outbound, onMac: String) async -> Resolution? {
         guard !presence.userIsPresent() else {
+            log("request \(id): user at the Mac, prompt stays in the terminal")
             await send(.agentStep(AgentStep(session: session, kind: .ask, text: String(onMac.prefix(120)))))
             return nil
         }
+        log("request \(id): user away, holding for the buddy")
         registry.register(PendingRequest(id: id, session: session, body: body, expiresAt: expiresAt))
         return await withCheckedContinuation { continuation in
             waiting[id] = continuation
@@ -99,6 +104,7 @@ public actor Coordinator {
         while registry.pendingRequests.contains(where: { $0.id == id }) {
             await clock.sleep(seconds: pollSeconds)
             if presence.userIsPresent() || clock.now() >= expiresAt, let released = registry.release(id) {
+                log("request \(id): released to the Mac (\(clock.now() >= expiresAt ? "expired" : "user back"))")
                 waiting.removeValue(forKey: id)?.resume(returning: nil)
                 await send(.requestResolved(released))
                 return

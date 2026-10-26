@@ -48,3 +48,15 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 - [x] Non-discoverable connectable advertising is enough for CoreBluetooth to reconnect a known peripheral. *2026-10-25: every reconnect ran with `disc_mode=0`.*
 - [x] `hilod` first run triggers the macOS Bluetooth permission prompt (embedded `Info.plist`); `hilod --pair` finds the buddy, pairs and writes `buddies.json`. *2026-10-25: only when started by launchd; from a terminal macOS aborts it (see [open questions](open-questions.md#daemon)). Every rebuild asks again.*
 - [x] Plain `hilod` reconnects after the buddy reboots and after toggling Bluetooth on the Mac, and sends a `snapshot` each time. *2026-10-25: reconnects in 7–22 s with a snapshot each time. Found and fixed on the way: clipped `agent.step` / `task_done` text was rejected by the buddy, a timed-out overlapping security procedure dropped bonded links after 30 s, and `hilod` busy-looped while Bluetooth was off.*
+
+### Remote decisions (phase 4)
+
+- [x] A low-risk permission (`npm test` inside the repo) held while the user is away shows Hold to approve on the buddy; approving returns `allow` to the hook. *2026-10-25: a synthetic `PermissionRequest` piped into `hilo hook`; approved on the board, hook answered `allow` 4 s after the request.*
+- [x] A high-risk permission (`pnpm test` is not in the default allowlist) shows "Mac only" on the buddy and cannot be approved there. *2026-10-25.*
+- [x] With input on the Mac in the last `--away-after` seconds the request is not held and the prompt stays in the terminal. *2026-10-25. On a laptop, a palm resting near the trackpad keeps resetting the idle time (`UserIsActive` from the internal trackpad every few seconds), see [open questions](open-questions.md#daemon).*
+- [x] Coming back to the Mac releases a held request to the terminal and closes it on the buddy. *2026-10-25: works; the buddy labels it "expired", which reads like a timeout.*
+- [ ] Deny from the buddy returns `deny` to the hook.
+- [ ] A question (`AskUserQuestion`) answered on the buddy reaches Claude Code.
+- [ ] A real Claude Code session (not a synthetic payload) is held, approved on the buddy, and the tool runs with no terminal prompt.
+- [ ] A held request expires after 600 s and the hook falls back to the terminal prompt.
+
