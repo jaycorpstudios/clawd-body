@@ -60,6 +60,7 @@ The portable model (`firmware/components/buddy_model/`) follows the prototype; w
 
 - **AXP2101** (0x34): read only. Battery present, USB present, charge direction, fuel-gauge percent and battery voltage, polled every 5 s and fed to `bm_set_battery`, which owns the 15 % alert and the charging toast. The PMU's power-on defaults already enable the gauge and the battery ADC; nothing is written to it.
 - **PCF85063** (0x51): time registers only, UTC, BCD.
+- **ES8311** (through the BSP's `bsp_audio_codec_speaker_init` and `esp_codec_dev`): with `CONFIG_BUDDY_SOUND`, an audio task renders each cue the model queues into PSRAM and writes it to I²S; the codec (and its power amplifier) closes after 2 s without sound. The cue renderer is portable and covered by the host tests.
 
 ## Out of scope for now
 

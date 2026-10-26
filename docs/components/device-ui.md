@@ -52,4 +52,4 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 | Problem | low-passed square, low register | falling intervals | error, 80 % usage, limit, battery, disconnect |
 | Info | short, high sine blips | 1 to 3 notes | new session, denied, song, button |
 
-Exact notes and durations live in `SOUNDS` inside the prototype. On the firmware they play through the ES8311 codec — synthesis vs. short PCM samples is [pending to define](../plans/open-questions.md#firmware).
+Exact notes and durations live in `SOUNDS` inside the prototype. On the firmware `buddy_model/src/bm_synth.c` synthesizes the same notes, waveforms, envelopes, vibrato, bell overtone and low-pass filter at 22 050 Hz and plays them through the ES8311 codec; sound is a build option for now ([pending](../plans/open-questions.md#firmware)).

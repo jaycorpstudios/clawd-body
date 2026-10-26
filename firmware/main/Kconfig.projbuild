@@ -11,4 +11,16 @@ config BUDDY_DEMO
     bool "Play a scripted demo Mac instead of starting BLE"
     default n
 
+config BUDDY_SOUND
+    bool "Play the sound cues through the ES8311"
+    default n
+    help
+        Sound is off by default (device spec). Until there is a setting on the device, it is a build option.
+
+config BUDDY_SOUND_VOLUME
+    int "Speaker volume (codec output, 0-100)"
+    depends on BUDDY_SOUND
+    range 0 100
+    default 60
+
 endmenu

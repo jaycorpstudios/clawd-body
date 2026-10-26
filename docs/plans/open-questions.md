@@ -40,7 +40,7 @@ Nothing pending.
 
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
-| Sound playback | ES8311 codec | Simple synthesis vs. short PCM samples; volume range | 2 |
+| Sound playback | ES8311 codec. Implemented 2026-10-25: the cues are synthesized on the device from the prototype's `SOUNDS` / `FAM` (no samples in flash), behind the build option `CONFIG_BUDDY_SOUND` (off by default, as the spec asks) | Confirm synthesis over PCM samples after listening; volume range and default; how the user turns sound on and sets the volume without a rebuild (a device setting, or a Hilo setting sent in a message, which would need a contract field) | 2 |
 | Time zone | The clock comes from the envelope `ts` (UTC); the offset is a build setting for now | Where the user sets it (Hilo settings sent in a message, or a fixed per-device setting) and DST handling | 2 |
 | Battery target | 1000 mAh Li-ion | Expected hours per charge; brightness/sleep policy to meet it | 2 |
 | OTA | Not decided | Skip, or signed images only (signing key custody, rollback) | 6 |

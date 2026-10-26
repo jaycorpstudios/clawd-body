@@ -13,6 +13,7 @@
 #include "bm_frame.h"
 #include "demo.h"
 #include "hw/power.h"
+#include "hw/audio.h"
 #include "hw/ext_rtc.h"
 #include "ui/ui.h"
 
@@ -133,7 +134,7 @@ static void io_cb(lv_timer_t *t)
     poll_button(now);
     pump_link(now);
     bm_sound_t snd;
-    while (bm_sound_pop(model, &snd)) ESP_LOGD(TAG, "sound %d", snd);
+    while (bm_sound_pop(model, &snd)) audio_play(snd);
     sync_rtc();
 }
 
@@ -170,6 +171,9 @@ void app_main(void)
         power_cb(NULL);
         lv_timer_create(power_cb, POWER_POLL_MS, NULL);
     }
+#endif
+#if CONFIG_BUDDY_SOUND
+    audio_init(CONFIG_BUDDY_SOUND_VOLUME);
 #endif
     side_button_init();
     lv_timer_create(io_cb, IO_PERIOD_MS, NULL);
