@@ -8,6 +8,7 @@ public final class BLECentral: NSObject, FrameWriter, @unchecked Sendable {
     static var rx: CBUUID { CBUUID(string: "FF7BD675-3612-48AF-9960-1F7338BF3623") }
     static var tx: CBUUID { CBUUID(string: "2076870D-85DF-42C8-9C4D-21589C44FC9F") }
     static let maxFrameSize = 512
+    static let retryDelay: DispatchTimeInterval = .seconds(2)
 
     public let events: AsyncStream<LinkEvent>
     private let continuation: AsyncStream<LinkEvent>.Continuation
@@ -95,7 +96,7 @@ extension BLECentral: CBCentralManagerDelegate {
 
     public func centralManager(_ central: CBCentralManager, didFailToConnect p: CBPeripheral, error: Error?) {
         log("connect failed: \(error?.localizedDescription ?? "unknown")")
-        central.connect(p)
+        reconnect(p)
     }
 
     public func centralManager(_ central: CBCentralManager, didDisconnectPeripheral p: CBPeripheral, error: Error?) {
@@ -106,7 +107,16 @@ extension BLECentral: CBCentralManagerDelegate {
             log("pairing did not complete")
             return
         }
-        central.connect(p)
+        reconnect(p)
+    }
+
+    /// Powered off, `start()` reconnects once the radio is back; other failures retry after a pause.
+    private func reconnect(_ p: CBPeripheral) {
+        guard central.state == .poweredOn else { return }
+        queue.asyncAfter(deadline: .now() + Self.retryDelay) { [self] in
+            guard central.state == .poweredOn, p.state == .disconnected else { return }
+            central.connect(p)
+        }
     }
 }
 
