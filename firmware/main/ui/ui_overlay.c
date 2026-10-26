@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "esp_log.h"
+
 #include "ui_priv.h"
 
 static void overlay_tap_cb(lv_event_t *e)
@@ -135,6 +137,7 @@ void ui_overlay_update(uint32_t now_ms)
     bm_overlay_t type = ui.m->ov.type;
     ui_show(ui.ov, type != BM_OV_NONE);
     if (type != ui.ov_shown) {
+        ESP_LOGI("ui", "overlay %d", type);
         if (type == BM_OV_DONE) burst(46);
         else if (type == BM_OV_APPROVED) burst(20);
         else burst(0);
@@ -155,22 +158,63 @@ void ui_overlay_update(uint32_t now_ms)
     lv_obj_set_style_bg_color(ui.ov, ui_hex(tint), 0);
 }
 
-void ui_overlay_frame(void)
+#define CONFETTI_TILES 4
+
+static void area_union(lv_area_t *a, const lv_area_t *b)
 {
-    if (ui.m->ov.type == BM_OV_NONE) return;
-    ui_pet_draw(ui.ov_pet, bm_main_pet(ui.m), BM_PET_MAIN_HUE, ui.m->acc, 0);
+    a->x1 = LV_MIN(a->x1, b->x1);
+    a->y1 = LV_MIN(a->y1, b->y1);
+    a->x2 = LV_MAX(a->x2, b->x2);
+    a->y2 = LV_MAX(a->y2, b->y2);
+}
+
+static void tile_add(lv_area_t *tiles, bool *used, const lv_area_t *a)
+{
+    int32_t cx = LV_CLAMP(0, (a->x1 + a->x2) / 2, SCREEN - 1), cy = LV_CLAMP(0, (a->y1 + a->y2) / 2, SCREEN - 1);
+    int t = cy * CONFETTI_TILES / SCREEN * CONFETTI_TILES + cx * CONFETTI_TILES / SCREEN;
+    if (!used[t]) tiles[t] = *a;
+    else area_union(&tiles[t], a);
+    used[t] = true;
+}
+
+// LVGL keeps 32 invalid areas and falls back to a full-screen redraw past that; 46 moving
+// pieces overflow it, so their old and new areas are merged per tile instead.
+static void confetti_step(void)
+{
+    lv_area_t old[CONFETTI_MAX], tiles[CONFETTI_TILES * CONFETTI_TILES];
+    bool moved[CONFETTI_MAX] = {false}, used[CONFETTI_TILES * CONFETTI_TILES] = {false};
+    lv_display_t *disp = lv_obj_get_display(ui.ov);
+    lv_obj_update_layout(ui.ov);
+    lv_display_enable_invalidation(disp, false);
     for (int i = 0; i < ui.n_confetti; i++) {
         ui_confetti_t *c = &ui.confetti[i];
         if (c->y >= 500) continue;
+        moved[i] = true;
+        lv_obj_get_coords(c->obj, &old[i]);
         for (int step = 0; step < 2; step++) {
             c->vy += .32f;
             c->x += c->vx;
             c->y += c->vy;
         }
-        if (c->y >= 500) {
-            ui_show(c->obj, false);
-            continue;
-        }
-        lv_obj_set_pos(c->obj, (int32_t)(c->x / 3) * 3, (int32_t)(c->y / 3) * 3);
+        if (c->y >= 500) ui_show(c->obj, false);
+        else lv_obj_set_pos(c->obj, (int32_t)(c->x / 3) * 3, (int32_t)(c->y / 3) * 3);
     }
+    lv_obj_update_layout(ui.ov);
+    lv_display_enable_invalidation(disp, true);
+    for (int i = 0; i < ui.n_confetti; i++) {
+        if (!moved[i]) continue;
+        lv_area_t a;
+        lv_obj_get_coords(ui.confetti[i].obj, &a);
+        area_union(&a, &old[i]);
+        tile_add(tiles, used, &a);
+    }
+    for (int t = 0; t < CONFETTI_TILES * CONFETTI_TILES; t++)
+        if (used[t]) lv_obj_invalidate_area(ui.ov, &tiles[t]);
+}
+
+void ui_overlay_frame(void)
+{
+    if (ui.m->ov.type == BM_OV_NONE) return;
+    ui_pet_draw(ui.ov_pet, bm_main_pet(ui.m), BM_PET_MAIN_HUE, ui.m->acc, 0);
+    if (ui.n_confetti) confetti_step();
 }
