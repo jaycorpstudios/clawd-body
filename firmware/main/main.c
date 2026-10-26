@@ -3,6 +3,7 @@
 #include "driver/gpio.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
+#include "esp_memory_utils.h"
 #include "esp_random.h"
 #include "lvgl.h"
 
@@ -15,6 +16,7 @@
 
 #define SIDE_BUTTON GPIO_NUM_18
 #define IO_PERIOD_MS 20
+#define HEAP_LOG_MS 60000
 
 static const char *TAG = "buddy";
 static bm_model_t *model;
@@ -108,6 +110,16 @@ static void io_cb(lv_timer_t *t)
     while (bm_sound_pop(model, &snd)) ESP_LOGD(TAG, "sound %d", snd);
 }
 
+static void heap_log_cb(lv_timer_t *t)
+{
+    (void)t;
+    ESP_LOGI(TAG, "heap internal %u (min %u), psram %u (min %u)",
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+             (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL),
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+             (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM));
+}
+
 void app_main(void)
 {
     bsp_display_start();
@@ -125,6 +137,9 @@ void app_main(void)
 #endif
     side_button_init();
     lv_timer_create(io_cb, IO_PERIOD_MS, NULL);
+    lv_timer_create(heap_log_cb, HEAP_LOG_MS, NULL);
     bsp_display_unlock();
-    ESP_LOGI(TAG, "model %u bytes", (unsigned)sizeof(*model));
+    ESP_LOGI(TAG, "model %u bytes in %s", (unsigned)sizeof(*model),
+             esp_ptr_external_ram(model) ? "psram" : "internal");
+    heap_log_cb(NULL);
 }
