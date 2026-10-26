@@ -11,7 +11,8 @@ let package = Package(
     targets: [
         .target(name: "HiloContract"),
         .target(name: "HiloCore", dependencies: ["HiloContract"]),
-        .target(name: "HiloRuntime", dependencies: ["HiloCore", "HiloContract"]),
+        .target(name: "HiloStore", dependencies: ["HiloContract"], linkerSettings: [.linkedLibrary("sqlite3")]),
+        .target(name: "HiloRuntime", dependencies: ["HiloCore", "HiloContract", "HiloStore"]),
         .executableTarget(
             name: "hilod", dependencies: ["HiloRuntime", "HiloCore", "HiloContract"], exclude: ["Info.plist"],
             linkerSettings: [.unsafeFlags(["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist",
@@ -20,6 +21,7 @@ let package = Package(
         .executableTarget(name: "hilo", dependencies: ["HiloRuntime"]),
         .testTarget(name: "HiloContractTests", dependencies: ["HiloContract"]),
         .testTarget(name: "HiloCoreTests", dependencies: ["HiloCore"]),
+        .testTarget(name: "HiloStoreTests", dependencies: ["HiloStore", "HiloContract"]),
         .testTarget(name: "HiloRuntimeTests", dependencies: ["HiloRuntime", "HiloCore", "HiloContract"]),
     ]
 )
