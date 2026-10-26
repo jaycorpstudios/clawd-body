@@ -30,6 +30,9 @@ private actor RecordingLink: BuddyLink {
     func send(_ data: Data) async { raw.append(data) }
     private var messages: [[String: Any]] { raw.compactMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } }
     func types() -> [String] { messages.compactMap { $0["type"] as? String } }
+    func lastData(_ type: String) -> Data? {
+        (messages.last { $0["type"] as? String == type }?["data"]).flatMap { try? JSONSerialization.data(withJSONObject: $0) }
+    }
     func field(_ type: String, _ key: String) -> String? {
         let data = messages.last { $0["type"] as? String == type }?["data"] as? [String: Any]
         return data?[key] as? String
@@ -139,4 +142,22 @@ private func behavior(_ reply: Data) -> String? {
     #expect(snap.sessions.first?.pendingPermission?.requestId == id)
     try await h.buddy(id, "deny")
     _ = try await hook.value
+}
+
+@Suite struct CoordinatorUsageTests {
+    @Test func statusLineLimitsReachTheBuddyAndTheSnapshot() async throws {
+        let h = Harness()
+        let resets = h.clock.now() + 3_600
+        await h.coordinator.updateUsage(RateLimits(fiveHour: .init(usedPercentage: 42, resetsAt: resets)))
+        await h.coordinator.updateUsage(RateLimits(fiveHour: .init(usedPercentage: 42, resetsAt: resets)))
+        await h.coordinator.updateUsage(tokensToday: 5_000)
+        #expect(await h.link.types() == ["usage.update", "usage.update"])
+        await h.coordinator.sendSnapshot()
+        let raw = try #require(await h.link.lastData("snapshot"))
+        let snapshot = try #require(try JSONSerialization.jsonObject(with: raw) as? [String: Any])
+        let usage = try #require(snapshot["usage"] as? [String: Any])
+        #expect(usage["session_pct"] as? Double == 42)
+        #expect(usage["reset_in_min"] as? Int == 60)
+        #expect(usage["tokens_today"] as? Int == 5_000)
+    }
 }

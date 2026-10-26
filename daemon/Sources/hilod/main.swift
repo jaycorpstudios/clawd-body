@@ -10,12 +10,14 @@ func option(_ name: String) -> String? {
     return arguments[arguments.index(after: i)]
 }
 
-let host = option("--host") ?? "work"
+let config = HiloConfig.load()
+let host = option("--host") ?? config.host ?? HiloConfig.defaultHost
 let idle = Double(option("--away-after") ?? "120") ?? 120
 let socketPath = option("--socket") ?? LocalSocket.defaultPath
 let forceAway = arguments.contains("--always-away")
 let useStdout = arguments.contains("--stdout")
 let pair = arguments.contains("--pair")
+let tokensFromTranscripts = arguments.contains("--tokens-from-transcripts") || config.tokensFromTranscripts == true
 
 let log: @Sendable (String) -> Void = { FileHandle.standardError.write(Data("hilod: \($0)\n".utf8)) }
 
@@ -57,6 +59,16 @@ if let central, let session {
     }
 }
 
+if tokensFromTranscripts {
+    let transcripts = TranscriptTokens()
+    Task.detached {
+        while true {
+            await coordinator.updateUsage(tokensToday: transcripts.scan())
+            try? await Task.sleep(for: .seconds(60))
+        }
+    }
+}
+
 do {
     try LocalSocket.serve(path: socketPath) { op, body in
         switch op {
@@ -65,6 +77,10 @@ do {
             return await coordinator.handleHook(input)
         case "hilo":
             await coordinator.sendSnapshot()
+            return Data("ok\n".utf8)
+        case "usage":
+            guard let limits = try? JSONDecoder().decode(RateLimits.self, from: body) else { return Data("rejected\n".utf8) }
+            await coordinator.updateUsage(limits)
             return Data("ok\n".utf8)
         case "buddy":
             do {

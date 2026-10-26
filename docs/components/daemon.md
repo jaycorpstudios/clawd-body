@@ -5,7 +5,7 @@ Runs on each Mac as a login item. Connects Claude Code, Hilo and the buddy.
 ## Responsibilities
 
 1. **Claude Code hook ingestion**: session start and end, permission request, question to the user, task done, error and tool use. Normalizes each one to the [event contract](../architecture/event-contract.md). Flow: [hook ingestion](../flows/hook-ingestion-flow.md).
-2. **Usage**: 5 h window percentage, weekly percentage and tokens today. Never uses account credentials.
+2. **Usage**: 5 h window percentage, weekly percentage and tokens today. Never uses account credentials. Percentages and reset come from the `rate_limits` Claude Code gives its status line (`hilo statusline` forwards them); tokens today, opt-in, from the local transcripts. Details: [daemon README › Usage](../../daemon/README.md#usage).
 3. **Persistence** in local SQLite, shared with Hilo ([hilo.md](hilo.md)).
 4. **BLE bridge** (central on the Mac, the buddy is the peripheral):
    - Discovers and connects only to bonded buddies.
@@ -35,8 +35,8 @@ Threats and mitigations: [threat-model.md](../security/threat-model.md).
 
 ## Implementation
 
-Code, build and local run: [`daemon/README.md`](../../daemon/README.md). Done: hook ingestion, risk policy defaults, request registry, presence-based hold, Unix socket IPC, BLE central (untested against the board). Not yet: SQLite, MCP, usage, revoking a buddy from Hilo.
+Code, build and local run: [`daemon/README.md`](../../daemon/README.md). Done: hook ingestion, risk policy defaults, request registry, presence-based hold, Unix socket IPC, BLE central (verified on the board), SQLite store, MCP, usage. Not yet: revoking a buddy from Hilo.
 
 ## Pending to define
 
-See [open questions › daemon](../plans/open-questions.md#daemon): usage data source, policy file location and format, hook ↔ daemon IPC and blocking behavior, hook timeout vs. `expires_at`, answering questions from a hook.
+See [open questions › daemon](../plans/open-questions.md#daemon): policy file location and format, hook ↔ daemon IPC and blocking behavior, hook timeout vs. `expires_at`, answering questions from a hook.

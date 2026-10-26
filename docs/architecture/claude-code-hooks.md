@@ -32,7 +32,7 @@ How `hilod` learns what Claude Code sessions do. Verified against the [Claude Co
 
 The buddy infers session status from the stream: `session.start` and `agent.step` → working, a pending request → waiting, `agent.task_done` → done, `agent.error` → error.
 
-Usage (`usage.update`) has no hook source; see [open questions › daemon](../plans/open-questions.md#daemon).
+Usage (`usage.update`) has no hook source: it comes from the status line's `rate_limits` and, opt-in, the local transcripts ([daemon README › Usage](../../daemon/README.md#usage)).
 
 ## Transport
 

@@ -58,6 +58,10 @@ public struct SessionStore: Sendable {
         hilo = state
     }
 
+    public mutating func setUsage(_ value: Usage) {
+        usage = value
+    }
+
     public func snapshot(maxBytes: Int = Framing.maxMessageSize, host: String = "work") -> Snapshot {
         var ordered = sessions.values.sorted { a, b in
             a.status.priority != b.status.priority ? a.status.priority < b.status.priority : a.since > b.since

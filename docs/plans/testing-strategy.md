@@ -65,3 +65,9 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 - [x] A real Claude Code session (not a synthetic payload) is held, approved on the buddy, and the tool runs with no terminal prompt. *2026-10-25: `claude --permission-mode default`, `npm test`, with `hilod --always-away`: no terminal prompt, approved on the board, the command ran. With presence detection the request was never held: see "Presence decided once" in [open questions](open-questions.md#daemon). In auto mode Claude Code sends no `PermissionRequest` at all.*
 - [ ] A held request expires after 600 s and the hook falls back to the terminal prompt.
 
+### Usage (phase 3)
+
+- [x] A status line payload piped into `hilo statusline` reaches `hilod`, which sends `usage.update` and the buddy accepts it. *2026-10-25: synthetic payload (33 % / 21 %), buddy `rx 176 bytes`, no rejection.*
+- [x] `--tokens-from-transcripts` counts today's tokens from the local transcripts. *2026-10-25: ~3.0 M tokens on the dev Mac (input + cache writes + output).*
+- [ ] With `hilo statusline -- <your status line command>` in `~/.claude/settings.json`, the buddy's Usage ring and Home stats match Claude Code's `/usage` within a minute of a reply, and the existing status line still prints.
+

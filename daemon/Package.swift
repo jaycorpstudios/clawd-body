@@ -20,7 +20,7 @@ let package = Package(
             linkerSettings: [.unsafeFlags(["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist",
                                            "-Xlinker", "Sources/hilod/Info.plist"])]
         ),
-        .executableTarget(name: "hilo", dependencies: ["HiloRuntime", "HiloStore"]),
+        .executableTarget(name: "hilo", dependencies: ["HiloRuntime", "HiloCore", "HiloStore"]),
         .testTarget(name: "HiloContractTests", dependencies: ["HiloContract"]),
         .testTarget(name: "HiloCoreTests", dependencies: ["HiloCore"]),
         .testTarget(name: "HiloStoreTests", dependencies: ["HiloStore", "HiloContract"]),

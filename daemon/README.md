@@ -5,11 +5,11 @@
 | Target | What it is |
 | :--- | :--- |
 | `HiloContract` | Codable contract types; strict decoding of buddy → Mac messages |
-| `HiloCore` | Request registry (pending, expiry, single use), risk policy, hook → contract mapping, hook replies |
-| `HiloRuntime` | `Coordinator` (presence-based hold), `BuddySession` (framing, ordered writes, snapshot on link up), `BLECentral` (CoreBluetooth), trusted buddies, macOS presence probe, Unix socket, stdout link |
+| `HiloCore` | Request registry (pending, expiry, single use), risk policy, hook → contract mapping, hook replies, usage tracker |
+| `HiloRuntime` | `Coordinator` (presence-based hold), `BuddySession` (framing, ordered writes, snapshot on link up), `BLECentral` (CoreBluetooth), trusted buddies, macOS presence probe, Unix socket, stdout link, config file, transcript token counter |
 | `hilod` | Daemon executable |
 | `HiloStore` | SQLite store shared with the Hilo app: projects, tasks, sessions and steps, agreements |
-| `hilo` | CLI: `hilo hook` (called by Claude Code), tasks and agreements (`hilo today`, `add`, `start`, `done`, `agree`, `sessions`, `link`), `hilo mcp` (MCP server for Claude Code), `hilo buddy '<json>'` (development) |
+| `hilo` | CLI: `hilo hook` (called by Claude Code), tasks and agreements (`hilo today`, `add`, `start`, `done`, `agree`, `sessions`, `link`), `hilo mcp` (MCP server for Claude Code), `hilo statusline` (usage from the status line), `hilo buddy '<json>'` (development) |
 
 No third-party packages.
 
@@ -52,13 +52,33 @@ Hold the side button 5 s on the buddy's Home view, then run `hilod --pair`. macO
 | `--always-away` | off | Hold every permission for the buddy (development) |
 | `--pair` | off | Scan for a buddy in pairing mode and trust it once paired |
 | `--stdout` | off | No BLE; print outgoing messages (development) |
+| `--tokens-from-transcripts` | off | Count today's tokens from Claude Code's local transcripts (see [Usage](#usage)) |
 | `--socket` | `~/Library/Application Support/Hilo/hilod.sock` | Socket path (max 103 bytes) |
+
+`~/Library/Application Support/Hilo/config.json` (`HILO_CONFIG` overrides the path) holds the same settings for a plain `hilod` run; flags win:
+
+```json
+{ "host": "work", "tokens_from_transcripts": true }
+```
 
 Answer a held request as the buddy would:
 
 ```sh
 .build/debug/hilo buddy '{"v":1,"id":"<ULID>","ts":0,"type":"permission.decision","data":{"request_id":"<id>","decision":"approve"}}'
 ```
+
+## Usage
+
+`usage.update` and `snapshot.usage` come from two local sources; no account credentials or API calls.
+
+- **5 h and weekly percent, reset time.** Claude Code hands its status line command a `rate_limits` object (`five_hour` / `seven_day`, each `used_percentage` and `resets_at`). `hilo statusline` forwards only that object to `hilod` (socket op `usage`) and then runs the wrapped command with the same input, so an existing status line keeps working. In `~/.claude/settings.json`:
+
+  ```json
+  "statusLine": { "type": "command", "command": "hilo statusline -- bash ~/.claude/statusline-command.sh" }
+  ```
+
+  Without a wrapped command it prints nothing. Values only move while a Claude Code window is open; a new 5 h window (a later `resets_at`) sends `usage.window_reset` first. `hilod` sends an update only when a percent or the window changes; the buddy counts the reset down by itself.
+- **Tokens today** (opt-in, `--tokens-from-transcripts` or `tokens_from_transcripts`): every 60 s `hilod` reads the new lines of today's `~/.claude/projects/**/*.jsonl` (`CLAUDE_CONFIG_DIR` respected) and sums `input + cache writes + output` of each assistant message once (cache reads are left out; they would dwarf the rest). Opt-in because the transcript format is internal to Claude Code and may change.
 
 ## Claude Code hooks
 

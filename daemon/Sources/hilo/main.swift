@@ -1,4 +1,5 @@
 import Foundation
+import HiloCore
 import HiloRuntime
 import HiloStore
 
@@ -50,6 +51,24 @@ case "hook":
         FileHandle.standardOutput.write(reply)
     }
     exit(0)
+case "statusline":
+    // Forwards only `rate_limits` to hilod, then hands the same input to the wrapped status line command, if any.
+    let input = FileHandle.standardInput.readDataToEndOfFile()
+    if let limits = RateLimits.fromStatusLine(input), let body = try? JSONEncoder().encode(limits) {
+        _ = LocalSocket.request(path: socketPath, op: "usage", body: body, timeoutSeconds: 1)
+    }
+    let wrapped = Array(arguments.dropFirst().drop { $0 == "--" })
+    guard !wrapped.isEmpty else { exit(0) }
+    let process = Process()
+    process.executableURL = URL(filePath: "/usr/bin/env")
+    process.arguments = wrapped
+    let pipe = Pipe()
+    process.standardInput = pipe
+    do { try process.run() } catch { exit(0) }
+    pipe.fileHandleForWriting.write(input)
+    try? pipe.fileHandleForWriting.close()
+    process.waitUntilExit()
+    exit(process.terminationStatus)
 case "buddy" where arguments.count == 2:
     guard let reply = LocalSocket.request(path: socketPath, op: "buddy", body: Data(arguments[1].utf8), timeoutSeconds: 5) else {
         fail("hilod is not running")
@@ -110,6 +129,7 @@ default:
       hilo link <session> <task id>    attach a session to a task
       hilo mcp                         MCP server on stdio, for Claude Code
       hilo hook                        read a Claude Code hook payload on stdin (configured in settings.json)
+      hilo statusline [-- command…]    status line command: sends rate_limits to hilod, then runs the wrapped command
       hilo buddy '<json>'              send a buddy -> Mac message to hilod (development)
 
     """.utf8))

@@ -32,6 +32,7 @@ public actor Coordinator {
     private let recorder: StoreRecorder?
     private var registry = RequestRegistry()
     private var store = SessionStore()
+    private var usage = UsageTracker()
     private var waiting: [String: CheckedContinuation<Resolution?, Never>] = [:]
 
     public init(host: String, mapper: HookMapper, link: BuddyLink, presence: PresenceProbe,
@@ -116,9 +117,27 @@ public actor Coordinator {
         }
     }
 
+    public func updateUsage(_ limits: RateLimits) async {
+        await sendUsage(usage.update(limits, now: clock.now()))
+    }
+
+    public func updateUsage(tokensToday: Int) async {
+        await sendUsage(usage.update(tokensToday: tokensToday, now: clock.now()))
+    }
+
+    private func sendUsage(_ messages: [Outbound]) async {
+        for message in messages {
+            if case .usageUpdate(let u) = message {
+                log("usage: 5 h \(u.sessionPct)% (reset in \(u.resetInMin) min), week \(u.weeklyPct)%, tokens today \(u.tokensToday.map(String.init) ?? "-")")
+            }
+            await send(message)
+        }
+    }
+
     /// Full state for this host; send it whenever a buddy link comes up.
     public func sendSnapshot() async {
         if let recorder { store.setHilo(recorder.hiloState(now: clock.now())) }
+        store.setUsage(usage.usage(now: clock.now()))
         await send(.snapshot(store.snapshot(host: host)))
     }
 
