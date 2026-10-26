@@ -660,8 +660,8 @@ void bm__on_resolved(bm_model_t *m, int host, const char *request_id, const char
     if (m->sheet == BM_SHEET_PERM && m->sheet_session == idx) close_sheet(m);
 
     if (strcmp(outcome, "expired") == 0) {
-        bm__push_step(s, wall_s(m, now_ms), BM_STEP_ASK, "Request expired; answer on the Mac");
-        if (was_open || was_attn) bm__toast(m, "Expired \xC2\xB7 answer on the Mac", BM_C_IDLE, now_ms);
+        bm__push_step(s, wall_s(m, now_ms), BM_STEP_ASK, "Handed back to the Mac prompt");
+        if (was_open || was_attn) bm__toast(m, "Answer it on the Mac", BM_C_IDLE, now_ms);
     } else if (was_open) {
         s->status = BM_WORKING;
         s->since = wall_s(m, now_ms);
