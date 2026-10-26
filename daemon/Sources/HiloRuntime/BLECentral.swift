@@ -14,21 +14,82 @@ public final class BLECentral: NSObject, FrameWriter, @unchecked Sendable {
     private let continuation: AsyncStream<LinkEvent>.Continuation
     private let queue = DispatchQueue(label: "hilod.ble")
     private let trusted: TrustedBuddies
-    private let pairing: Bool
+    private var flow = PairingFlow()
     private let log: @Sendable (String) -> Void
     private var central: CBCentralManager!
     private var peripheral: CBPeripheral?
     private var rx: CBCharacteristic?
     private var pendingWrite: CheckedContinuation<Bool, Never>?
 
-    /// With `pairing`, scans for an untrusted buddy and trusts it once the encrypted link is up.
+    /// With `pairing`, scans for an untrusted buddy as soon as Bluetooth is on and trusts it once the encrypted link is up.
     public init(trusted: TrustedBuddies, pairing: Bool, log: @escaping @Sendable (String) -> Void) {
         (events, continuation) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
         self.trusted = trusted
-        self.pairing = pairing
         self.log = log
         super.init()
+        if pairing { _ = flow.start(now: Self.now) }
         central = CBCentralManager(delegate: self, queue: queue)
+    }
+
+    static var now: Int { Int(Date().timeIntervalSince1970) }
+    private var pairing: Bool { flow.active }
+
+    public func status() -> BuddyStatus {
+        queue.sync {
+            let link: BuddyStatus.Link = switch central.state {
+            case .unauthorized: .unauthorized
+            case .poweredOn: rx != nil ? .connected : trusted.load().isEmpty ? .notPaired : .disconnected
+            default: .bluetoothOff
+            }
+            return BuddyStatus(link: link, pairing: flow.state, buddyName: flow.buddyName)
+        }
+    }
+
+    /// False while a buddy is connected or a pairing is already running.
+    public func startPairing() -> Bool {
+        queue.sync {
+            guard rx == nil, central.state == .poweredOn, flow.start(now: Self.now) else { return false }
+            if let peripheral {
+                self.peripheral = nil
+                central.cancelPeripheralConnection(peripheral)
+            }
+            start()
+            watchPairing()
+            return true
+        }
+    }
+
+    public func cancelPairing() {
+        queue.async { [self] in
+            guard flow.active else { return }
+            flow.cancel()
+            endPairing()
+        }
+    }
+
+    /// Drops the link so the next one starts fresh, e.g. after this Mac's host name changed.
+    public func reconnect() {
+        queue.async { [self] in
+            if let peripheral, peripheral.state != .disconnected { central.cancelPeripheralConnection(peripheral) }
+        }
+    }
+
+    private func watchPairing() {
+        queue.asyncAfter(deadline: .now() + 1) { [self] in
+            guard flow.active else { return }
+            guard flow.expire(now: Self.now) else { return watchPairing() }
+            log("pairing: timed out")
+            endPairing()
+        }
+    }
+
+    private func endPairing() {
+        central.stopScan()
+        if let p = peripheral, !trusted.load().contains(p.identifier) {
+            peripheral = nil
+            central.cancelPeripheralConnection(p)
+        }
+        if peripheral == nil { start() }
     }
 
     public func write(_ frame: Data) async -> Bool {
@@ -46,6 +107,7 @@ public final class BLECentral: NSObject, FrameWriter, @unchecked Sendable {
 
     private func start() {
         if pairing {
+            if central.isScanning { return }
             log("pairing: scanning for a buddy in pairing mode")
             central.scanForPeripherals(withServices: [Self.service])
             return
@@ -75,7 +137,9 @@ public final class BLECentral: NSObject, FrameWriter, @unchecked Sendable {
 extension BLECentral: CBCentralManagerDelegate {
     public func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
-        case .poweredOn: start()
+        case .poweredOn:
+            start()
+            if pairing { watchPairing() }
         case .unauthorized: log("Bluetooth permission denied for hilod")
         default:
             if rx != nil { linkDown() }
@@ -88,6 +152,7 @@ extension BLECentral: CBCentralManagerDelegate {
         central.stopScan()
         let name = advertisementData[CBAdvertisementDataLocalNameKey] as? String ?? p.name ?? "buddy"
         log("pairing: found \(name); confirm the passkey shown on it")
+        flow.found(name: name, now: Self.now)
         connect(p)
     }
 
@@ -104,10 +169,15 @@ extension BLECentral: CBCentralManagerDelegate {
         let wasUp = rx != nil
         linkDown()
         if wasUp { log("buddy disconnected") }
-        if pairing && !trusted.load().contains(p.identifier) {
-            log("pairing did not complete")
+        if !trusted.load().contains(p.identifier) {
+            if pairing {
+                log("pairing did not complete")
+                flow.linkLost()
+                endPairing()
+            }
             return
         }
+        guard !pairing, peripheral === p else { return }
         reconnect(p)
     }
 
@@ -115,7 +185,7 @@ extension BLECentral: CBCentralManagerDelegate {
     private func reconnect(_ p: CBPeripheral) {
         guard central.state == .poweredOn else { return }
         queue.asyncAfter(deadline: .now() + Self.retryDelay) { [self] in
-            guard central.state == .poweredOn, p.state == .disconnected else { return }
+            guard central.state == .poweredOn, p.state == .disconnected, !pairing, peripheral === p else { return }
             central.connect(p)
         }
     }
@@ -142,6 +212,7 @@ extension BLECentral: CBPeripheralDelegate {
         guard frameSize >= 36 else { return drop(p, "frame size \(frameSize) too small") }
         if pairing {
             do { try trusted.add(p.identifier) } catch { log("cannot save paired buddy: \(error)") }
+            flow.secured()
             log("paired")
         }
         rx = c.service?.characteristics?.first { $0.uuid == Self.rx }

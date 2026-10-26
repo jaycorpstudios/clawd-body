@@ -6,7 +6,7 @@ import HiloStore
 import Observation
 
 enum AppSection: String, CaseIterable, Identifiable {
-    case today = "Today", sessions = "Sessions", week = "Week", agreements = "Agreements", resume = "Resume context"
+    case today = "Today", sessions = "Sessions", week = "Week", agreements = "Agreements", resume = "Resume context", setup = "Setup"
     var id: String { rawValue }
 
     var icon: String {
@@ -16,6 +16,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .week: "chart.bar"
         case .agreements: "checklist"
         case .resume: "arrow.counterclockwise"
+        case .setup: "gearshape"
         }
     }
 }
@@ -32,6 +33,9 @@ final class AppModel {
     var projects: [Project] = []
     var daemonRunning = false
     var buddyConnected = false
+    var daemonStatus: DaemonStatus?
+    var daemonError: String?
+    var config = HiloConfig.load()
     var selectedTask: Int?
     var selectedSession: String?
     var errorMessage: String?
@@ -44,6 +48,7 @@ final class AppModel {
             store = nil
             errorMessage = "Cannot open the Hilo store: \(error)"
         }
+        if !FileManager.default.fileExists(atPath: HiloConfig.defaultPath) { section = .setup }
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.refresh() }
@@ -71,9 +76,12 @@ final class AppModel {
             if week.0 != weekTasks { weekTasks = week.0 }
             if week.1 != weekSessions { weekSessions = week.1 }
             let state = try store.daemonState()
-            let running = LocalSocket.request(path: LocalSocket.defaultPath, op: "ping", body: Data(), timeoutSeconds: 1) != nil
+            let reply = LocalSocket.request(path: LocalSocket.defaultPath, op: "status", body: Data(), timeoutSeconds: 1)
+            let running = reply != nil
             if running != daemonRunning { daemonRunning = running }
-            let connected = running && state?.buddyConnected == true
+            let status = reply.flatMap { try? JSONDecoder().decode(DaemonStatus.self, from: $0) }
+            if status != daemonStatus { daemonStatus = status }
+            let connected = running && (status.map { $0.buddy.link == .connected } ?? (state?.buddyConnected == true))
             if connected != buddyConnected { buddyConnected = connected }
         }
         if selectedTask == nil || !tasks.contains(where: { $0.id == selectedTask }) {
@@ -152,6 +160,88 @@ final class AppModel {
     func discard(_ agreement: Agreement) {
         attempt { try store?.deleteAgreement(agreement.id) }
         changed()
+    }
+
+    static let statusLineCommand = "hilo statusline -- <your status line command>"
+
+    /// `HILO_HILOD` overrides it; otherwise the copy bundled next to the app's executable.
+    var hilodPath: String? {
+        if let path = ProcessInfo.processInfo.environment["HILO_HILOD"] { return path }
+        let bundled = Bundle.main.bundleURL.appending(path: "Contents/MacOS/hilod").path(percentEncoded: false)
+        return FileManager.default.isExecutableFile(atPath: bundled) ? bundled : nil
+    }
+
+    func saveHost(_ display: String) {
+        guard let host = HiloConfig.hostName(from: display) else { return }
+        if daemonRunning, let reply = LocalSocket.request(path: LocalSocket.defaultPath, op: "host", body: Data(display.utf8), timeoutSeconds: 2),
+           (try? JSONDecoder().decode(DaemonStatus.self, from: reply)) != nil {
+            daemonError = nil
+        } else {
+            var updated = HiloConfig.load()
+            updated.host = host
+            do { try updated.save() } catch { daemonError = "Cannot save the name: \(error)" }
+        }
+        config = HiloConfig.load()
+        refresh()
+    }
+
+    func setTokensFromTranscripts(_ on: Bool) {
+        var updated = HiloConfig.load()
+        updated.tokensFromTranscripts = on
+        do { try updated.save() } catch { daemonError = "Cannot save the setting: \(error)" }
+        config = HiloConfig.load()
+    }
+
+    func startDaemon() {
+        guard let hilodPath else { return }
+        try? FileManager.default.createDirectory(at: URL(filePath: LaunchAgent.defaultLogPath).deletingLastPathComponent(),
+                                                 withIntermediateDirectories: true)
+        launchctl(LaunchAgent().submitArguments(hilod: hilodPath))
+        refreshSoon()
+    }
+
+    func stopDaemon() {
+        launchctl(LaunchAgent().removeArguments)
+        refreshSoon()
+    }
+
+    func restartDaemon() {
+        launchctl(LaunchAgent().removeArguments)
+        Task {
+            try? await Task.sleep(for: .seconds(1))
+            startDaemon()
+        }
+    }
+
+    func startPairing() { control("pair") }
+    func cancelPairing() { control("pair-cancel") }
+
+    private func control(_ op: String) {
+        let reply = LocalSocket.request(path: LocalSocket.defaultPath, op: op, body: Data(), timeoutSeconds: 2)
+        if let status = reply.flatMap({ try? JSONDecoder().decode(DaemonStatus.self, from: $0) }) { daemonStatus = status }
+    }
+
+    private func launchctl(_ arguments: [String]) {
+        let process = Process()
+        process.executableURL = URL(filePath: "/bin/launchctl")
+        process.arguments = arguments
+        let errors = Pipe()
+        process.standardError = errors
+        do {
+            try process.run()
+            process.waitUntilExit()
+            let message = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            daemonError = process.terminationStatus == 0 ? nil : "launchctl \(arguments[0]) failed: \(message)"
+        } catch {
+            daemonError = "Cannot run launchctl: \(error)"
+        }
+    }
+
+    private func refreshSoon() {
+        Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            refresh()
+        }
     }
 
     func copy(_ text: String) {

@@ -10,6 +10,9 @@ app=".build/Hilo.app"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS"
 cp .build/release/HiloApp "$app/Contents/MacOS/Hilo"
+# The app starts hilod from its own bundle; build-hilod.sh signs it, and that signature is kept here.
+hilod="../daemon/.build/release/hilod"
+if [ -x "$hilod" ]; then cp "$hilod" "$app/Contents/MacOS/hilod"; else echo "note: no $hilod yet, run scripts/build-hilod.sh first"; fi
 cat > "$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

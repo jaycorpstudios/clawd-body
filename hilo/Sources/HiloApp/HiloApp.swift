@@ -68,6 +68,7 @@ struct RootView: View {
         case .week: WeekView()
         case .agreements: AgreementsView()
         case .resume: ResumeView()
+        case .setup: SetupView()
         }
     }
 }
@@ -84,7 +85,7 @@ struct TopBar: View {
                 PetView(hue: 22, state: buddyPet, size: 24)
                 Text(buddyText).font(.system(size: 13)).foregroundStyle(Color(hex: "#c2bbb0"))
             }
-            Text(Host.current().localizedName ?? "This Mac").font(.system(size: 12.5)).padding(.horizontal, 10).padding(.vertical, 4)
+            Text((model.daemonStatus?.host ?? model.config.host ?? "This Mac").capitalized).font(.system(size: 12.5)).padding(.horizontal, 10).padding(.vertical, 4)
                 .background(Theme.card, in: Capsule()).overlay(Capsule().stroke(Theme.line)).foregroundStyle(Theme.secondary)
         }
         .padding(.horizontal, 16).frame(height: 46).background(Theme.topBar)
@@ -178,7 +179,7 @@ struct Sidebar: View {
         case .today: model.tasks.filter { $0.status != .done }.count.nonZero
         case .sessions: model.sessions.filter { $0.endedAt == nil }.count.nonZero
         case .agreements: model.pendingAgreements.count.nonZero
-        case .week, .resume: ""
+        case .week, .resume, .setup: ""
         }
     }
 }

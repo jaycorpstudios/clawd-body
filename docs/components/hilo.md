@@ -26,8 +26,9 @@ Visual reference approved as direction: `prototypes/hilo/`. Dark theme only, wit
 | **Week** | `Week.dc.html` | Totals (active time, tasks closed, sessions, agreements); per-project summary drafted by Claude and editable; hours per project and per day; closed tasks; Markdown copy/export |
 | **Agreements** | `Agreements.dc.html` | Log by date with project, context, origin (meeting, session, manual) and linked task; **To confirm** column with agreements Claude detected in sessions — nothing enters the log without confirmation |
 | **Resume context** | `Resume.dc.html` | Per project: where you left off, suggested next step, open threads, files touched, recent agreements, commands to get back in |
+| **Setup** | — (no prototype) | Four steps: name this Mac (Work / Home presets or free text, normalized to the contract's `host` and saved in `config.json`; applied live through `hilod`'s socket op `host`, which drops the BLE link so the buddy rebinds it), run `hilod` (start, stop, restart as the launchd job `dev.hilo.hilod`, from the copy bundled in `Hilo.app`), pair the buddy (guided: hold 5 s, Start pairing, type the passkey in the macOS dialog; progress from socket ops `pair`, `pair-cancel` and `status`), and usage (status line command to copy, transcript-token toggle). Opens by itself when `config.json` does not exist yet |
 
-Shared chrome: top bar with ⌘K search, buddy status with its pet, and the Mac's name; sidebar with a "Your buddy" card, sections, projects and the note "Data from this Mac only · SQLite".
+Shared chrome: top bar with ⌘K search, buddy status with its pet, and the Mac's name; the Mac's name is the configured `host`; sidebar with a "Your buddy" card, sections, projects and the note "Data from this Mac only · SQLite".
 
 ## Data model (draft)
 

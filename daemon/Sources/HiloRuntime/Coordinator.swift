@@ -22,7 +22,7 @@ public struct SystemClock: Clock {
 }
 
 public actor Coordinator {
-    private let host: String
+    private var host: String
     private let mapper: HookMapper
     private let link: BuddyLink
     private let presence: PresenceProbe
@@ -115,6 +115,13 @@ public actor Coordinator {
                 return
             }
         }
+    }
+
+    public var currentHost: String { host }
+
+    /// The buddy binds a link to one host, so the caller must also drop the link.
+    public func setHost(_ name: String) {
+        host = name
     }
 
     public func updateUsage(_ limits: RateLimits) async {

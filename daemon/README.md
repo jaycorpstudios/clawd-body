@@ -33,6 +33,8 @@ The log records the buddy link, every held or released request and every buddy d
 
 ## Pair a buddy
 
+The Hilo app's Setup section does this without a terminal (socket ops `pair`, `pair-cancel`, `status`). By hand:
+
 Hold the side button 5 s on the buddy's Home view, then run `hilod --pair`. macOS shows its pairing dialog; type the code the buddy shows. The buddy's identifier is saved to `~/Library/Application Support/Hilo/buddies.json` (the bond keys stay in macOS). From then on plain `hilod` reconnects by itself and sends a `snapshot` on every link up.
 
 `hilod` embeds an `Info.plist` with `NSBluetoothAlwaysUsageDescription`; the first run asks for Bluetooth permission.

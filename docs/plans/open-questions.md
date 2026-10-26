@@ -10,7 +10,6 @@ Nothing pending.
 
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
-| Host naming | Allowed characters are fixed by the schema (`^[a-z0-9-]{1,16}$`) | Where the user configures it (daemon config file, Hilo settings) and the default | 3 |
 
 ## Contract
 
@@ -53,7 +52,7 @@ Nothing pending.
 | Jira credentials | Optional per-project sync | Storage (macOS Keychain), scopes, sync interval | 5 |
 | Project hue/accessory | Fixed per project, same on buddy and Hilo; the contract has no hue/accessory field yet | Assigned manually, from config, or derived from the name | 5 |
 | Music source | `media.now_playing` has no producer | Which player(s) and how `hilod` reads now-playing on macOS | 6 |
-| Setup and pairing in the app | Today `hilod --pair`, `launchctl submit` and the `--host` flag are terminal-only, and each Mac's name on the buddy defaults to `work` | Requirement (2026-10-25): a first-run wizard in Hilo that names this Mac (e.g. Work / Home, editable later in settings and sent as `host`), starts `hilod`, walks through buddy pairing (hold the button 5 s, passkey) and shows link status; nothing should need the terminal | 5 |
+| Setup and pairing in the app | Implemented 2026-10-25 as the app's Setup section (see [hilo.md](../components/hilo.md#screens)); pairing itself not yet run from the app on the board | Confirm the flow after a real pairing; whether Setup should also open as a modal on first run; renaming a Mac drops the old name's sessions on the buddy (it frees the slot) | 5 |
 | Distribution | `Hilo.app` is built with SwiftPM and bundled by `scripts/build-hilo-app.sh`, signed with the local identity; `hilod` still runs as a separate launchd job | Embed `hilod` in the app as a login item (stable Bluetooth permission, no `launchctl submit`), notarization, install/update path | 5 |
 
 ## Security

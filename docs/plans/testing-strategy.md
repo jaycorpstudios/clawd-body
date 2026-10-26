@@ -65,6 +65,13 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 - [x] A real Claude Code session (not a synthetic payload) is held, approved on the buddy, and the tool runs with no terminal prompt. *2026-10-25: `claude --permission-mode default`, `npm test`, with `hilod --always-away`: no terminal prompt, approved on the board, the command ran. With presence detection the request was never held: see "Presence decided once" in [open questions](open-questions.md#daemon). In auto mode Claude Code sends no `PermissionRequest` at all.*
 - [ ] A held request expires after 600 s and the hook falls back to the terminal prompt.
 
+### Hilo setup (phase 5)
+
+- [x] `hilod` answers the socket op `status` with host, buddy link and pairing state. *2026-10-25: `{"host":"work","buddy":{"link":"connected","pairing":"idle"}}` from the running daemon.*
+- [ ] In Hilo › Setup, rename this Mac (e.g. Home, then back to Work): the buddy's top bar and session rows follow within a few seconds, and `~/Library/Application Support/Hilo/config.json` holds the new host. *Not run tonight: renaming the live host was blocked as a change to shared state.*
+- [ ] Stop and start `hilod` from Setup. Start runs the copy bundled in `Hilo.app`: check macOS does not ask for Bluetooth again (same signing identity and identifier as `daemon/.build/release/hilod`) and the buddy reconnects.
+- [ ] Guided pairing from Setup with a second buddy, or after forgetting this one on both sides: hold 5 s, Start pairing, "Found Hilo Buddy", passkey dialog, "Paired". Also Cancel mid-scan and a 60 s timeout with no buddy in pairing mode (the paired buddy must reconnect afterwards).
+
 ### Usage (phase 3)
 
 - [x] A status line payload piped into `hilo statusline` reaches `hilod`, which sends `usage.update` and the buddy accepts it. *2026-10-25: synthetic payload (33 % / 21 %), buddy `rx 176 bytes`, no rejection.*

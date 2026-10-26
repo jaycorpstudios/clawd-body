@@ -69,8 +69,11 @@ if tokensFromTranscripts {
     }
 }
 
+let control = ControlOps(coordinator: coordinator, buddy: central, tokensFromTranscripts: tokensFromTranscripts)
+
 do {
     try LocalSocket.serve(path: socketPath) { op, body in
+        if let reply = await control.handle(op: op, body: body) { return reply }
         switch op {
         case "hook":
             guard let input = try? HookInput.decode(body) else { return HookResponse.passThrough }
