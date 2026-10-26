@@ -2,7 +2,7 @@
 
 ESP-IDF v5.5.6 + LVGL 9 for the Waveshare ESP32-S3-Touch-AMOLED-2.16. Spec: [docs/components/firmware.md](../docs/components/firmware.md).
 
-Status: all five views, pet, alerts, permission screen, sheets and the pairing screen drawn with LVGL from the model. NimBLE peripheral with the contract GATT service, passkey pairing and two links; untested on the board. `CONFIG_BUDDY_DEMO` swaps BLE for a scripted demo Mac (`main/demo.c`). Sound, battery (AXP2101) and RTC are next.
+Status: all five views, pet, alerts, permission screen, sheets and the pairing screen drawn with LVGL from the model. NimBLE peripheral with the contract GATT service, passkey pairing and two links, verified on the board with one Mac. `CONFIG_BUDDY_DEMO` swaps BLE for a scripted demo Mac (`main/demo.c`). Battery (AXP2101) and RTC (PCF85063) are read on the board; sound is next.
 
 ## Layout
 
@@ -12,6 +12,7 @@ Status: all five views, pet, alerts, permission screen, sheets and the pairing s
 | `main/` | Board bring-up, side button, link pump (`main.c`), the demo feed (`demo.c`, portable, also run by the host tests) and the LVGL allocator (`lv_mem_psram.c`) |
 | `main/ui/` | LVGL drawing of the model: one file per area (views, overlay, permission screen, sheets, bar and sleep) |
 | `main/ble/` | NimBLE peripheral: GATT service, pairing, advertising, per-link reassembly |
+| `main/hw/` | Board drivers over the BSP's I²C bus: AXP2101 battery, PCF85063 RTC |
 | `main/fonts/` | Generated LVGL fonts (do not edit) |
 | `test/` | Host tests for `buddy_model` |
 | `tools/fonts/` | Generates `main/fonts/` from the prototype fonts ([README](tools/fonts/README.md)) |

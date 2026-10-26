@@ -48,11 +48,18 @@ The portable model (`firmware/components/buddy_model/`) holds all state and timi
 The portable model (`firmware/components/buddy_model/`) follows the prototype; where the prototype is silent:
 
 - **Usage per Mac.** Each Mac's `usage.update` is kept separately; the Usage view shows one ring per Mac. Home stats, the pet and the Home "Limit reached" message use the connected Mac with the highest 5 h value. The 80 % warning fires once per Mac per crossing.
-- **Clock from the envelope.** A `snapshot` sets the clock to its `ts`; any other message only moves it forward. The PCF85063 is written from that clock. The time zone is a build setting until [pending](../plans/open-questions.md#firmware).
+- **Clock from the envelope.** A `snapshot` sets the clock to its `ts`; any other message only moves it forward. The PCF85063 holds UTC: it is written every time a Mac sets the clock and read once at boot, so the clock is known before any Mac connects (an RTC with its oscillator-stop flag set, or a year before 2026, is ignored). The time zone is a build setting until [pending](../plans/open-questions.md#firmware).
 - **Unknown fields are ignored** (minor-version rule), so `extra-envelope-field` and `window-reset-with-data` are accepted; every other invalid fixture is rejected.
 - **Expired requests.** `outcome: expired` (or the local clock passing `expires_at`) removes the decision but keeps the session in "needs you": the Mac prompt still waits for the user.
 - **Pending requests vs. status.** Reminders and the "no idle sleep" rule apply only to requests the buddy can answer; a "needs you" row with no request does neither.
 - **Agent hue and accessory** are derived from a hash of the project name until [Project hue/accessory](../plans/open-questions.md#hilo) is resolved.
+
+## Board drivers
+
+`main/hw/` talks to the PMU and RTC over the BSP's I²C bus with the IDF `i2c_master` driver (no extra components):
+
+- **AXP2101** (0x34): read only. Battery present, USB present, charge direction, fuel-gauge percent and battery voltage, polled every 5 s and fed to `bm_set_battery`, which owns the 15 % alert and the charging toast. The PMU's power-on defaults already enable the gauge and the battery ADC; nothing is written to it.
+- **PCF85063** (0x51): time registers only, UTC, BCD.
 
 ## Out of scope for now
 

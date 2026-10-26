@@ -65,7 +65,16 @@ void bm__observe_ts(bm_model_t *m, int64_t ts, bool exact, uint32_t now_ms)
     if (exact || !m->clock_known || wall - bm_wall_ms(m, now_ms) >= 1000) {
         m->wall_offset_ms = wall - (int64_t)now_ms;
         m->clock_known = true;
+        m->clock_synced++;
     }
+}
+
+void bm_clock_from_rtc(bm_model_t *m, int64_t unix_s, uint32_t now_ms)
+{
+    if (m->clock_known) return;
+    m->wall_offset_ms = unix_s * 1000 - (int64_t)now_ms;
+    m->clock_known = true;
+    bm__touch(m);
 }
 
 int bm__host_slot(bm_model_t *m, const char *name, bool create)

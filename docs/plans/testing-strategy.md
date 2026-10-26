@@ -34,7 +34,10 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 - [x] Sleep clock is dim and moves every 6 s; tap or button wakes. Brightness is not lowered yet (no brightness policy). *2026-10-25: dim, moves, tap and button wake to Home. Showed boxes for `--:--` before the time was known (fixed: `-` added to the digit fonts).*
 - [x] Confetti burst on "Task done" does not drop frames. *2026-10-25: 37–61 fps during a burst (was ~20 fps for 1.5 s: 46 moving pieces overflowed LVGL's 32 invalid areas and forced full-screen redraws; they are now merged per tile). The 20-piece "Approved" burst is not measured yet.*
 - [x] Heap after boot: model and pets live in PSRAM (`model … bytes` log line); no allocation failures over an hour of demo feed. *2026-10-25: `model 76520 bytes in psram`; over one hour of demo feed (one boot, no errors) internal heap stayed at ~196 KB free (low-water 94 KB) and PSRAM at 6.5 MB free, logged every minute.*
-- [ ] Not implemented yet, still demo values: battery from the AXP2101, writing the PCF85063 from the model clock, sound through the ES8311.
+- [x] Battery from the AXP2101 (read only, polled every 5 s): level, USB and charging reach the top bar and `device.battery`. *2026-10-25: chip id `0x4a`, fuel gauge and battery ADC already on at power-up; reads 100 %, ~4190 mV, USB present, not charging (charge done).*
+- [ ] Unplug USB: still on battery, no "Charging" toast; plug it back with the battery below full: "⚡ Charging" toast and Success sound. Let it drop to 15 %: "Low battery" alert once, Problem sound.
+- [x] The PCF85063 is written whenever a Mac sets the clock and read at boot, so the sleep clock shows the time before any Mac connects. *2026-10-25: first boot found the oscillator-stop flag set (never written) and wrote it from the snapshot; after a reset the clock came from the RTC 2 s behind the Mac.*
+- [ ] Clock after a full power-off (USB unplugged, battery out of the PMU path): the PCF85063 keeps time only if its backup supply holds.
 - [x] LVGL runs from flash (`LV_ATTRIBUTE_FAST_MEM_USE_IRAM` is off so NimBLE fits in IRAM); confirm the frame rate above still holds. *2026-10-25: holds (see above). Turning it on does not link even in the demo build, since the BT controller is always compiled in.*
 
 ### BLE peripheral

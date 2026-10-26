@@ -12,11 +12,14 @@
 #include "bm_conn.h"
 #include "bm_frame.h"
 #include "demo.h"
+#include "hw/power.h"
+#include "hw/ext_rtc.h"
 #include "ui/ui.h"
 
 #define SIDE_BUTTON GPIO_NUM_18
 #define IO_PERIOD_MS 20
 #define HEAP_LOG_MS 60000
+#define POWER_POLL_MS 5000
 
 static const char *TAG = "buddy";
 static bm_model_t *model;
@@ -101,6 +104,28 @@ static void pump_link(uint32_t now)
 }
 #endif
 
+static void sync_rtc(void)
+{
+    static uint32_t written;
+    if (model->clock_synced == written) return;
+    written = model->clock_synced;
+    int64_t unix_s = bm_wall_ms(model, lv_tick_get()) / 1000;
+    if (ext_rtc_write(unix_s)) ESP_LOGI(TAG, "rtc set to %lld", (long long)unix_s);
+}
+
+static void power_cb(lv_timer_t *t)
+{
+    (void)t;
+    power_state_t p;
+    if (!power_read(&p)) return;
+    static power_state_t last;
+    if (p.battery != last.battery || p.usb != last.usb || p.charging != last.charging || p.pct != last.pct)
+        ESP_LOGI(TAG, "battery %s %u%% %u mV, usb %d, charging %d", p.battery ? "present" : "absent", p.pct, p.mv,
+                 p.usb, p.charging);
+    last = p;
+    if (p.battery) bm_set_battery(model, p.pct, p.charging, lv_tick_get());
+}
+
 static void io_cb(lv_timer_t *t)
 {
     (void)t;
@@ -109,6 +134,7 @@ static void io_cb(lv_timer_t *t)
     pump_link(now);
     bm_sound_t snd;
     while (bm_sound_pop(model, &snd)) ESP_LOGD(TAG, "sound %d", snd);
+    sync_rtc();
 }
 
 static void heap_log_cb(lv_timer_t *t)
@@ -131,10 +157,19 @@ void app_main(void)
     uint32_t now = lv_tick_get();
     bm_init(model, &cfg, now);
     ui_init(model);
+    int64_t rtc_s;
+    if (ext_rtc_init() && ext_rtc_read(&rtc_s)) {
+        bm_clock_from_rtc(model, rtc_s, now);
+        ESP_LOGI(TAG, "clock from rtc %lld", (long long)rtc_s);
+    }
 #if CONFIG_BUDDY_DEMO
     demo_start(&demo, model, esp_random32, NULL, now);
 #else
     if (!ble_start()) ESP_LOGE(TAG, "BLE did not start");
+    if (power_init()) {
+        power_cb(NULL);
+        lv_timer_create(power_cb, POWER_POLL_MS, NULL);
+    }
 #endif
     side_button_init();
     lv_timer_create(io_cb, IO_PERIOD_MS, NULL);

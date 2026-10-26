@@ -312,3 +312,30 @@ void bm_fmt_clock(int64_t wall_ms, int32_t tz_offset_min, char *out, size_t n)
     if (day_s < 0) day_s += 86400;
     snprintf(out, n, "%02lld:%02lld", (long long)(day_s / 3600), (long long)(day_s / 60 % 60));
 }
+
+static int64_t floor_div(int64_t a, int64_t b) { return a / b - (a % b < 0); }
+
+/* Howard Hinnant's days_from_civil / civil_from_days. */
+void bm_utc_from_unix(int64_t unix_s, bm_utc_t *out)
+{
+    int64_t days = floor_div(unix_s, 86400), secs = unix_s - days * 86400;
+    out->hour = (int)(secs / 3600);
+    out->min = (int)(secs / 60 % 60);
+    out->sec = (int)(secs % 60);
+    out->wday = (int)((days % 7 + 11) % 7);
+    int64_t z = days + 719468, era = floor_div(z, 146097), doe = z - era * 146097;
+    int64_t yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    int64_t doy = doe - (365 * yoe + yoe / 4 - yoe / 100), mp = (5 * doy + 2) / 153;
+    out->day = (int)(doy - (153 * mp + 2) / 5 + 1);
+    out->month = (int)(mp < 10 ? mp + 3 : mp - 9);
+    out->year = (int)(yoe + era * 400 + (out->month <= 2));
+}
+
+int64_t bm_unix_from_utc(const bm_utc_t *t)
+{
+    int64_t y = t->year - (t->month <= 2), era = floor_div(y, 400), yoe = y - era * 400;
+    int64_t mp = t->month > 2 ? t->month - 3 : t->month + 9;
+    int64_t doe = yoe * 365 + yoe / 4 - yoe / 100 + (153 * mp + 2) / 5 + t->day - 1;
+    int64_t days = era * 146097 + doe - 719468;
+    return days * 86400 + t->hour * 3600 + t->min * 60 + t->sec;
+}

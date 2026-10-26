@@ -210,6 +210,7 @@ typedef struct {
 
     bool clock_known;
     int64_t wall_offset_ms;
+    uint32_t clock_synced;
 
     bm_view_t view;
     bm_overlay_state_t ov;
@@ -290,6 +291,13 @@ bool bm_out_pop(bm_model_t *m, bm_out_t *out);
 bool bm_sound_pop(bm_model_t *m, bm_sound_t *out);
 
 int64_t bm_wall_ms(const bm_model_t *m, uint32_t now_ms);
+void bm_clock_from_rtc(bm_model_t *m, int64_t unix_s, uint32_t now_ms);
+
+typedef struct {
+    int year, month, day, hour, min, sec, wday;
+} bm_utc_t;
+void bm_utc_from_unix(int64_t unix_s, bm_utc_t *out);
+int64_t bm_unix_from_utc(const bm_utc_t *t);
 bool bm_live(const bm_model_t *m, const bm_session_t *s);
 bool bm_waiting(const bm_model_t *m, const bm_session_t *s);
 const bm_session_t *bm_attn_session(const bm_model_t *m);

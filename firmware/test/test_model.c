@@ -596,3 +596,33 @@ TEST(text_at_the_character_limit_is_kept_even_when_it_needs_more_bytes)
     repeat(text, "a", 121, "");
     CHECK(send("work", "agent.step", "{\"session\":\"a\",\"kind\":\"run\",\"text\":\"%s\"}", text) == BM_E_DATA);
 }
+
+TEST(utc_conversion_round_trips_and_matches_known_dates)
+{
+    bm_utc_t t;
+    bm_utc_from_unix(0, &t);
+    CHECK(t.year == 1970 && t.month == 1 && t.day == 1 && t.wday == 4);
+    bm_utc_from_unix(1792951445, &t);
+    CHECK(t.year == 2026 && t.month == 10 && t.day == 25 && t.hour == 18 && t.min == 4 && t.sec == 5 && t.wday == 0);
+    bm_utc_from_unix(4107542399, &t);
+    CHECK(t.year == 2100 && t.month == 2 && t.day == 28 && t.hour == 23 && t.min == 59 && t.sec == 59);
+    bm_utc_from_unix(951782400, &t);
+    CHECK(t.year == 2000 && t.month == 2 && t.day == 29);
+    for (int64_t s = 946684800; s < 4102444800; s += 86400 * 37 + 3601) {
+        bm_utc_from_unix(s, &t);
+        CHECK(bm_unix_from_utc(&t) == s);
+    }
+}
+
+TEST(rtc_seeds_an_unknown_clock_and_a_mac_message_overrides_it)
+{
+    fresh();
+    bm_clock_from_rtc(&M, BASE_TS - 500, now);
+    CHECK(M.clock_known && M.clock_synced == 0);
+    CHECK(bm_wall_ms(&M, now) == (BASE_TS - 500) * 1000);
+    bm_clock_from_rtc(&M, BASE_TS - 900, now);
+    CHECK(bm_wall_ms(&M, now) == (BASE_TS - 500) * 1000);
+    start_session("work", "a", "alpha");
+    CHECK(M.clock_synced == 1);
+    CHECK(bm_wall_ms(&M, now) == (BASE_TS + now / 1000) * 1000);
+}
