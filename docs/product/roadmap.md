@@ -16,8 +16,8 @@ flowchart LR
 | Phase | Outcome | Status |
 | :--- | :--- | :--- |
 | 1 | Event schema in `shared/` as single source of truth; a terminal tool that emits contract events | Done |
-| 2 | Firmware renders all views and the pet from fake data, matching the simulator | Toolchain and display bring-up done; views next |
-| 3 | `hilod` turns Claude Code hooks into events and sends them over a bonded BLE link | Hook ingestion and risk policy done; BLE and pairing pending |
-| 4 | Permission and question decisions from the buddy, validated by the daemon | Daemon side done (registry, presence-based hold); buddy side pending |
+| 2 | Firmware renders all views and the pet from fake data, matching the simulator | All views, pet, alerts, permission screen and sheets drawn from the model; demo build running on the board, [hardware checklist](../plans/testing-strategy.md#hardware-checklist) in progress |
+| 3 | `hilod` turns Claude Code hooks into events and sends them over a bonded BLE link | Hook ingestion, risk policy, NimBLE peripheral and CoreBluetooth central with passkey pairing done; BLE not yet tested on the board |
+| 4 | Permission and question decisions from the buddy, validated by the daemon | Daemon side (registry, presence-based hold) and buddy permission screen with hold-to-approve done; end-to-end over BLE not yet tested |
 | 5 | Hilo data layer (SQLite), CLI and MCP; then the macOS UI | Not started |
 | 6 | Hilo view on the buddy, music view, per-project accessories | Not started |

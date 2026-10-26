@@ -25,7 +25,7 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 ### Firmware phase 2 (views, pet, alerts, permission screen)
 
 - [ ] All five views, the overlays, the permission screen, the sheets, the toast and the sleep clock render without clipping at 480×480; fonts legible at their sizes.
-- [ ] Active view holds 30 fps or more with the pet animating (enable `LV_USE_PERF_MONITOR`); off-screen pets are not drawn.
+- [x] Active view holds 30 fps or more with the pet animating (enable `LV_USE_PERF_MONITOR`); off-screen pets are not drawn. *2026-10-25, demo build (`sdkconfig.demo`): 55–64 fps, 7–10 ms render on Home and the permission screen. First run gave 22–26 fps: LVGL's software transform scaled the 224 px pet in ~28 ms, and the attention frame's border pulse redrew the whole screen; pets are now pre-scaled and the frame pulses as four edge strips.*
 - [ ] Pixel pets look crisp (nearest-neighbour) at 224, 192, 128, 76, 72 and 48 px.
 - [ ] Overlay and permission backgrounds use vertical gradients instead of the prototype's radial ones (complex gradients are off in LVGL); check they read well on the AMOLED.
 - [ ] Swipe left/right changes view; taps on agent rows, the usage ring, the Hilo card and sheet controls land on the right target; a swipe never also fires a tap.
@@ -33,9 +33,9 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 - [ ] Side button on GPIO18: assumed active-low with the internal pull-up and a 40 ms debounce; click = back / Later / next view, hold 650 ms = sleep.
 - [ ] Sleep clock is dim and moves every 6 s; tap or button wakes. Brightness is not lowered yet (no brightness policy).
 - [ ] Confetti burst on "Task done" does not drop frames.
-- [ ] Heap after boot: model and pets live in PSRAM (`model … bytes` log line); no allocation failures over an hour of demo feed.
+- [x] Heap after boot: model and pets live in PSRAM (`model … bytes` log line); no allocation failures over an hour of demo feed. *2026-10-25: `model 76520 bytes in psram`; over one hour of demo feed (one boot, no errors) internal heap stayed at ~196 KB free (low-water 94 KB) and PSRAM at 6.5 MB free, logged every minute.*
 - [ ] Not implemented yet, still demo values: battery from the AXP2101, writing the PCF85063 from the model clock, sound through the ES8311.
-- [ ] LVGL runs from flash (`LV_ATTRIBUTE_FAST_MEM_USE_IRAM` is off so NimBLE fits in IRAM); confirm the frame rate above still holds.
+- [x] LVGL runs from flash (`LV_ATTRIBUTE_FAST_MEM_USE_IRAM` is off so NimBLE fits in IRAM); confirm the frame rate above still holds. *2026-10-25: holds (see above). Turning it on does not link even in the demo build, since the BT controller is always compiled in.*
 
 ### BLE peripheral
 
