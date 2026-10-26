@@ -54,7 +54,7 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 - [x] A low-risk permission (`npm test` inside the repo) held while the user is away shows Hold to approve on the buddy; approving returns `allow` to the hook. *2026-10-25: a synthetic `PermissionRequest` piped into `hilo hook`; approved on the board, hook answered `allow` 4 s after the request.*
 - [x] A high-risk permission (`pnpm test` is not in the default allowlist) shows "Mac only" on the buddy and cannot be approved there. *2026-10-25.*
 - [x] With input on the Mac in the last `--away-after` seconds the request is not held and the prompt stays in the terminal. *2026-10-25. On a laptop, a palm resting near the trackpad keeps resetting the idle time (`UserIsActive` from the internal trackpad every few seconds), see [open questions](open-questions.md#daemon).*
-- [x] Coming back to the Mac releases a held request to the terminal and closes it on the buddy. *2026-10-25: works; the buddy labels it "expired", which reads like a timeout.*
+- [x] Coming back to the Mac releases a held request to the terminal and closes it on the buddy. *2026-10-25: works. The buddy said "expired", which read like a timeout; it now says "Answer it on the Mac".*
 - [ ] Deny from the buddy returns `deny` to the hook.
 - [ ] A question (`AskUserQuestion`) answered on the buddy reaches Claude Code.
 - [ ] A real Claude Code session (not a synthetic payload) is held, approved on the buddy, and the tool runs with no terminal prompt.
