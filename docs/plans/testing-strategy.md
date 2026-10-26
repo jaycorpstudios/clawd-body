@@ -72,6 +72,8 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 - [ ] Stop and start `hilod` from Setup. Start runs the copy bundled in `Hilo.app`: check macOS does not ask for Bluetooth again (same signing identity and identifier as `daemon/.build/release/hilod`) and the buddy reconnects.
 - [ ] Guided pairing from Setup with a second buddy, or after forgetting this one on both sides: hold 5 s, Start pairing, "Found Hilo Buddy", passkey dialog, "Paired". Also Cancel mid-scan and a 60 s timeout with no buddy in pairing mode (the paired buddy must reconnect afterwards).
 
+- [ ] Automatic capture on real work: commit in a repo where a Claude Code session ran today; within a minute it shows under the task in progress (Today), in Resume and in Week's commit count; active time grows while the session works and stops after 5 min idle. *Rendered with seeded scratch data on 2026-10-25 (layout only).*
+
 ### Usage (phase 3)
 
 - [x] A status line payload piped into `hilo statusline` reaches `hilod`, which sends `usage.update` and the buddy accepts it. *2026-10-25: synthetic payload (33 % / 21 %), buddy `rx 176 bytes`, no rejection.*

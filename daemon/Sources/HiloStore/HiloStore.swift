@@ -5,7 +5,7 @@ import HiloContract
 public final class HiloStore: @unchecked Sendable {
     public static let projectPalette = ["#0e7c72", "#5b8cff", "#b98ae0", "#ff9a52", "#e0607e", "#4fd39a", "#ffc53d", "#7cc8ff"]
 
-    private let db: Database
+    let db: Database
 
     /// `HILO_DB` overrides the location (tests, a scratch database).
     public static var defaultPath: String {

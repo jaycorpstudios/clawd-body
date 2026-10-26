@@ -70,6 +70,11 @@ struct ResumeView: View {
                         }
                     }
                 }
+                card("Recent commits") {
+                    let commits = model.commits(project: project.name)
+                    if commits.isEmpty { Text("None captured.").foregroundStyle(Theme.secondary) }
+                    ForEach(commits) { c in CommitRow(commit: c) }
+                }
                 card("Recent agreements") {
                     if agreements.isEmpty { Text("None.").foregroundStyle(Theme.secondary) }
                     ForEach(Array(agreements)) { a in Text("✓ \(a.text)").font(.system(size: 13)) }

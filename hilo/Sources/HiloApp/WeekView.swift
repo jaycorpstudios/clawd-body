@@ -19,6 +19,8 @@ struct WeekView: View {
         var seconds: Int
         var sessions: Int
         var closed: [HiloTaskRecord]
+        var active = 0
+        var commits = 0
     }
 
     private var perProject: [ProjectWeek] {
@@ -28,11 +30,19 @@ struct WeekView: View {
             rows[name, default: ProjectWeek(name: name, project: s.project, seconds: 0, sessions: 0, closed: [])].seconds += Format.sessionTime(s)
             rows[name]?.sessions += 1
         }
+        for (name, seconds) in model.activeWeek {
+            let project = model.projects.first { $0.name == name }
+            rows[name, default: ProjectWeek(name: name, project: project, seconds: 0, sessions: 0, closed: [])].active = seconds
+        }
+        for c in model.weekCommits {
+            let name = c.project?.name ?? "No project"
+            rows[name, default: ProjectWeek(name: name, project: c.project, seconds: 0, sessions: 0, closed: [])].commits += 1
+        }
         for t in closed {
             let name = t.project?.name ?? "No project"
             rows[name, default: ProjectWeek(name: name, project: t.project, seconds: 0, sessions: 0, closed: [])].closed.append(t)
         }
-        return rows.values.sorted { $0.seconds > $1.seconds }
+        return rows.values.sorted { ($0.active, $0.seconds) > ($1.active, $1.seconds) }
     }
 
     var body: some View {
@@ -40,33 +50,35 @@ struct WeekView: View {
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("This week").font(Theme.title(30))
-                    Text("Since \(Format.day(AppModel.startOfWeek)) · from this Mac's sessions, tasks and agreements").foregroundStyle(Theme.secondary)
+                    Text("Since \(Format.day(AppModel.startOfWeek)) · from this Mac's sessions, commits, tasks and agreements").foregroundStyle(Theme.secondary)
                 }
                 Spacer()
                 Button("Copy as Markdown") { model.copy(markdown) }.buttonStyle(PrimaryButtonStyle())
             }
             HStack(spacing: 14) {
-                total(Format.duration(model.weekSessions.reduce(0) { $0 + Format.sessionTime($1) }), "in Claude Code sessions")
+                total(Format.duration(model.activeWeek.values.reduce(0, +)), "active")
+                total(Format.duration(model.weekSessions.reduce(0) { $0 + Format.sessionTime($1) }), "in sessions")
                 total("\(closed.count)", "tasks closed")
                 total("\(model.weekSessions.count)", "sessions")
+                total("\(model.weekCommits.count)", "commits")
                 total("\(agreements.count)", "agreements")
             }
             VStack(alignment: .leading, spacing: 12) {
                 SectionLabel(text: "Per project")
                 if perProject.isEmpty { Text("Nothing recorded this week yet.").foregroundStyle(Theme.secondary) }
-                let longest = max(1, perProject.map(\.seconds).max() ?? 1)
+                let longest = max(1, perProject.map(\.active).max() ?? 1)
                 ForEach(perProject) { p in
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             ProjectDot(project: p.project)
                             Text(p.name).fontWeight(.semibold)
                             Spacer()
-                            Text("\(Format.duration(p.seconds)) · \(p.sessions) session\(p.sessions == 1 ? "" : "s") · \(p.closed.count) closed")
+                            Text("\(Format.duration(p.active)) active · \(Format.duration(p.seconds)) in \(p.sessions) session\(p.sessions == 1 ? "" : "s") · \(p.commits) commit\(p.commits == 1 ? "" : "s") · \(p.closed.count) closed")
                                 .font(.system(size: 12.5)).foregroundStyle(Theme.secondary)
                         }
                         GeometryReader { g in
                             RoundedRectangle(cornerRadius: 3).fill(Color(hex: p.project?.color ?? "#5a554e"))
-                                .frame(width: max(4, g.size.width * CGFloat(p.seconds) / CGFloat(longest)))
+                                .frame(width: max(4, g.size.width * CGFloat(p.active) / CGFloat(longest)))
                         }
                         .frame(height: 6)
                         ForEach(p.closed) { t in
@@ -82,8 +94,8 @@ struct WeekView: View {
 
     private func total(_ value: String, _ label: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(value).font(Theme.title(26)).monospacedDigit()
-            Text(label).font(.system(size: 12.5)).foregroundStyle(Theme.secondary)
+            Text(value).font(Theme.title(26)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
+            Text(label).font(.system(size: 12.5)).foregroundStyle(Theme.secondary).lineLimit(1).minimumScaleFactor(0.8)
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.card, in: RoundedRectangle(cornerRadius: 12)).overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
@@ -93,7 +105,7 @@ struct WeekView: View {
         var out = ["# Week of \(Format.day(AppModel.startOfWeek))", ""]
         for p in perProject {
             out.append("## \(p.name)")
-            out.append("\(Format.duration(p.seconds)) in \(p.sessions) Claude Code session\(p.sessions == 1 ? "" : "s")")
+            out.append("\(Format.duration(p.active)) active · \(Format.duration(p.seconds)) in \(p.sessions) Claude Code session\(p.sessions == 1 ? "" : "s") · \(p.commits) commit\(p.commits == 1 ? "" : "s")")
             out.append(contentsOf: p.closed.map { "- [x] \($0.title)" })
             out.append("")
         }

@@ -45,7 +45,8 @@ struct TodayView: View {
         let time = model.sessions.reduce(0) { $0 + Format.sessionTime($1) }
         let done = model.tasks(.done).count
         let agreements = model.agreements.filter { $0.ts >= AppModel.startOfToday && $0.status == .confirmed }.count
-        return "\(Format.duration(time)) in sessions · \(model.sessions.count) Claude Code session\(model.sessions.count == 1 ? "" : "s") · \(done) done · \(agreements) agreement\(agreements == 1 ? "" : "s")"
+        let active = model.activeToday.values.reduce(0, +)
+        return "\(Format.duration(active)) active · \(Format.duration(time)) in sessions · \(model.sessions.count) Claude Code session\(model.sessions.count == 1 ? "" : "s") · \(done) done · \(agreements) agreement\(agreements == 1 ? "" : "s")"
     }
 
     private var captureField: some View {
@@ -187,6 +188,16 @@ struct TaskDetail: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
+                SectionLabel(text: "Commits")
+                let commits = model.commits(forTask: task.id)
+                if commits.isEmpty {
+                    Text("None yet. Your commits in a session's repo link here while this is the project's only task in progress.")
+                        .font(.system(size: 12.5)).foregroundStyle(Theme.muted)
+                }
+                ForEach(commits.prefix(8)) { c in CommitRow(commit: c) }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
                 SectionLabel(text: "Linked agreements")
                 ForEach(model.agreements.filter { $0.taskId == task.id && $0.status == .confirmed }) { a in
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -271,5 +282,19 @@ struct ProjectPicker: View {
                     naming = false
                 }
         }
+    }
+}
+
+struct CommitRow: View {
+    let commit: CommitRecord
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(String(commit.hash.prefix(7))).font(Theme.mono).foregroundStyle(Theme.link)
+            Text(commit.message).lineLimit(1)
+            Spacer()
+            Text("\(commit.branch) · \(Format.clock(commit.ts))").font(.system(size: 12)).foregroundStyle(Theme.secondary).lineLimit(1)
+        }
+        .font(.system(size: 13))
     }
 }

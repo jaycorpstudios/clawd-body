@@ -35,6 +35,8 @@ private func makeStore() throws -> HiloStore {
     let s = try #require(try store.sessions(since: 0).first)
     #expect(s.id == "s1" && s.project?.name == "api")
     #expect(try store.steps(session: "s1").count == 1)
+    #expect(try store.sessionRepos(since: 0).map(\.repo) == ["/home/dev/code/api"])
+    #expect(try store.activeSeconds(since: 0).keys.contains("api"))
 }
 
 @Test func snapshotCarriesTheCurrentHiloTask() async throws {

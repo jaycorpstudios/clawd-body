@@ -30,6 +30,9 @@ final class AppModel {
     var weekSessions: [SessionRecord] = []
     var weekTasks: [HiloTaskRecord] = []
     var agreements: [Agreement] = []
+    var activeToday: [String: Int] = [:]
+    var activeWeek: [String: Int] = [:]
+    var weekCommits: [CommitRecord] = []
     var projects: [Project] = []
     var daemonRunning = false
     var buddyConnected = false
@@ -75,6 +78,11 @@ final class AppModel {
             let week = (try store.tasks(doneSince: Self.startOfWeek), try store.sessions(since: Self.startOfWeek))
             if week.0 != weekTasks { weekTasks = week.0 }
             if week.1 != weekSessions { weekSessions = week.1 }
+            let capture = (try store.activeSeconds(since: Self.startOfToday), try store.activeSeconds(since: Self.startOfWeek),
+                           try store.commits(since: Self.startOfWeek))
+            if capture.0 != activeToday { activeToday = capture.0 }
+            if capture.1 != activeWeek { activeWeek = capture.1 }
+            if capture.2 != weekCommits { weekCommits = capture.2 }
             let state = try store.daemonState()
             let reply = LocalSocket.request(path: LocalSocket.defaultPath, op: "status", body: Data(), timeoutSeconds: 1)
             let running = reply != nil
@@ -103,6 +111,14 @@ final class AppModel {
 
     func steps(_ session: String) -> [StepRecord] {
         (try? store?.steps(session: session)) ?? []
+    }
+
+    func commits(forTask id: Int) -> [CommitRecord] {
+        (try? store?.commits(task: id)) ?? []
+    }
+
+    func commits(project name: String) -> [CommitRecord] {
+        (try? store?.commits(project: name, limit: 6)) ?? []
     }
 
     func sessions(forTask id: Int) -> [SessionRecord] {

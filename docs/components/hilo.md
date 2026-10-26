@@ -15,6 +15,7 @@ Visual reference approved as direction: `prototypes/hilo/`. Dark theme only, wit
 
 - SwiftUI app in [`hilo/`](../../hilo/README.md), built with SwiftPM and bundled by `scripts/build-hilo-app.sh` (no Xcode project needed).
 - One SQLite file per Mac, `~/Library/Application Support/Hilo/hilo.sqlite`, WAL mode, system `libsqlite3` (no third-party packages). `hilod` writes sessions and steps; the app and the CLI write tasks and agreements. Schema and queries live in `HiloStore` (`daemon/Sources/HiloStore`).
+- **Automatic capture** (in `hilod`): each session remembers its git repo (from the hook's `cwd`). Every 60 s `hilod` runs `git log` on the current branch of the repos of the last week's sessions, keeping only commits by the repo's `user.email`, and stores new ones in `git_commit`; a new commit links to its project's task in progress when there is exactly one (same rule as sessions). **Active time** is kept per project in `activity` spans: every message for a session and every captured commit extends the project's last span, and a gap over 5 min starts a new one (the pause). Today shows active time in its summary and commits in the task detail; Week shows active time and commits per project; Resume lists recent commits.
 - The buddy's Hilo card (`snapshot.hilo`) is built from the store: the most recently started task in progress, the next three tasks, and today's confirmed agreements.
 
 ## Screens
@@ -38,9 +39,9 @@ Shared chrome: top bar with ⌘K search, buddy status with its pet, and the Mac'
 | `task` | `id, project_id, title, notes, status[todo\|doing\|done], jira_ref?, created_at, done_at?` |
 | `session` | `id, project_id, task_id?, claude_session_id, warp_tab?, started_at, ended_at?, status, tokens` |
 | `session_step` | `session_id, ts, kind[plan\|read\|edit\|run\|ask\|ok\|deny\|err], text` |
-| `commit` | `repo, hash, branch, msg, ts, task_id?` |
+| `git_commit` | `repo, hash, branch, message, ts, project_id?, task_id?` (implemented) |
 | `agreement` | `id, project_id, task_id?, text, context, origin[meeting\|session\|manual], status[confirmed\|pending], ts` |
-| `activity` | `ts_start, ts_end, project_id?` |
+| `activity` | `project_id, ts_start, ts_end` (implemented; 5 min gap = pause) |
 
 ## CLI
 

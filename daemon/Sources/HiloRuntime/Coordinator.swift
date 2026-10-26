@@ -48,7 +48,8 @@ public actor Coordinator {
         switch mapper.map(input, now: clock.now()) {
         case .emit(let messages):
             for m in messages { await send(m) }
-            recorder?.attach(session: Text.clip(input.sessionId, 64), project: mapper.project(of: input))
+            recorder?.attach(session: Text.clip(input.sessionId, 64), project: mapper.project(of: input),
+                            repo: mapper.repoRoot(input.cwd))
             return HookResponse.passThrough
         case .awaitPermission(let request):
             guard let resolution = await hold(id: request.requestId, session: request.session, expiresAt: request.expiresAt,

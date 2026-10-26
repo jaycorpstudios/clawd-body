@@ -59,3 +59,19 @@ public struct DaemonState: Equatable, Sendable {
     public var buddyConnected: Bool
     public var updatedAt: Int
 }
+
+public struct CommitRecord: Equatable, Sendable, Identifiable {
+    public var id: String { repo + "@" + hash }
+    public var repo: String
+    public var hash: String
+    public var branch: String
+    public var message: String
+    public var ts: Int
+    public var project: Project?
+    public var taskId: Int?
+
+    public init(repo: String, hash: String, branch: String, message: String, ts: Int, project: Project? = nil, taskId: Int? = nil) {
+        self.repo = repo; self.hash = hash; self.branch = branch; self.message = message; self.ts = ts
+        self.project = project; self.taskId = taskId
+    }
+}

@@ -28,13 +28,14 @@ struct AlwaysAway: PresenceProbe {
 let central = useStdout ? nil : BLECentral(trusted: TrustedBuddies(), pairing: pair, log: log)
 let session = central.map { BuddySession(writer: $0) }
 
-let recorder: StoreRecorder?
+let store: HiloStore?
 do {
-    recorder = StoreRecorder(store: try HiloStore(), log: log)
+    store = try HiloStore()
 } catch {
     log("Hilo store unavailable, sessions are not recorded: \(error)")
-    recorder = nil
+    store = nil
 }
+let recorder = store.map { StoreRecorder(store: $0, log: log) }
 
 let coordinator = Coordinator(
     host: host,
@@ -55,6 +56,16 @@ if let central, let session {
         for await event in central.events {
             await coordinator.buddyLink(up: event != .down)
             await session.handle(event)
+        }
+    }
+}
+
+if let store {
+    let capture = GitCapture(store: store, log: log)
+    Task.detached {
+        while true {
+            capture.scan(now: Int(Date().timeIntervalSince1970))
+            try? await Task.sleep(for: .seconds(60))
         }
     }
 }

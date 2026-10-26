@@ -37,13 +37,31 @@ public struct StoreRecorder: Sendable {
             case .snapshot, .usageUpdate, .usageWindowReset, .hiloTaskChanged, .nowPlaying:
                 break
             }
+            if let session = Self.session(of: message) { try store.recordActivity(session: session, now: now) }
         } catch {
             log("store: \(error)")
         }
     }
 
-    public func attach(session: String, project: String) {
-        do { try store.setProjectIfMissing(session: session, project: project) } catch { log("store: \(error)") }
+    public func attach(session: String, project: String, repo: String?) {
+        do {
+            try store.setProjectIfMissing(session: session, project: project)
+            if let repo { try store.setRepo(session: session, repo: repo) }
+        } catch { log("store: \(error)") }
+    }
+
+    private static func session(of message: Outbound) -> String? {
+        switch message {
+        case .sessionStart(let s): s.session
+        case .sessionEnd(let s): s.session
+        case .agentStep(let s): s.session
+        case .needsPermission(let p): p.session
+        case .question(let q): q.session
+        case .requestResolved(let r): r.session
+        case .taskDone(let d): d.session
+        case .agentError(let e): e.session
+        case .snapshot, .usageUpdate, .usageWindowReset, .hiloTaskChanged, .nowPlaying: nil
+        }
     }
 
     public func buddyLink(up: Bool, now: Int) {

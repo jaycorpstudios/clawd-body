@@ -27,6 +27,19 @@ enum Schema {
         CREATE TABLE daemon_state (
           id INTEGER PRIMARY KEY CHECK (id = 1), buddy_connected INTEGER NOT NULL, updated_at INTEGER NOT NULL);
         """,
+        """
+        ALTER TABLE session ADD COLUMN repo TEXT;
+        CREATE TABLE git_commit (
+          repo TEXT NOT NULL, hash TEXT NOT NULL, branch TEXT NOT NULL, message TEXT NOT NULL, ts INTEGER NOT NULL,
+          project_id INTEGER REFERENCES project(id) ON DELETE SET NULL,
+          task_id INTEGER REFERENCES task(id) ON DELETE SET NULL,
+          PRIMARY KEY (repo, hash));
+        CREATE INDEX git_commit_ts ON git_commit(ts);
+        CREATE TABLE activity (
+          id INTEGER PRIMARY KEY, project_id INTEGER REFERENCES project(id) ON DELETE CASCADE,
+          ts_start INTEGER NOT NULL, ts_end INTEGER NOT NULL);
+        CREATE INDEX activity_end ON activity(ts_end);
+        """,
     ]
 
     static func migrate(_ db: Database) throws {
