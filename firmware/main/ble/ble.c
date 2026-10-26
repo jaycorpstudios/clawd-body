@@ -134,14 +134,17 @@ static void on_security(uint16_t handle, int status)
     int i;
     link_t *l = find(handle, &i);
     if (!l) return;
+    // Judge the link, not the event: when the Mac encrypts with its bond first, our own security
+    // request still times out 30 s later (status 13) on a link that is already secure.
     struct ble_gap_conn_desc desc;
-    bool ok = status == 0 && ble_gap_conn_find(handle, &desc) == 0 && desc.sec_state.encrypted &&
-              desc.sec_state.authenticated && desc.sec_state.bonded;
+    bool ok = ble_gap_conn_find(handle, &desc) == 0 && desc.sec_state.encrypted && desc.sec_state.authenticated &&
+              desc.sec_state.bonded;
     if (!ok) {
         ESP_LOGW(TAG, "link %d: security failed (%d)", i, status);
         ble_gap_terminate(handle, BLE_ERR_AUTH_FAIL);
         return;
     }
+    if (status != 0) ESP_LOGI(TAG, "link %d: security procedure ended (%d), link stays secure", i, status);
     if (l->secure) return;
     l->secure = true;
     ESP_LOGI(TAG, "link %d: secure (%s, peer address %s)", i, l->pairing ? "new bond" : "bonded",
