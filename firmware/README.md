@@ -9,12 +9,21 @@ Status: all five views, pet, alerts, permission screen, sheets and the pairing s
 | Path | Role |
 | :--- | :--- |
 | `components/buddy_model/` | Portable C11 model, no ESP-IDF or LVGL includes: parses contract messages (cJSON), keeps per-Mac state, derives what each view shows, runs the timers and queues outgoing messages and sound cues. Also renders the 32×32 pet. |
-| `main/` | Board bring-up, side button, link pump (`main.c`) and the demo feed (`demo.c`, portable, also run by the host tests) |
+| `main/` | Board bring-up, side button, link pump (`main.c`), the demo feed (`demo.c`, portable, also run by the host tests) and the LVGL allocator (`lv_mem_psram.c`) |
 | `main/ui/` | LVGL drawing of the model: one file per area (views, overlay, permission screen, sheets, bar and sleep) |
 | `main/ble/` | NimBLE peripheral: GATT service, pairing, advertising, per-link reassembly |
 | `main/fonts/` | Generated LVGL fonts (do not edit) |
 | `test/` | Host tests for `buddy_model` |
 | `tools/fonts/` | Generates `main/fonts/` from the prototype fonts ([README](tools/fonts/README.md)) |
+
+## Memory
+
+Measured on the board (2026-10-25). The BSP keeps LVGL's draw buffers in PSRAM, so every flush copies its area (up to 48 KB) into an internal DMA buffer allocated on the spot; with NimBLE running, that allocation failed and the screen stopped updating. `main/lv_mem_psram.c` sends LVGL allocations under 1 KB (objects, styles) to PSRAM and keeps larger render-time buffers internal (all-PSRAM halved the frame rate).
+
+| Build | Internal free after boot (low-water) | Frame rate |
+| :--- | :--- | :--- |
+| Demo | ~232 KB (168 KB) | ~60 fps, min 46 |
+| BLE | ~133 KB (83 KB) | not measured (no perf monitor) |
 
 ## Host tests
 
