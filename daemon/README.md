@@ -9,7 +9,7 @@
 | `HiloRuntime` | `Coordinator` (presence-based hold), `BuddySession` (framing, ordered writes, snapshot on link up), `BLECentral` (CoreBluetooth), trusted buddies, macOS presence probe, Unix socket, stdout link |
 | `hilod` | Daemon executable |
 | `HiloStore` | SQLite store shared with the Hilo app: projects, tasks, sessions and steps, agreements |
-| `hilo` | CLI: `hilo hook` (called by Claude Code), tasks and agreements (`hilo today`, `add`, `start`, `done`, `agree`, `sessions`, `link`), `hilo buddy '<json>'` (development) |
+| `hilo` | CLI: `hilo hook` (called by Claude Code), tasks and agreements (`hilo today`, `add`, `start`, `done`, `agree`, `sessions`, `link`), `hilo mcp` (MCP server for Claude Code), `hilo buddy '<json>'` (development) |
 
 No third-party packages.
 

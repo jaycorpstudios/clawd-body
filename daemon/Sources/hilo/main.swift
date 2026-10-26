@@ -89,6 +89,8 @@ case "sessions":
         let task = s.taskTitle.map { " → \($0)" } ?? ""
         print("\(s.id.prefix(8))  \(s.status.rawValue.padding(toLength: 7, withPad: " ", startingAt: 0))  \(s.project?.name ?? "-")\(task)  \(s.lastAction)")
     }
+case "mcp":
+    MCPServer(store: openStore(), onChange: notifyDaemon).run()
 case "link" where arguments.count == 3:
     guard let id = Int(arguments[2].trimmingCharacters(in: CharacterSet(charactersIn: "#"))) else { fail("bad task id", code: 2) }
     let store = openStore()
@@ -106,6 +108,7 @@ default:
       hilo agree "text" [-p project]   log an agreement
       hilo sessions                    today's Claude Code sessions
       hilo link <session> <task id>    attach a session to a task
+      hilo mcp                         MCP server on stdio, for Claude Code
       hilo hook                        read a Claude Code hook payload on stdin (configured in settings.json)
       hilo buddy '<json>'              send a buddy -> Mac message to hilod (development)
 

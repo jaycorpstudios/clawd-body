@@ -41,19 +41,23 @@ Shared chrome: top bar with ⌘K search, buddy status with its pet, and the Mac'
 | `agreement` | `id, project_id, task_id?, text, context, origin[meeting\|session\|manual], status[confirmed\|pending], ts` |
 | `activity` | `ts_start, ts_end, project_id?` |
 
-## CLI (draft)
+## CLI
 
-`hilo add "…" [-p project]` · `hilo done <id>` · `hilo agree "…"` · `hilo resume <project>` · `hilo week [--md]` · `hilo link <session> <task>`
+`hilo today` · `hilo add "…" [-p project] [--start]` · `hilo start|done|todo <id>` · `hilo agree "…" [-p project]` · `hilo sessions` · `hilo link <session> <task>` · `hilo mcp`. Not yet: `hilo resume`, `hilo week --md` (both available over MCP and in the app).
 
-## MCP tools (draft)
+## MCP tools
+
+`hilo mcp` serves these over stdio (MCP tool names cannot contain dots):
 
 | Tool | Notes |
 | :--- | :--- |
-| `hilo.resume(project)` | Same content as the Resume context screen |
-| `hilo.add_task(...)` | |
-| `hilo.log_agreement(..., status="pending")` | Claude only proposes; the user confirms |
-| `hilo.current_task()` | |
-| `hilo.week_summary(week)` | |
+| `hilo_resume(project)` | Same content as the Resume context screen, as Markdown |
+| `hilo_add_task(title, project?, start?)` | |
+| `hilo_log_agreement(text, project?, context?)` | Always stored as `pending`; Claude only proposes, the user confirms in the app |
+| `hilo_current_task()` | |
+| `hilo_week_summary()` | Sessions, closed tasks and confirmed agreements per project |
+
+Register it with Claude Code: `claude mcp add hilo -- <repo>/daemon/.build/release/hilo mcp`.
 
 ## Pending to define
 
