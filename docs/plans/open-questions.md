@@ -48,12 +48,12 @@ Nothing pending.
 
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
-| Session ↔ task linking | Sessions must attach to Hilo tasks | By directory, branch, or a prompt when the session starts | 5 |
+| Session ↔ task linking | Sessions must attach to Hilo tasks. Implemented default: a session links to its project's task in progress when there is exactly one; otherwise by hand (app or `hilo link`). Project = repo directory name | Confirm the default, or add branch matching / a prompt when the session starts | 5 |
 | Weekly summary drafting | "Drafted by Claude" | How, without storing API keys in Hilo (e.g. via Claude Code + MCP) | 5 |
 | Jira credentials | Optional per-project sync | Storage (macOS Keychain), scopes, sync interval | 5 |
 | Project hue/accessory | Fixed per project, same on buddy and Hilo; the contract has no hue/accessory field yet | Assigned manually, from config, or derived from the name | 5 |
 | Music source | `media.now_playing` has no producer | Which player(s) and how `hilod` reads now-playing on macOS | 6 |
-| Distribution | Login item + app | Signing, notarization, install/update path | 5 |
+| Distribution | `Hilo.app` is built with SwiftPM and bundled by `scripts/build-hilo-app.sh`, signed with the local identity; `hilod` still runs as a separate launchd job | Embed `hilod` in the app as a login item (stable Bluetooth permission, no `launchctl submit`), notarization, install/update path | 5 |
 
 ## Security
 

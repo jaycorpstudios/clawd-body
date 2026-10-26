@@ -7,6 +7,8 @@ let package = Package(
     products: [
         .executable(name: "hilod", targets: ["hilod"]),
         .executable(name: "hilo", targets: ["hilo"]),
+        .library(name: "HiloStore", targets: ["HiloStore"]),
+        .library(name: "HiloRuntime", targets: ["HiloRuntime"]),
     ],
     targets: [
         .target(name: "HiloContract"),
