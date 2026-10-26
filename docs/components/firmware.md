@@ -12,7 +12,7 @@ Stack: **ESP-IDF + LVGL 9**, BLE through NimBLE. Board bring-up uses the vendor 
 - 480×480 touch AMOLED (CO5300 display controller, CST9220 touch)
 - 2.4 GHz WiFi and BLE 5 · QMI8658 IMU · PCF85063 RTC · AXP2101 PMU
 - Audio: ES8311 codec and ES7210 ADC with 2 microphones (microphones unused)
-- microSD · user button on GPIO18 · 3.7 V 1000 mAh Li-ion battery
+- microSD · user button on GPIO18 (on the bare board, the third of the three buttons on the top edge; the UI calls it the side button) · 3.7 V 1000 mAh Li-ion battery
 
 Spare parts available: PAM8403 amplifiers and 8 Ω 0.5 W speakers, in case the onboard audio is not loud enough.
 

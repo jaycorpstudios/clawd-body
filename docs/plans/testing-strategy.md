@@ -30,8 +30,8 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 - [ ] Overlay and permission backgrounds use vertical gradients instead of the prototype's radial ones (complex gradients are off in LVGL); check they read well on the AMOLED.
 - [ ] Swipe left/right changes view; taps on agent rows, the usage ring, the Hilo card and sheet controls land on the right target; a swipe never also fires a tap.
 - [ ] Hold to approve fires at ~900 ms; lifting early or sliding off the button cancels it.
-- [ ] Side button on GPIO18: assumed active-low with the internal pull-up and a 40 ms debounce; click = back / Later / next view, hold 650 ms = sleep.
-- [ ] Sleep clock is dim and moves every 6 s; tap or button wakes. Brightness is not lowered yet (no brightness policy).
+- [ ] Side button on GPIO18: assumed active-low with the internal pull-up and a 40 ms debounce; click = back / Later / next view, hold 650 ms = sleep. *2026-10-25: active-low confirmed (click on Home opens Agents; 5 s hold opens pairing). Back, Later and the 650 ms sleep hold not checked yet.*
+- [ ] Sleep clock is dim and moves every 6 s; tap or button wakes. Brightness is not lowered yet (no brightness policy). *2026-10-25: dim, moves, tap wakes to Home. Showed boxes for `--:--` before the time was known (fixed: `-` added to the digit fonts). Button wake not checked yet.*
 - [x] Confetti burst on "Task done" does not drop frames. *2026-10-25: 37–61 fps during a burst (was ~20 fps for 1.5 s: 46 moving pieces overflowed LVGL's 32 invalid areas and forced full-screen redraws; they are now merged per tile). The 20-piece "Approved" burst is not measured yet.*
 - [x] Heap after boot: model and pets live in PSRAM (`model … bytes` log line); no allocation failures over an hour of demo feed. *2026-10-25: `model 76520 bytes in psram`; over one hour of demo feed (one boot, no errors) internal heap stayed at ~196 KB free (low-water 94 KB) and PSRAM at 6.5 MB free, logged every minute.*
 - [ ] Not implemented yet, still demo values: battery from the AXP2101, writing the PCF85063 from the model clock, sound through the ES8311.
@@ -39,12 +39,12 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 
 ### BLE peripheral
 
-- [ ] Hold the side button 5 s on Home: pairing screen appears and the buddy shows up as `Hilo Buddy` in a scan; it closes after 60 s or on Cancel / side button.
-- [ ] Pairing from macOS shows the system passkey dialog; the code on the buddy matches; the bond survives a reboot (NVS).
+- [ ] Hold the side button 5 s on Home: pairing screen appears and the buddy shows up as `Hilo Buddy` in a scan; it closes after 60 s or on Cancel / side button. *2026-10-25: screen appears, advertising turns discoverable (`disc_mode=2`) and closes after exactly 60 s. `hilod` found the buddy but logged no name (`found buddy`); Cancel and the button not checked.*
+- [x] Pairing from macOS shows the system passkey dialog; the code on the buddy matches; the bond survives a reboot (NVS). *2026-10-25: confirmed; after several reflashes the Mac reconnects as `secure (bonded)` without a passkey.*
 - [ ] Outside pairing mode an unbonded central is disconnected within 10 s and never reaches `rx`; a bonded Mac reconnects on its own.
-- [ ] Bonded Macs using a resolvable private address are recognised after reconnecting.
-- [ ] Negotiated MTU (log `mtu`) and an 8 KB snapshot round trip; notifications do not fail with out-of-mbuf on a burst.
+- [ ] Bonded Macs using a resolvable private address are recognised after reconnecting. *2026-10-25: the test Mac connects with a public address, so this is still open.*
+- [x] Negotiated MTU (log `mtu`) and an 8 KB snapshot round trip; notifications do not fail with out-of-mbuf on a burst. *2026-10-25: MTU 517; a 7681-byte snapshot (16 injected sessions, trimmed by `hilod`) arrives in ~1.2 s and is accepted. The buddy only sends single-frame messages so far, so no notify burst occurs.*
 - [ ] Two Macs connected at once; each only receives the messages for its host.
-- [ ] Non-discoverable connectable advertising is enough for CoreBluetooth to reconnect a known peripheral.
-- [ ] `hilod` first run triggers the macOS Bluetooth permission prompt (embedded `Info.plist`); `hilod --pair` finds the buddy, pairs and writes `buddies.json`.
-- [ ] Plain `hilod` reconnects after the buddy reboots and after toggling Bluetooth on the Mac, and sends a `snapshot` each time.
+- [x] Non-discoverable connectable advertising is enough for CoreBluetooth to reconnect a known peripheral. *2026-10-25: every reconnect ran with `disc_mode=0`.*
+- [x] `hilod` first run triggers the macOS Bluetooth permission prompt (embedded `Info.plist`); `hilod --pair` finds the buddy, pairs and writes `buddies.json`. *2026-10-25: only when started by launchd; from a terminal macOS aborts it (see [open questions](open-questions.md#daemon)). Every rebuild asks again.*
+- [x] Plain `hilod` reconnects after the buddy reboots and after toggling Bluetooth on the Mac, and sends a `snapshot` each time. *2026-10-25: reconnects in 7–22 s with a snapshot each time. Found and fixed on the way: clipped `agent.step` / `task_done` text was rejected by the buddy, a timed-out overlapping security procedure dropped bonded links after 30 s, and `hilod` busy-looped while Bluetooth was off.*
