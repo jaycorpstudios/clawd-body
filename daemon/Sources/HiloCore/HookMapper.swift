@@ -130,17 +130,17 @@ public struct HookMapper: Sendable {
 }
 
 /// Limits count Unicode scalars, as JSON Schema's maxLength does.
-enum Text {
-    static func clip(_ s: String, _ max: Int) -> String {
+public enum Text {
+    public static func clip(_ s: String, _ max: Int) -> String {
         clipLine(s.replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces), max)
     }
 
-    static func clipLine(_ s: String, _ max: Int) -> String {
+    public static func clipLine(_ s: String, _ max: Int) -> String {
         let u = s.unicodeScalars
         return u.count <= max ? s : String(String.UnicodeScalarView(u.prefix(max - 1))) + "…"
     }
 
-    static func clipLeft(_ s: String, _ max: Int) -> String {
+    public static func clipLeft(_ s: String, _ max: Int) -> String {
         let u = s.unicodeScalars
         return u.count <= max ? s : "…" + String(String.UnicodeScalarView(u.suffix(max - 1)))
     }

@@ -29,14 +29,17 @@ public actor Coordinator {
     private let clock: Clock
     private let pollSeconds: Double
     private let log: @Sendable (String) -> Void
+    private let recorder: StoreRecorder?
     private var registry = RequestRegistry()
     private var store = SessionStore()
     private var waiting: [String: CheckedContinuation<Resolution?, Never>] = [:]
 
     public init(host: String, mapper: HookMapper, link: BuddyLink, presence: PresenceProbe,
-                clock: Clock = SystemClock(), pollSeconds: Double = 2, log: @escaping @Sendable (String) -> Void = { _ in }) {
+                clock: Clock = SystemClock(), pollSeconds: Double = 2, recorder: StoreRecorder? = nil,
+                log: @escaping @Sendable (String) -> Void = { _ in }) {
         self.host = host; self.mapper = mapper; self.link = link
-        self.presence = presence; self.clock = clock; self.pollSeconds = pollSeconds; self.log = log
+        self.presence = presence; self.clock = clock; self.pollSeconds = pollSeconds
+        self.recorder = recorder; self.log = log
     }
 
     /// Returns what the hook command must print to stdout.
@@ -114,11 +117,17 @@ public actor Coordinator {
 
     /// Full state for this host; send it whenever a buddy link comes up.
     public func sendSnapshot() async {
+        if let recorder { store.setHilo(recorder.hiloState(now: clock.now())) }
         await send(.snapshot(store.snapshot(host: host)))
+    }
+
+    public func buddyLink(up: Bool) {
+        recorder?.buddyLink(up: up, now: clock.now())
     }
 
     private func send(_ message: Outbound) async {
         store.apply(message, now: clock.now())
+        recorder?.record(message, now: clock.now())
         guard let data = try? Wire.encode(message, host: host, ts: clock.now()) else { return }
         await link.send(data)
     }

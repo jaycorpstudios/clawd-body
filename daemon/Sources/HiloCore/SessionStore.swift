@@ -54,6 +54,10 @@ public struct SessionStore: Sendable {
         }
     }
 
+    public mutating func setHilo(_ state: HiloState) {
+        hilo = state
+    }
+
     public func snapshot(maxBytes: Int = Framing.maxMessageSize, host: String = "work") -> Snapshot {
         var ordered = sessions.values.sorted { a, b in
             a.status.priority != b.status.priority ? a.status.priority < b.status.priority : a.since > b.since
