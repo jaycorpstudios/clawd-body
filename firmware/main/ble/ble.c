@@ -144,6 +144,8 @@ static void on_security(uint16_t handle, int status)
     }
     if (l->secure) return;
     l->secure = true;
+    ESP_LOGI(TAG, "link %d: secure (%s, peer address %s)", i, l->pairing ? "new bond" : "bonded",
+             desc.peer_ota_addr.type == BLE_ADDR_RANDOM ? "random" : "public");
     if (l->pairing) {
         l->pairing = false;
         post(BLE_EV_PAIRED, i, 0, NULL, 0);
@@ -189,12 +191,16 @@ static int gap_event(struct ble_gap_event *event, void *arg)
         links[i].mtu = BLE_ATT_MTU_DFLT;
         links[i].opened_ms = now_ms();
         bm_reasm_reset(links[i].rx);
+        ESP_LOGI(TAG, "link %d: connected", i);
         ble_gap_security_initiate(event->connect.conn_handle);
         advertise();
         return 0;
 
     case BLE_GAP_EVENT_DISCONNECT:
-        if (find(event->disconnect.conn.conn_handle, &i)) drop_link(i);
+        if (find(event->disconnect.conn.conn_handle, &i)) {
+            ESP_LOGI(TAG, "link %d: disconnected (0x%x)", i, event->disconnect.reason);
+            drop_link(i);
+        }
         advertise();
         return 0;
 
@@ -216,12 +222,16 @@ static int gap_event(struct ble_gap_event *event, void *arg)
 
     case BLE_GAP_EVENT_SUBSCRIBE:
         l = find(event->subscribe.conn_handle, NULL);
-        if (l && event->subscribe.attr_handle == tx_handle) l->subscribed = event->subscribe.cur_notify;
+        if (l && event->subscribe.attr_handle == tx_handle) {
+            l->subscribed = event->subscribe.cur_notify;
+            ESP_LOGI(TAG, "tx notify %s", l->subscribed ? "on" : "off");
+        }
         return 0;
 
     case BLE_GAP_EVENT_MTU:
         l = find(event->mtu.conn_handle, NULL);
         if (l) l->mtu = event->mtu.value;
+        ESP_LOGI(TAG, "mtu %u", event->mtu.value);
         return 0;
 
     case BLE_GAP_EVENT_ADV_COMPLETE:

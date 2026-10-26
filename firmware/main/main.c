@@ -79,6 +79,7 @@ static void on_ble_event(const ble_ev_t *ev, size_t len, uint32_t now)
     case BLE_EV_MESSAGE: {
         bm_err_t err = bm_conn_deliver(model, c, inbound, len - 1, now);
         if (err != BM_OK) ESP_LOGW(TAG, "link %d: message rejected (%d)", ev->link, err);
+        else ESP_LOGI(TAG, "link %d: rx %u bytes", ev->link, (unsigned)(len - 1));
         break;
     }
     }
