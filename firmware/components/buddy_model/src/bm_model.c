@@ -82,15 +82,18 @@ int bm__host_slot(bm_model_t *m, const char *name, bool create)
     for (int i = 0; i < BM_MAX_HOSTS; i++)
         if (m->hosts[i].used && strcmp(m->hosts[i].name, name) == 0) return i;
     if (!create) return -1;
-    for (int i = 0; i < BM_MAX_HOSTS; i++) {
-        if (!m->hosts[i].used) {
-            memset(&m->hosts[i], 0, sizeof(m->hosts[i]));
-            m->hosts[i].used = true;
-            bm__copy(m->hosts[i].name, sizeof(m->hosts[i].name), name);
-            return i;
-        }
-    }
-    return -1;
+    int slot = -1;
+    for (int i = 0; i < BM_MAX_HOSTS && slot < 0; i++)
+        if (!m->hosts[i].used) slot = i;
+    /* A renamed or replaced Mac would otherwise keep its slot until the buddy reboots. */
+    for (int i = 0; i < BM_MAX_HOSTS && slot < 0; i++)
+        if (!m->hosts[i].connected) slot = i;
+    if (slot < 0) return -1;
+    bm__clear_host(m, slot);
+    memset(&m->hosts[slot], 0, sizeof(m->hosts[slot]));
+    m->hosts[slot].used = true;
+    bm__copy(m->hosts[slot].name, sizeof(m->hosts[slot].name), name);
+    return slot;
 }
 
 bm_session_t *bm__find_session(bm_model_t *m, int host, const char *id)

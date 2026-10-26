@@ -116,8 +116,21 @@ TEST(not_json_and_unknown_version_are_rejected)
                    "\"data\":{\"session\":\"x\"}}") == BM_E_VERSION);
 }
 
-TEST(third_host_is_rejected)
+TEST(third_host_is_rejected_while_both_macs_are_connected)
 {
     fresh();
     CHECK(send("lab", "session.start", "{\"session\":\"s\",\"project\":\"p\",\"task\":\"t\"}") == BM_E_HOSTS_FULL);
+}
+
+TEST(new_host_takes_the_slot_of_a_disconnected_one)
+{
+    fresh();
+    start_session("home", "h1", "alpha");
+    start_session("work", "w1", "beta");
+    bm_link(&M, "home", false, now);
+    CHECK(send("studio", "session.start", "{\"session\":\"s\",\"project\":\"p\",\"task\":\"t\"}") == BM_OK);
+    CHECK(session_index("home", "h1") < 0);
+    CHECK(session_index("work", "w1") >= 0);
+    CHECK(session_index("studio", "s") >= 0);
+    for (int i = 0; i < BM_MAX_HOSTS; i++) CHECK(strcmp(M.hosts[i].name, "home") != 0);
 }
