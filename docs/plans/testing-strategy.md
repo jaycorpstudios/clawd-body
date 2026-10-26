@@ -1,6 +1,6 @@
 # Testing strategy
 
-> **Pending to define.** Fill per component once stacks are chosen. The safety rules (no remote high-risk approval, single-use decisions) must have automated tests before phase 4 ships.
+The safety rules (no remote high-risk approval, single-use decisions) must have automated tests before phase 4 ships.
 
 ```mermaid
 flowchart LR
