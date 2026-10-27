@@ -37,6 +37,8 @@ public actor Coordinator {
     private var buddySettings: DeviceSettings?
     private var face: FaceImage?
     private var pomodoro: PomodoroState?
+    private var media: (value: Media, at: Int)?
+    private var player: MediaPlayer?
 
     public init(host: String, mapper: HookMapper, link: BuddyLink, presence: PresenceProbe,
                 clock: Clock = SystemClock(), pollSeconds: Double = 2, recorder: StoreRecorder? = nil,
@@ -83,6 +85,12 @@ public actor Coordinator {
             if let mine = pomodoro, p.updatedAt < mine.updatedAt { return await send(.pomodoro(mine)) }
             log("buddy pomodoro: \(p.state.rawValue) \(p.phase.rawValue), cycle \(p.cycle)")
             adopt(p)
+            return
+        case .mediaControl(let c):
+            guard let player else { return log("buddy media control ignored: no player") }
+            log("buddy media control: \(c.action.rawValue)")
+            player.control(c.action)
+            await updateMedia(player.current())
             return
         case .faceRequest(let ref):
             guard let face, face.hash == ref.hash else { return log("buddy asked for face \(ref.hash), which this Mac no longer has") }
@@ -187,6 +195,32 @@ public actor Coordinator {
     }
 
     public var focus: PomodoroState? { pomodoro }
+
+    public func setPlayer(_ player: MediaPlayer) { self.player = player }
+
+    public func pollMedia() async {
+        guard let player else { return }
+        await updateMedia(player.current())
+    }
+
+    /// Sends `media.now_playing` when the track, play state or a seek changes what the buddy extrapolates; a snapshot
+    /// without `media` when playback stops.
+    public func updateMedia(_ next: Media?) async {
+        let now = clock.now()
+        guard let next else {
+            guard media != nil else { return }
+            media = nil
+            store.setMedia(nil)
+            return await sendSnapshot()
+        }
+        if let (last, at) = media, last.title == next.title, last.artist == next.artist, last.lengthS == next.lengthS,
+           last.playing == next.playing {
+            let expected = last.positionS + (last.playing == false ? 0 : now - at)
+            if abs(expected - next.positionS) <= 3 { return }
+        }
+        media = (next, now)
+        await send(.nowPlaying(next))
+    }
 
     /// Runs on the Mac's clock too, so finished work phases are recorded even with the buddy away.
     public func tickPomodoro() {

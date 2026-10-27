@@ -39,6 +39,10 @@ Hold the side button 5 s on the buddy's Home view, then run `hilod --pair`. macO
 
 `hilod` embeds an `Info.plist` with `NSBluetoothAlwaysUsageDescription`; the first run asks for Bluetooth permission.
 
+## Now playing
+
+Every 3 s `hilod` asks Spotify and then Music.app (only if already running) what is playing over AppleScript and forwards changes as `media.now_playing`; the buddy's play/pause, next and previous come back as `media.control` and run as the matching AppleScript command on that app. macOS asks once per app for Automation permission ("hilod wants to control Spotify"); if it is denied the log says so and `hilod` leaves that app alone until restarted. See [open questions](../docs/plans/open-questions.md) for what to do if the prompt never shows under launchd.
+
 ## Socket ops
 
 One request per connection on the Unix socket: the first line is the op, the rest its body. Only the same user can connect.

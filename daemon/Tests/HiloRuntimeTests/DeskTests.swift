@@ -171,3 +171,56 @@ final class DeskClock: Clock, @unchecked Sendable {
         #expect(try JSONDecoder().decode(DaemonStatus.self, from: reply).pomodoro?.state == .running)
     }
 }
+
+final class FakePlayer: MediaPlayer, @unchecked Sendable {
+    private let lock = NSLock()
+    private var actions: [MediaAction] = []
+    var now: Media?
+    func current() -> Media? { lock.withLock { now } }
+    func control(_ action: MediaAction) { lock.withLock { actions.append(action) } }
+    var received: [MediaAction] { lock.withLock { actions } }
+}
+
+@Suite struct MediaFlowTests {
+    let link = DeskLink()
+    let clock = DeskClock(10_000)
+    let coordinator: Coordinator
+
+    init() {
+        coordinator = Coordinator(host: "work", mapper: HookMapper(repoRoot: { _ in nil }), link: link, presence: DeskAway(), clock: clock)
+    }
+
+    @Test func parsesBothAppsAndClipsLongFields() {
+        let spotify = AppleScriptPlayer.parse("Low Tide\tThe Pixels\t214000\t61\tplaying", durationDivisor: 1000)
+        #expect(spotify == Media(title: "Low Tide", artist: "The Pixels", lengthS: 214, positionS: 61, playing: true))
+        let music = AppleScriptPlayer.parse("Fan Noise\t\t180\t200\tpaused", durationDivisor: 1)
+        #expect(music == Media(title: "Fan Noise", artist: "", lengthS: 180, positionS: 180, playing: false))
+        #expect(AppleScriptPlayer.parse("", durationDivisor: 1) == nil)
+        #expect(AppleScriptPlayer.parse("\tx\t1\t1\tplaying", durationDivisor: 1) == nil)
+        #expect(AppleScriptPlayer.parse(String(repeating: "a", count: 200) + "\tb\t10\t1\tplaying", durationDivisor: 1)?.title.count == 80)
+    }
+
+    @Test func sendsOnlyChangesThatTheBuddyCannotExtrapolate() async {
+        let song = Media(title: "Low Tide", artist: "The Pixels", lengthS: 214, positionS: 10, playing: true)
+        await coordinator.updateMedia(song)
+        clock.set(10_030)
+        await coordinator.updateMedia(Media(title: "Low Tide", artist: "The Pixels", lengthS: 214, positionS: 41, playing: true))
+        #expect(await link.types() == ["media.now_playing"])
+        await coordinator.updateMedia(Media(title: "Low Tide", artist: "The Pixels", lengthS: 214, positionS: 120, playing: true))
+        await coordinator.updateMedia(Media(title: "Low Tide", artist: "The Pixels", lengthS: 214, positionS: 120, playing: false))
+        #expect(await link.types().count == 3)
+        await coordinator.updateMedia(nil)
+        guard case .snapshot(let snap) = await link.decoded().last else { Issue.record("no snapshot"); return }
+        #expect(snap.media == nil)
+        await coordinator.updateMedia(nil)
+        #expect(await link.types().count == 4)
+    }
+
+    @Test func buddyControlsReachThePlayer() async throws {
+        let player = FakePlayer()
+        await coordinator.setPlayer(player)
+        try await coordinator.handleBuddy(buddyMessage("media.control", #"{"action":"next"}"#))
+        try await coordinator.handleBuddy(buddyMessage("media.control", #"{"action":"play_pause"}"#))
+        #expect(player.received == [.next, .playPause])
+    }
+}

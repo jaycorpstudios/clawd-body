@@ -71,6 +71,14 @@ if let store {
 }
 
 Task.detached {
+    await coordinator.setPlayer(AppleScriptPlayer(log: log))
+    while true {
+        await coordinator.pollMedia()
+        try? await Task.sleep(for: .seconds(3))
+    }
+}
+
+Task.detached {
     while true {
         await coordinator.tickPomodoro()
         try? await Task.sleep(for: .seconds(5))

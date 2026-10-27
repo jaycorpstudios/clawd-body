@@ -8,5 +8,7 @@
     <string>hilod</string>
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>hilod talks to your Hilo Buddy over Bluetooth.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>hilod shows what Spotify or Music is playing on your Hilo Buddy and lets the buddy play, pause and skip.</string>
 </dict>
 </plist>
