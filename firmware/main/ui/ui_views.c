@@ -362,7 +362,14 @@ static void create_pomodoro(lv_obj_t *v)
     lv_obj_set_flex_flow(mid, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(mid, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(mid, 18, 0);
+    lv_obj_set_style_pad_ver(mid, 14, 0);
     ui.pomo_pet = ui_pet_create(mid, 96);
+    ui.pomo_ring = ui_box(mid);
+    lv_obj_add_flag(ui.pomo_ring, LV_OBJ_FLAG_FLOATING);
+    lv_obj_set_size(ui.pomo_ring, 124, 124);
+    lv_obj_set_style_radius(ui.pomo_ring, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_border_width(ui.pomo_ring, 6, 0);
+    ui_show(ui.pomo_ring, false);
     lv_obj_t *texts = ui_box(mid);
     lv_obj_set_size(texts, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(texts, LV_FLEX_FLOW_COLUMN);
@@ -389,6 +396,23 @@ static void create_pomodoro(lv_obj_t *v)
     lv_obj_set_style_pad_column(ctl, 28, 0);
     round_button(ctl, 52, &lv_font_montserrat_24, LV_SYMBOL_REFRESH, BM_TAP_POMO_RESET, 0);
     ui.pomo_play = round_button(ctl, 68, &lv_font_montserrat_32, LV_SYMBOL_PLAY, BM_TAP_POMO_TOGGLE, 0);
+}
+
+static void alarm_catch_cb(lv_event_t *e)
+{
+    (void)e;
+    bm_alarm_stop(ui.m, lv_tick_get());
+}
+
+/* Above the views and below alerts, so any touch on the screen silences the alarm without acting. */
+void ui_alarm_create(lv_obj_t *scr)
+{
+    ui.alarm_catch = ui_box(scr);
+    lv_obj_set_size(ui.alarm_catch, SCREEN, SCREEN);
+    lv_obj_add_flag(ui.alarm_catch, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_remove_flag(ui.alarm_catch, LV_OBJ_FLAG_GESTURE_BUBBLE);
+    lv_obj_add_event_cb(ui.alarm_catch, alarm_catch_cb, LV_EVENT_PRESSED, NULL);
+    ui_show(ui.alarm_catch, false);
 }
 
 void ui_views_create(lv_obj_t *scr)
@@ -705,6 +729,14 @@ static void update_pomodoro(void)
     lv_label_set_text_fmt(ui.pomo_break, "%u", p->break_min);
     lv_label_set_text(ui.pomo_play, p->state == BM_POMO_RUNNING ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
     lv_obj_set_style_opa(lv_obj_get_parent(ui.pomo_play), ui.m->clock_known ? LV_OPA_COVER : LV_OPA_40, 0);
+    bool ringing = bm_alarm_ringing(ui.m);
+    ui_show(ui.alarm_catch, ringing);
+    if (ringing != !lv_obj_has_flag(ui.pomo_ring, LV_OBJ_FLAG_HIDDEN)) {
+        ui_show(ui.pomo_ring, ringing);
+        lv_obj_set_style_border_color(ui.pomo_ring, ui_hex(color), 0);
+        lv_obj_update_layout(ui.views[BM_VIEW_POMODORO]);
+        lv_obj_align_to(ui.pomo_ring, ui.pomo_pet->img, LV_ALIGN_CENTER, 0, 0);
+    }
 }
 
 void ui_views_update(void)
@@ -797,7 +829,12 @@ void ui_views_frame(void)
             lv_obj_set_style_border_opa(ui.rows[i].row, pulse ? (lv_opa_t)(0x33 + k * (255 - 0x33)) : LV_OPA_TRANSP, 0);
         }
         break;
-    case BM_VIEW_POMODORO: ui_pet_draw(ui.pomo_pet, bm_pomo_pet(ui.m), BM_PET_MAIN_HUE, ui.m->acc, 0); break;
+    case BM_VIEW_POMODORO: ui_pet_draw(ui.pomo_pet, bm_pomo_pet(ui.m), BM_PET_MAIN_HUE, ui.m->acc, 0);
+        if (bm_alarm_ringing(ui.m)) {
+            float k = (sinf(ui.t * 2 * 3.14159f / 1.1f) + 1) / 2;
+            lv_obj_set_style_border_opa(ui.pomo_ring, (lv_opa_t)(0x40 + k * (255 - 0x40)), 0);
+        }
+        break;
     case BM_VIEW_MUSIC: cover_frame(lv_tick_get()); break;
     default: break;
     }

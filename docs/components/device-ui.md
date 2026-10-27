@@ -35,7 +35,7 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 - A full-width progress track in the phase color.
 - While stopped: WORK and BREAK steppers (− value +, 5 min steps up to 90 for work, 1 min up to 60 for break). Hidden while running or paused.
 - Round buttons: reset and a larger play/pause. Play dims until the buddy knows the time.
-- Pet: working during work, happy during the break, idle when paused or stopped. A phase change shows a toast ("Break time" / "Back to work") and plays Success / Start when sound is on.
+- Pet: working during work, happy during the break, idle when paused or stopped. A phase change shows a toast ("Break time" / "Back to work") and rings the **end-of-phase alarm** (decided 2026-10-27): the buddy wakes on the Focus view at full brightness, a 124 px ring in the new phase's colour pulses around the pet (1.1 s), and the Success cue plays in bursts of three 1 s apart, every 5 s, for 30 s or until a touch anywhere or the side button (that touch does nothing else; a change from a Mac also silences it). It follows the sound setting (silent when sound is off) and plays at volume 60 at least while it rings. A phase that ended more than 30 s ago (a clock that jumped) flips without ringing. Hilo.app shows a macOS notification at the same time.
 - Hilo › Focus shows the same timer with the same pet look.
 - Checked against the host render (`scripts/firmware-render.sh`, 2026-10-27): every state above draws as described. Open: the buddy still sleeps after 60 s on a running timer ([open questions](../plans/open-questions.md#firmware)).
 

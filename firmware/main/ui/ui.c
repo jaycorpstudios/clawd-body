@@ -70,6 +70,7 @@ void ui_init(bm_model_t *m)
 
     ui_views_create(ui.scr);
     ui_bar_create(ui.scr);
+    ui_alarm_create(ui.scr);
     ui_overlay_create(ui.scr);
     ui_attn_create(ui.scr);
     ui_sheet_create(ui.scr);

@@ -59,3 +59,29 @@ extension PomodoroState {
 public enum PomodoroCommand: Equatable, Sendable {
     case toggle, reset, durations(work: Int?, rest: Int?)
 }
+
+/// Announces each phase end once, from the states `hilod` reports; a change made by hand (new `updatedAt`) is never announced.
+public struct PhaseAlarm: Sendable {
+    public static let staleAfter = 30
+    private var watched: PomodoroState?
+
+    public init() {}
+
+    /// The phase that just began, when one began since the last call and less than `staleAfter` seconds ago.
+    public mutating func check(_ state: PomodoroState?, now: Int) -> PomodoroState? {
+        guard let state, state.state == .running else {
+            watched = nil
+            return nil
+        }
+        guard var seen = watched, seen.updatedAt == state.updatedAt, let end = seen.endsAt else {
+            var fresh = state
+            fresh.advance(to: now)
+            watched = fresh
+            return nil
+        }
+        seen.advance(to: now)
+        watched = seen
+        guard let next = seen.endsAt, next != end else { return nil }
+        return now - (next - seen.phaseSeconds) < Self.staleAfter ? seen : nil
+    }
+}

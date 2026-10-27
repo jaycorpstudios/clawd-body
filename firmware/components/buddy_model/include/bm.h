@@ -39,6 +39,11 @@
 #define BM_COVER_WAIT_MS 8000
 #define BM_POMO_WORK_MIN 25
 #define BM_POMO_BREAK_MIN 5
+#define BM_ALARM_MS 30000
+#define BM_ALARM_BURSTS 3
+#define BM_ALARM_BURST_GAP_MS 1000
+#define BM_ALARM_REPEAT_MS 5000
+#define BM_ALARM_MIN_VOLUME 60
 
 #define BM_C_WORK 0xff9a52
 #define BM_C_WAIT 0xffc53d
@@ -303,6 +308,8 @@ typedef struct {
     uint32_t settings_emit_ms;
     bool panel;
     bm_pomo_t pomo;
+    uint32_t alarm_until_ms, alarm_next_ms;
+    uint8_t alarm_burst;
     uint32_t faces_rev;
     bm_rx_t face_rx;
     uint8_t face_rx_px[BM_FACE_MAX * BM_FACE_MAX * 2];
@@ -368,6 +375,8 @@ void bm_panel(bm_model_t *m, bool open, uint32_t now_ms);
 int32_t bm_pomo_left_s(const bm_model_t *m, uint32_t now_ms);
 float bm_pomo_progress(const bm_model_t *m, uint32_t now_ms);
 bm_pet_state_t bm_pomo_pet(const bm_model_t *m);
+bool bm_alarm_ringing(const bm_model_t *m);
+void bm_alarm_stop(bm_model_t *m, uint32_t now_ms);
 
 #define BM_CARD_CLOCK (-1)
 #define BM_CARD_COMPUTERS (-2)

@@ -138,7 +138,7 @@ static void power_cb(lv_timer_t *t)
 static void follow_brightness(void)
 {
     static int applied = -1;
-    int awake = model->settings.brightness;
+    int awake = bm_alarm_ringing(model) ? 100 : model->settings.brightness;
     int pct = model->sleeping && CONFIG_BUDDY_SLEEP_BRIGHTNESS < awake ? CONFIG_BUDDY_SLEEP_BRIGHTNESS : awake;
     if (pct == applied) return;
     applied = pct;
@@ -154,13 +154,22 @@ static void follow_settings(uint32_t now)
     if (model->settings_rev != applied_rev) {
         applied_rev = model->settings_rev;
         changed_at = now;
-        audio_set_volume(s->volume);
         ESP_LOGI(TAG, "settings sound %d, volume %u, brightness %u%%", s->sound, s->volume, s->brightness);
     }
     if (settings_saved_rev != applied_rev && now - changed_at >= SETTINGS_SAVE_MS) {
         settings_saved_rev = applied_rev;
         if (settings_store_save(s)) ESP_LOGI(TAG, "settings saved");
     }
+}
+
+static void follow_volume(void)
+{
+    static int applied = -1;
+    int volume = model->settings.volume;
+    if (bm_alarm_ringing(model) && volume < BM_ALARM_MIN_VOLUME) volume = BM_ALARM_MIN_VOLUME;
+    if (volume == applied) return;
+    applied = volume;
+    audio_set_volume(volume);
 }
 
 static void follow_faces(void)
@@ -188,6 +197,7 @@ static void io_cb(lv_timer_t *t)
     uint32_t now = lv_tick_get();
     poll_button(now);
     pump_link(now);
+    follow_volume();
     bm_sound_t snd;
     while (bm_sound_pop(model, &snd))
         if (model->settings.sound) audio_play(snd);

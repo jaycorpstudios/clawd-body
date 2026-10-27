@@ -111,6 +111,7 @@ void bm__settings_tick(bm_model_t *m, uint32_t now_ms)
 
 void bm_panel(bm_model_t *m, bool open, uint32_t now_ms)
 {
+    if (bm__alarm_ack(m, now_ms)) return;
     if (m->sleeping) {
         bm__wake(m, false, BM_BY_TOUCH, now_ms);
         return;
@@ -348,6 +349,7 @@ void bm__on_pomodoro(bm_model_t *m, int host, const bm_pomo_t *p, bool from_snap
     }
     if (p->updated_at > m->pomo.updated_at || (!from_snapshot && p->updated_at == m->pomo.updated_at)) {
         m->pomo = *p;
+        bm__alarm_ack(m, now_ms);
         if (m->clock_known) pomo_advance(&m->pomo, wall_s(m, now_ms));
         send_pomodoro(m, BM_ALL_HOSTS, now_ms);
         bm__touch(m);
@@ -433,10 +435,11 @@ void bm__pomo_tick(bm_model_t *m, uint32_t now_ms)
     if (m->pomo.state != BM_POMO_RUNNING || !m->clock_known) return;
     int64_t now_s = wall_s(m, now_ms);
     if (now_s < m->pomo.ends_at) return;
+    int64_t ended_at = m->pomo.ends_at;
     pomo_advance(&m->pomo, now_s);
     bool on_break = m->pomo.on_break;
     bm__toast(m, on_break ? "Break time" : "Back to work", on_break ? BM_C_DONE : BM_C_WORK, now_ms);
-    bm__sound(m, on_break ? BM_SND_DONE : BM_SND_START);
+    if (now_s - ended_at < BM_ALARM_MS / 1000) bm__alarm_start(m, now_ms);
     bm__touch(m);
 }
 

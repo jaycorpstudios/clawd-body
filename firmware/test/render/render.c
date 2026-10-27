@@ -348,7 +348,13 @@ static void scene_focus(void)
     run(50 * 1000);
     bm_touch_wake(&M, now);
     run(41 * 1000);
-    shot("focus-after-break-alone");
+    CHECK(bm_alarm_ringing(&M));
+    shot("focus-alarm-after-break-alone");
+    run(550);
+    shot("focus-alarm-pulse");
+    bm_alarm_stop(&M, now);
+    run(300);
+    shot("focus-alarm-silenced");
 
     bm_tap(&M, BM_TAP_POMO_RESET, 0, now);
     bm_tap(&M, BM_TAP_POMO_WORK, 1, now);

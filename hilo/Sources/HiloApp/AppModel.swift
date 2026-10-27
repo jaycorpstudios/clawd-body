@@ -3,9 +3,11 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 import HiloContract
+import HiloCore
 import HiloRuntime
 import HiloStore
 import Observation
+import UserNotifications
 
 enum AppSection: String, CaseIterable, Identifiable {
     case today = "Today", focus = "Focus", sessions = "Sessions", week = "Week", agreements = "Agreements", resume = "Resume context", setup = "Setup"
@@ -50,6 +52,7 @@ final class AppModel {
 
     private let store: HiloStore?
     private var timer: Timer?
+    private var phaseAlarm = PhaseAlarm()
 
     init() {
         do { store = try HiloStore() } catch {
@@ -94,6 +97,7 @@ final class AppModel {
             if running != daemonRunning { daemonRunning = running }
             let status = reply.flatMap { try? JSONDecoder().decode(DaemonStatus.self, from: $0) }
             if status != daemonStatus { daemonStatus = status }
+            if let begun = phaseAlarm.check(status?.pomodoro, now: Self.now) { PhaseNotifier.announce(begun) }
             let connected = running && (status.map { $0.buddy.link == .connected } ?? (state?.buddyConnected == true))
             if connected != buddyConnected { buddyConnected = connected }
         }

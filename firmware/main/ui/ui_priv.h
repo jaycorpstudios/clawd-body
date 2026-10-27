@@ -66,6 +66,7 @@ typedef struct {
 
     ui_pet_t *pomo_pet;
     lv_obj_t *pomo_cycle, *pomo_time, *pomo_phase, *pomo_bar, *pomo_steps, *pomo_work, *pomo_break, *pomo_play;
+    lv_obj_t *pomo_ring, *alarm_catch;
     lv_image_dsc_t cover_dsc;
     uint16_t *cover_px;
     uint32_t cover_grid[BM_COVER_GRID * BM_COVER_GRID];
@@ -121,6 +122,7 @@ void ui_bar_create(lv_obj_t *scr);
 void ui_bar_update(uint32_t now_ms);
 
 void ui_views_create(lv_obj_t *scr);
+void ui_alarm_create(lv_obj_t *scr);
 void ui_views_update(void);
 void ui_views_tick(uint32_t now_ms);
 void ui_views_frame(void);

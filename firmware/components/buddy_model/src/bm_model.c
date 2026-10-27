@@ -243,6 +243,55 @@ void bm__wake(bm_model_t *m, bool silent, bm_by_t by, uint32_t now_ms)
     m->last_act_ms = now_ms;
 }
 
+void bm__alarm_start(bm_model_t *m, uint32_t now_ms)
+{
+    bm__wake(m, true, BM_BY_TOUCH, now_ms);
+    m->panel = false;
+    m->sheet = BM_SHEET_NONE;
+    m->sheet_session = -1;
+    m->view = BM_VIEW_POMODORO;
+    m->alarm_until_ms = deadline(now_ms, BM_ALARM_MS);
+    m->alarm_next_ms = now_ms;
+    m->alarm_burst = 0;
+    bm__touch(m);
+}
+
+bool bm_alarm_ringing(const bm_model_t *m)
+{
+    return m->alarm_until_ms != 0;
+}
+
+/* The touch or press that silences the alarm does nothing else. */
+bool bm__alarm_ack(bm_model_t *m, uint32_t now_ms)
+{
+    if (!m->alarm_until_ms) return false;
+    m->alarm_until_ms = 0;
+    m->last_act_ms = now_ms;
+    bm__touch(m);
+    return true;
+}
+
+void bm_alarm_stop(bm_model_t *m, uint32_t now_ms)
+{
+    bm__alarm_ack(m, now_ms);
+}
+
+static void alarm_tick(bm_model_t *m, uint32_t now_ms)
+{
+    if (!m->alarm_until_ms) return;
+    if (due(now_ms, m->alarm_until_ms)) {
+        m->alarm_until_ms = 0;
+        bm__touch(m);
+        return;
+    }
+    if (!due(now_ms, m->alarm_next_ms)) return;
+    bm__sound(m, BM_SND_DONE);
+    m->alarm_burst++;
+    m->alarm_next_ms += m->alarm_burst % BM_ALARM_BURSTS
+                            ? BM_ALARM_BURST_GAP_MS
+                            : BM_ALARM_REPEAT_MS - (BM_ALARM_BURSTS - 1) * BM_ALARM_BURST_GAP_MS;
+}
+
 static void go_sleep(bm_model_t *m, bm_by_t by, uint32_t now_ms)
 {
     static const char *const by_names[] = {"touch", "button", "long_press", "idle"};
@@ -419,6 +468,7 @@ static void later(bm_model_t *m, uint32_t now_ms)
 
 void bm_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms)
 {
+    if (bm__alarm_ack(m, now_ms)) return;
     if (m->sleeping) {
         bm__wake(m, false, BM_BY_TOUCH, now_ms);
         return;
@@ -458,6 +508,7 @@ void bm_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms)
 
 void bm_tap_overlay(bm_model_t *m, uint32_t now_ms)
 {
+    if (bm__alarm_ack(m, now_ms)) return;
     if (m->sleeping) {
         bm__wake(m, false, BM_BY_TOUCH, now_ms);
         return;
@@ -475,6 +526,7 @@ void bm_tap_overlay(bm_model_t *m, uint32_t now_ms)
 
 void bm_touch_wake(bm_model_t *m, uint32_t now_ms)
 {
+    if (bm__alarm_ack(m, now_ms)) return;
     if (m->sleeping) bm__wake(m, false, BM_BY_TOUCH, now_ms);
     else m->last_act_ms = now_ms;
 }
@@ -487,6 +539,7 @@ static void next_view(bm_model_t *m, int dir)
 
 void bm_swipe(bm_model_t *m, int dir, uint32_t now_ms)
 {
+    if (bm__alarm_ack(m, now_ms)) return;
     if (m->sleeping) {
         bm__wake(m, false, BM_BY_TOUCH, now_ms);
         return;
@@ -519,6 +572,10 @@ static void side_press(bm_model_t *m, uint32_t now_ms)
 void bm_button(bm_model_t *m, bool pressed, uint32_t now_ms)
 {
     if (pressed) {
+        if (bm__alarm_ack(m, now_ms)) {
+            m->button_down = false;
+            return;
+        }
         m->button_down = true;
         m->button_long_fired = false;
         m->button_pairing_armed =
@@ -899,6 +956,7 @@ void bm_tick(bm_model_t *m, uint32_t now_ms)
     expire_requests(m, now_ms);
     bm__settings_tick(m, now_ms);
     bm__pomo_tick(m, now_ms);
+    alarm_tick(m, now_ms);
 
     if (m->hold_active && now_ms - m->hold_start_ms >= BM_HOLD_MS) decide(m, true, -1, now_ms);
 
