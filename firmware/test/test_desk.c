@@ -869,3 +869,49 @@ TEST(auto_continue_toggles_in_any_state_and_goes_to_the_macs)
     bm_tap(&M, BM_TAP_POMO_RESET, 0, now);
     CHECK(!M.pomo.auto_continue);
 }
+
+TEST(focus_card_comes_right_after_the_clock_while_a_timer_runs_or_is_paused)
+{
+    fresh();
+    CHECK(snapshot("work", "") == BM_OK);
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    advance(BM_IDLE_SLEEP_MS + 1000);
+    CHECK(M.sleeping && M.sleep_card == BM_CARD_CLOCK);
+    advance(BM_SLEEP_CARD_S * 1000);
+    CHECK(M.sleep_card == BM_CARD_FOCUS);
+    advance(BM_SLEEP_CARD_S * 1000);
+    CHECK(M.sleep_card == BM_CARD_COMPUTERS);
+    advance(BM_SLEEP_CARD_S * 1000);
+    CHECK(M.sleep_card == BM_CARD_CLOCK);
+
+    face_t f;
+    make_face(&f, 2);
+    send_face("home", &f);
+    int h = bm__host_slot(&M, "home", false);
+    advance(BM_SLEEP_CARD_S * 1000);
+    CHECK(M.sleep_card == BM_CARD_FOCUS);
+    advance(BM_SLEEP_CARD_S * 1000);
+    CHECK(M.sleep_card == h);
+    advance(BM_SLEEP_CARD_S * 1000);
+    CHECK(M.sleep_card == BM_CARD_CLOCK);
+}
+
+TEST(focus_card_stays_while_paused_and_goes_when_the_timer_stops)
+{
+    fresh();
+    CHECK(snapshot("work", "") == BM_OK);
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    CHECK(M.pomo.state == BM_POMO_PAUSED);
+    advance(BM_IDLE_SLEEP_MS + 1000 + BM_SLEEP_CARD_S * 1000);
+    CHECK(M.sleeping && M.sleep_card == BM_CARD_FOCUS);
+    char fmt[256];
+    snprintf(fmt, sizeof(fmt),
+             "{\"state\":\"stopped\",\"phase\":\"work\",\"work_min\":25,\"break_min\":5,\"cycle\":0,\"updated_at\":%lld}",
+             (long long)wall_now());
+    CHECK(send("work", "pomodoro.state", "%s", fmt) == BM_OK);
+    advance(1000);
+    CHECK(M.sleep_card == BM_CARD_CLOCK);
+    advance(2 * BM_SLEEP_CARD_S * 1000);
+    CHECK(M.sleep_card != BM_CARD_FOCUS);
+}

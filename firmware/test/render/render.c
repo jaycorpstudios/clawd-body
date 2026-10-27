@@ -382,6 +382,35 @@ static void scene_focus(void)
     shot("focus-stopped-90-4");
 }
 
+static void scene_focus_card(void)
+{
+    linked();
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    fall_asleep();
+    wait_card(BM_CARD_FOCUS);
+    shot("sleep-focus-work");
+
+    int64_t t = bm_wall_ms(&M, now) / 1000;
+    char state[300];
+    snprintf(state, sizeof(state),
+             "{\"state\":\"running\",\"phase\":\"break\",\"ends_at\":%lld,\"work_min\":25,\"break_min\":5,"
+             "\"cycle\":1,\"updated_at\":%lld}",
+             (long long)(t + 250), (long long)t);
+    pomo_snapshot(state);
+    wait_card(BM_CARD_CLOCK);
+    wait_card(BM_CARD_FOCUS);
+    shot("sleep-focus-break");
+
+    snprintf(state, sizeof(state),
+             "{\"state\":\"paused\",\"phase\":\"break\",\"left_s\":200,\"work_min\":25,\"break_min\":5,"
+             "\"cycle\":1,\"updated_at\":%lld}",
+             (long long)t + 1);
+    pomo_snapshot(state);
+    wait_card(BM_CARD_CLOCK);
+    wait_card(BM_CARD_FOCUS);
+    shot("sleep-focus-paused");
+}
+
 static void now_playing(bool playing, const char *cover)
 {
     char ref[64] = "";
@@ -693,6 +722,7 @@ int main(int argc, char **argv)
 
     scene_sleep();
     scene_focus();
+    scene_focus_card();
     scene_music();
     scene_panel();
     scene_looks();

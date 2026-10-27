@@ -7,6 +7,8 @@
 #define FACE_PX 160
 #define SLEEP_CARDS_DY 90
 
+static void sleep_focus_update(uint32_t now_ms);
+
 void ui_bar_create(lv_obj_t *scr)
 {
     lv_obj_t *bar = ui.bar = ui_box(scr);
@@ -66,6 +68,7 @@ void ui_bar_create(lv_obj_t *scr)
 void ui_bar_update(uint32_t now_ms)
 {
     char buf[16];
+    if (ui.m->sleeping && ui.m->sleep_card == BM_CARD_FOCUS) sleep_focus_update(now_ms);
     if (ui.m->clock_known) {
         bm_fmt_clock(bm_wall_ms(ui.m, now_ms), ui.m->settings.tz_offset_min, buf, sizeof(buf));
         lv_label_set_text(ui.clock, buf);
@@ -116,6 +119,22 @@ static int known_count(void)
     return n;
 }
 
+/* Minutes only, so the card changes at most once a minute; the tint is the Focus view's, kept while paused. */
+static void sleep_focus_update(uint32_t now_ms)
+{
+    const bm_pomo_t *p = &ui.m->pomo;
+    int left = (bm_pomo_left_s(ui.m, now_ms) + 59) / 60;
+    int key = left << 3 | p->on_break << 1 | (p->state == BM_POMO_PAUSED);
+    if (key == ui.sleep_focus_shown) return;
+    ui.sleep_focus_shown = key;
+    lv_label_set_text_fmt(ui.sleep_focus_phase, "%s%s", p->on_break ? "BREAK" : "WORK",
+                          p->state == BM_POMO_PAUSED ? " \xC2\xB7 PAUSED" : "");
+    lv_label_set_text_fmt(ui.sleep_focus_min, "%d", left);
+    bool tint = p->state == BM_POMO_RUNNING;
+    lv_obj_set_style_bg_color(ui.sleep_focus, ui_hex(p->on_break ? C_BREAK_BG : C_WORK_BG), 0);
+    lv_obj_set_style_bg_opa(ui.sleep_focus, tint ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
+}
+
 static void sleep_card_update(uint32_t now_ms)
 {
     int card = ui.m->sleep_card;
@@ -123,7 +142,9 @@ static void sleep_card_update(uint32_t now_ms)
     ui_show(ui.sleep_face, face);
     ui_show(ui.sleep_name, face);
     ui_show(ui.sleep_pet->img, computers);
-    ui_show(ui.sleep_clock, !face && !computers);
+    ui_show(ui.sleep_clock, card == BM_CARD_CLOCK);
+    ui_show(ui.sleep_focus, card == BM_CARD_FOCUS);
+    if (card == BM_CARD_FOCUS) sleep_focus_update(now_ms);
     ui_show(ui.sleep_ago, face || computers);
     ui_show(ui.sleep_hint, !face);
     if (face) {
@@ -198,6 +219,26 @@ void ui_misc_create(lv_obj_t *scr)
     lv_obj_set_style_clip_corner(ui.sleep_face, true, 0);
     lv_obj_set_style_opa(ui.sleep_face, 200, 0);
     ui.sleep_clock = ui_label(ui.sleep_inner, &font_pixel_90, UI_ORANGE, "--:--");
+    ui.sleep_focus = ui_box(ui.sleep_inner);
+    lv_obj_set_size(ui.sleep_focus, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_style_radius(ui.sleep_focus, 28, 0);
+    lv_obj_set_style_pad_hor(ui.sleep_focus, 36, 0);
+    lv_obj_set_style_pad_ver(ui.sleep_focus, 18, 0);
+    lv_obj_set_flex_flow(ui.sleep_focus, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(ui.sleep_focus, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    ui.sleep_focus_phase = ui_label(ui.sleep_focus, &font_mono_bold_18, UI_ORANGE, "");
+    lv_obj_set_style_text_opa(ui.sleep_focus_phase, 179, 0);
+    lv_obj_set_style_text_letter_space(ui.sleep_focus_phase, 2, 0);
+    lv_obj_t *row = ui_box(ui.sleep_focus);
+    lv_obj_set_size(row, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_style_margin_top(row, 8, 0);
+    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(row, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_END);
+    lv_obj_set_style_pad_column(row, 10, 0);
+    ui.sleep_focus_min = ui_label(row, &font_pixel_56, UI_ORANGE, "");
+    lv_obj_set_style_margin_bottom(ui_label(row, &font_mono_bold_18, UI_ORANGE, "min"), 6, 0);
+    ui.sleep_focus_shown = -1;
+    ui_show(ui.sleep_focus, false);
     ui.sleep_ago = ui_label(ui.sleep_inner, &font_mono_17, UI_ORANGE, "");
     lv_obj_set_style_text_opa(ui.sleep_ago, 179, 0);
     lv_obj_set_style_margin_top(ui.sleep_ago, 14, 0);

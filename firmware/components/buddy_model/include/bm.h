@@ -418,6 +418,7 @@ void bm_alarm_stop(bm_model_t *m, uint32_t now_ms);
 
 #define BM_CARD_CLOCK (-1)
 #define BM_CARD_COMPUTERS (-2)
+#define BM_CARD_FOCUS (-3)
 int bm_faces_count(const bm_model_t *m);
 uint64_t bm_fnv1a64(const void *data, size_t len);
 size_t bm_base64_decode(const char *in, uint8_t *out, size_t cap);

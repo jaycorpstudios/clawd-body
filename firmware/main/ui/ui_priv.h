@@ -105,6 +105,8 @@ typedef struct {
     lv_obj_t *toast, *toast_lbl;
     lv_obj_t *sleep, *sleep_inner, *sleep_clock, *sleep_face, *sleep_name, *sleep_ago, *sleep_hint;
     ui_pet_t *sleep_pet;
+    lv_obj_t *sleep_focus, *sleep_focus_phase, *sleep_focus_min;
+    int sleep_focus_shown;
     lv_image_dsc_t face_dsc;
     uint16_t *face_px;
     int8_t face_card;

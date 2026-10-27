@@ -285,9 +285,17 @@ int bm_faces_count(const bm_model_t *m)
     return n;
 }
 
+static bool focus_card_shown(const bm_model_t *m)
+{
+    return m->pomo.state != BM_POMO_STOPPED;
+}
+
+/* clock → Focus (while a timer runs or is paused) → one card per Mac with a picture, or the computers → clock. */
 static int next_card(const bm_model_t *m, int card)
 {
-    if (!bm_faces_count(m)) return card == BM_CARD_CLOCK ? BM_CARD_COMPUTERS : BM_CARD_CLOCK;
+    if (card == BM_CARD_CLOCK && focus_card_shown(m)) return BM_CARD_FOCUS;
+    if (card == BM_CARD_COMPUTERS) return BM_CARD_CLOCK;
+    if (!bm_faces_count(m)) return BM_CARD_COMPUTERS;
     for (int i = card < 0 ? 0 : card + 1; i < BM_MAX_HOSTS; i++)
         if (m->hosts[i].used && m->hosts[i].has_face) return i;
     return BM_CARD_CLOCK;
@@ -306,7 +314,8 @@ void bm__sleep_card_tick(bm_model_t *m, uint32_t now_ms)
     int64_t secs = m->clock_known ? wall_s(m, now_ms) : now_ms / 1000;
     if (!m->sleep_card_s) m->sleep_card_s = secs;
     bool gone = m->sleep_card >= 0 && !(m->hosts[m->sleep_card].used && m->hosts[m->sleep_card].has_face);
-    bool stale = m->sleep_card == BM_CARD_COMPUTERS && bm_faces_count(m);
+    bool stale = (m->sleep_card == BM_CARD_COMPUTERS && bm_faces_count(m)) ||
+                 (m->sleep_card == BM_CARD_FOCUS && !focus_card_shown(m));
     if (secs - m->sleep_card_s < BM_SLEEP_CARD_S && !gone && !stale) return;
     m->sleep_card_s = secs;
     m->sleep_card = (int8_t)(gone || stale ? BM_CARD_CLOCK : next_card(m, m->sleep_card));
