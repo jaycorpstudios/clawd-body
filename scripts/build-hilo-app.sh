@@ -13,6 +13,10 @@ cp .build/release/HiloApp "$app/Contents/MacOS/Hilo"
 # The app starts hilod from its own bundle; build-hilod.sh signs it, and that signature is kept here.
 hilod="../daemon/.build/release/hilod"
 if [ -x "$hilod" ]; then cp "$hilod" "$app/Contents/MacOS/hilod"; else echo "note: no $hilod yet, run scripts/build-hilod.sh first"; fi
+# JetBrains Mono (OFL) from the firmware font sources; Bricolage Grotesque and Hanken Grotesk are not in the repo yet.
+fonts="../firmware/tools/fonts/ttf"
+mkdir -p "$app/Contents/Resources/Fonts"
+cp "$fonts"/JetBrainsMono-{Regular,SemiBold,Bold}.ttf "$fonts/OFL-JetBrainsMono.txt" "$app/Contents/Resources/Fonts/"
 cat > "$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -26,6 +30,7 @@ cat > "$app/Contents/Info.plist" <<PLIST
   <key>CFBundleVersion</key><string>1</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
+  <key>ATSApplicationFontsPath</key><string>Fonts</string>
 </dict>
 </plist>
 PLIST

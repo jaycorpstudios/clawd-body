@@ -54,6 +54,7 @@ Nothing pending.
 | Music source | `media.now_playing` has no producer | Which player(s) and how `hilod` reads now-playing on macOS | 6 |
 | Setup and pairing in the app | Implemented 2026-10-25 as the app's Setup section (see [hilo.md](../components/hilo.md#screens)); pairing itself not yet run from the app on the board | Confirm the flow after a real pairing; whether Setup should also open as a modal on first run; renaming a Mac drops the old name's sessions on the buddy (it frees the slot) | 5 |
 | Distribution | `Hilo.app` is built with SwiftPM and bundled by `scripts/build-hilo-app.sh`, signed with the local identity; `hilod` runs as a LaunchAgent pointing into the bundle (`hilo install` or Setup) | Embed `hilod` in the app as a login item (stable Bluetooth permission, no `launchctl submit`), notarization, install/update path | 5 |
+| Prototype parity gaps | Reviewed 2026-10-26 with `HILO_SNAPSHOT` and scratch data. Done: tokens column, JetBrains Mono, Week's hours per day and tasks closed | (a) Bricolage Grotesque / Hanken Grotesk: fetch the OFL TTFs from their upstream repos at a pinned commit with SHA-256 (as the firmware fonts) and bundle them, or keep the system font; (b) "Warp tab" column and "Open in Warp": needs a way to map a session to a terminal tab (Warp has no public API for it; drop the column or show the terminal app only); (c) Week: previous/next week navigation and "Export .md" (save panel) are small, pure UI; the Claude summary depends on "Weekly summary drafting" | 5 |
 
 ## Security
 

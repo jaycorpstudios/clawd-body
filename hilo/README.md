@@ -34,4 +34,4 @@ open .build/Hilo.app
 
 The window polls the store every 2 s. After a change it asks `hilod` (socket op `hilo`) to send the buddy a fresh snapshot, so the buddy's Hilo card follows.
 
-Commits and active time come from `hilod`'s automatic capture ([spec](../docs/components/hilo.md#stack-implemented)). Not yet: tokens per session, Warp tab, MCP, Jira, the prototype's fonts (system fonts for now).
+Commits and active time come from `hilod`'s automatic capture ([spec](../docs/components/hilo.md#stack-implemented)). Tokens per session come from the opt-in transcript scan. `scripts/build-hilo-app.sh` bundles JetBrains Mono (OFL, from `firmware/tools/fonts/ttf`) in `Contents/Resources/Fonts`; a plain `swift run` falls back to the system mono. Not yet: Bricolage Grotesque and Hanken Grotesk (titles and body use the system font), Warp tab, Jira, the Claude-drafted week summary, week navigation and `.md` export ([open questions](../docs/plans/open-questions.md#hilo)).

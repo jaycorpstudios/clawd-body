@@ -55,7 +55,7 @@ struct SessionsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(s.project?.name ?? "A session") needs you").fontWeight(.bold)
                 HStack(spacing: 0) {
-                    Text(s.waitingOn ?? s.lastAction).font(.system(size: 13, design: .monospaced))
+                    Text(s.waitingOn ?? s.lastAction).font(Theme.monospaced(13))
                     Text(" · also shown on the buddy when you are away from the Mac")
                 }
                 .font(.system(size: 13.5)).foregroundStyle(Color(hex: "#e6cf94")).lineLimit(1)
@@ -73,7 +73,7 @@ struct SessionsView: View {
                 Text("Status").frame(width: 100, alignment: .leading)
                 Text("Hilo task").frame(maxWidth: .infinity, alignment: .leading)
                 Text("Duration").frame(width: 90, alignment: .trailing)
-                Text("Tokens").frame(width: 80, alignment: .trailing)
+                Text("Tokens").frame(width: 90, alignment: .trailing).padding(.trailing, 8)
                 Text("Last action").frame(maxWidth: .infinity, alignment: .leading)
             }
             .font(.system(size: 11.5, weight: .semibold)).tracking(0.8).textCase(.uppercase).foregroundStyle(Theme.secondary)
@@ -88,13 +88,13 @@ struct SessionsView: View {
                 HStack(spacing: 8) {
                     HStack(spacing: 10) {
                         PetView(look: PetView.look(of: s.project), state: PetState(s.status), size: 32)
-                        Text(s.project?.name ?? String(s.id.prefix(8))).font(.system(size: 13, weight: .medium, design: .monospaced))
+                        Text(s.project?.name ?? String(s.id.prefix(8))).font(Theme.monospaced(13, .medium))
                     }
                     .frame(width: 220, alignment: .leading)
                     StatusChip(status: s.status).frame(width: 100, alignment: .leading)
                     Text(s.taskTitle ?? "—").lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
                     Text(Format.duration(Format.sessionTime(s))).monospacedDigit().frame(width: 90, alignment: .trailing)
-                    Text(s.tokens.map(Format.tokens) ?? "—").monospacedDigit().frame(width: 80, alignment: .trailing)
+                    Text(s.tokens.map(Format.tokens) ?? "—").monospacedDigit().frame(width: 90, alignment: .trailing).padding(.trailing, 8)
                     Text(s.lastAction).foregroundStyle(Color(hex: "#c2bbb0")).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .padding(.horizontal, 16).padding(.vertical, 6)
@@ -134,7 +134,7 @@ struct SessionDetail: View {
                 if steps.isEmpty { Text("No steps recorded yet.").foregroundStyle(Theme.secondary) }
                 ForEach(Array(steps.enumerated()), id: \.offset) { _, step in
                     HStack(spacing: 12) {
-                        Text(Format.clock(step.ts)).font(.system(size: 12, design: .monospaced)).foregroundStyle(Theme.secondary)
+                        Text(Format.clock(step.ts)).font(Theme.monospaced(12)).foregroundStyle(Theme.secondary)
                             .lineLimit(1).fixedSize().frame(minWidth: 70, alignment: .leading)
                         RoundedRectangle(cornerRadius: 2.5).fill(Theme.stepColor[step.kind] ?? Theme.secondary).frame(width: 9, height: 9)
                         Text(step.text).lineLimit(2)

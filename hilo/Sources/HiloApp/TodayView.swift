@@ -106,7 +106,7 @@ struct TaskRow: View {
                 HStack(spacing: 10) {
                     if let p = task.project { HStack(spacing: 5) { ProjectDot(project: p); Text(p.name) } }
                     if let jira = task.jiraRef {
-                        Text(jira).font(.system(size: 11.5, design: .monospaced)).padding(.horizontal, 5).background(Theme.line, in: RoundedRectangle(cornerRadius: 4))
+                        Text(jira).font(Theme.monospaced(11.5)).padding(.horizontal, 5).background(Theme.line, in: RoundedRectangle(cornerRadius: 4))
                     }
                     Text(meta)
                 }
@@ -237,7 +237,7 @@ struct SessionCard: View {
         HStack(spacing: 12) {
             PetView(look: PetView.look(of: session.project), state: PetState(session.status), size: 40)
             VStack(alignment: .leading, spacing: 2) {
-                Text(session.project?.name ?? String(session.id.prefix(8))).font(.system(size: 13, weight: .semibold, design: .monospaced)).lineLimit(1)
+                Text(session.project?.name ?? String(session.id.prefix(8))).font(Theme.monospaced(13, .semibold)).lineLimit(1)
                 Text(session.lastAction).font(.system(size: 12.5)).foregroundStyle(Theme.secondary).lineLimit(1)
             }
             Spacer()

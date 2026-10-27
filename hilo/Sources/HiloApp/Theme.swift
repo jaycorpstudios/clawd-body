@@ -40,7 +40,14 @@ enum Theme {
 
     static func title(_ size: CGFloat) -> Font { .system(size: size, weight: .bold, design: .rounded) }
     static let sectionLabel = Font.system(size: 11.5, weight: .semibold)
-    static let mono = Font.system(size: 12.5, design: .monospaced)
+    static let mono = monospaced(12.5)
+
+    /// JetBrains Mono ships inside Hilo.app (scripts/build-hilo-app.sh); a plain `swift run` falls back to the system mono.
+    static func monospaced(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        hasJetBrainsMono ? .custom("JetBrains Mono", size: size).weight(weight) : .system(size: size, weight: weight, design: .monospaced)
+    }
+
+    private static let hasJetBrainsMono = NSFont(name: "JetBrainsMono-Regular", size: 12) != nil
 }
 
 extension Color {

@@ -32,6 +32,7 @@ final class AppModel {
     var agreements: [Agreement] = []
     var activeToday: [String: Int] = [:]
     var activeWeek: [String: Int] = [:]
+    var activePerDay: [Int: Int] = [:]
     var weekCommits: [CommitRecord] = []
     var projects: [Project] = []
     var daemonRunning = false
@@ -79,6 +80,8 @@ final class AppModel {
             if capture.0 != activeToday { activeToday = capture.0 }
             if capture.1 != activeWeek { activeWeek = capture.1 }
             if capture.2 != weekCommits { weekCommits = capture.2 }
+            let perDay = try store.activeSecondsPerDay(since: Self.startOfWeek)
+            if perDay != activePerDay { activePerDay = perDay }
             let state = try store.daemonState()
             let reply = LocalSocket.request(path: LocalSocket.defaultPath, op: "status", body: Data(), timeoutSeconds: 1)
             let running = reply != nil
