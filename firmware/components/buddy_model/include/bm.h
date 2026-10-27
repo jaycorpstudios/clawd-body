@@ -13,7 +13,7 @@
 #define BM_MAX_NEXT 3
 #define BM_MAX_AGREEMENTS 3
 #define BM_AGENT_ROWS 5
-#define BM_VIEWS 5
+#define BM_VIEWS 6
 #define BM_OUTBOX_LEN 8
 #define BM_OUT_MAX 512
 #define BM_SOUND_QUEUE 8
@@ -30,6 +30,12 @@
 #define BM_PAIRING_HOLD_MS 5000
 #define BM_PAIRING_MS 60000
 #define BM_PASSKEY_MS 30000
+#define BM_SETTINGS_SETTLE_MS 400
+#define BM_SLEEP_CARD_S 8
+#define BM_FACE_MAX 160
+#define BM_FACE_CHUNKS 16
+#define BM_POMO_WORK_MIN 25
+#define BM_POMO_BREAK_MIN 5
 
 #define BM_C_WORK 0xff9a52
 #define BM_C_WAIT 0xffc53d
@@ -60,7 +66,7 @@ typedef enum {
 
 typedef enum { BM_SHEET_NONE, BM_SHEET_AGENT, BM_SHEET_PERM, BM_SHEET_USAGE, BM_SHEET_HILO } bm_sheet_t;
 
-typedef enum { BM_VIEW_HOME, BM_VIEW_AGENTS, BM_VIEW_USAGE, BM_VIEW_HILO, BM_VIEW_MUSIC } bm_view_t;
+typedef enum { BM_VIEW_HOME, BM_VIEW_AGENTS, BM_VIEW_USAGE, BM_VIEW_HILO, BM_VIEW_MUSIC, BM_VIEW_POMODORO } bm_view_t;
 
 typedef enum {
     BM_SND_PERM, BM_SND_QUESTION, BM_SND_RISK, BM_SND_REMINDER,
@@ -159,6 +165,7 @@ typedef struct {
 
 typedef struct {
     bool playing;
+    bool paused;
     char title[81];
     char artist[81];
     int32_t length_s;
@@ -167,13 +174,51 @@ typedef struct {
 } bm_media_t;
 
 typedef struct {
+    char hash[17];
+    uint16_t w, h;
+    uint16_t px[BM_FACE_MAX * BM_FACE_MAX];
+} bm_face_t;
+
+typedef struct {
     bool used;
     char name[17];
     bool connected;
+    int64_t connected_at;
+    int64_t disconnected_at;
     bm_usage_t usage;
     bm_hilo_t hilo;
     bm_media_t media;
+    bool has_face;
+    bm_face_t face;
 } bm_host_t;
+
+typedef struct {
+    bool sound;
+    uint8_t volume;
+    uint8_t brightness;
+} bm_settings_t;
+
+typedef enum { BM_POMO_STOPPED, BM_POMO_RUNNING, BM_POMO_PAUSED } bm_pomo_run_t;
+
+typedef struct {
+    bm_pomo_run_t state;
+    bool on_break;
+    int64_t ends_at;
+    int32_t left_s;
+    uint8_t work_min;
+    uint8_t break_min;
+    uint16_t cycle;
+    int64_t updated_at;
+} bm_pomo_t;
+
+typedef struct {
+    int8_t host;
+    char hash[17];
+    uint16_t w, h;
+    uint8_t count, next;
+    uint32_t bytes;
+    uint8_t px[BM_FACE_MAX * BM_FACE_MAX * 2];
+} bm_face_rx_t;
 
 typedef struct {
     bm_overlay_t type;
@@ -244,6 +289,16 @@ typedef struct {
     uint32_t passkey;
     bool passkey_shown;
 
+    bm_settings_t settings;
+    uint32_t settings_rev;
+    uint32_t settings_emit_ms;
+    bool panel;
+    bm_pomo_t pomo;
+    uint32_t faces_rev;
+    bm_face_rx_t face_rx;
+    int8_t sleep_card;
+    int64_t sleep_card_s;
+
     bm_session_t scratch;
 
     bm_out_t outbox[BM_OUTBOX_LEN];
@@ -263,7 +318,14 @@ typedef enum {
     BM_TAP_LATER,
     BM_TAP_DENY,
     BM_TAP_ANSWER,
+    BM_TAP_MEDIA,
+    BM_TAP_POMO_TOGGLE,
+    BM_TAP_POMO_RESET,
+    BM_TAP_POMO_WORK,
+    BM_TAP_POMO_BREAK,
 } bm_tap_t;
+
+typedef enum { BM_MEDIA_PLAY_PAUSE, BM_MEDIA_NEXT, BM_MEDIA_PREVIOUS } bm_media_action_t;
 
 void bm_init(bm_model_t *m, const bm_config_t *cfg, uint32_t now_ms);
 bm_err_t bm_ingest(bm_model_t *m, const char *json, size_t len, uint32_t now_ms);
@@ -281,6 +343,19 @@ void bm_hold_cancel(bm_model_t *m);
 float bm_hold_progress(const bm_model_t *m, uint32_t now_ms);
 void bm_set_battery(bm_model_t *m, uint8_t pct, bool charging, uint32_t now_ms);
 void bm_set_accessory(bm_model_t *m, bm_acc_t acc);
+
+void bm_settings_load(bm_model_t *m, const bm_settings_t *s);
+void bm_settings_change(bm_model_t *m, const bm_settings_t *s, uint32_t now_ms);
+void bm_panel(bm_model_t *m, bool open, uint32_t now_ms);
+
+int32_t bm_pomo_left_s(const bm_model_t *m, uint32_t now_ms);
+float bm_pomo_progress(const bm_model_t *m, uint32_t now_ms);
+
+#define BM_CARD_CLOCK (-1)
+#define BM_CARD_COMPUTERS (-2)
+int bm_faces_count(const bm_model_t *m);
+uint64_t bm_fnv1a64(const void *data, size_t len);
+size_t bm_base64_decode(const char *in, uint8_t *out, size_t cap);
 
 typedef enum { BM_PAIR_CANCELLED, BM_PAIR_TIMEOUT, BM_PAIR_OK, BM_PAIR_FAILED } bm_pair_result_t;
 void bm_pairing_start(bm_model_t *m, uint32_t now_ms);

@@ -18,6 +18,7 @@ private func json(_ data: Data) throws -> NSDictionary {
 private let buddyTypes: Set<String> = [
     "permission.decision", "question.answer", "device.ack", "device.snooze",
     "device.battery", "device.sleep", "device.wake", "device.pet_accessory",
+    "device.settings", "device.face_request", "device.pomodoro", "media.control",
 ]
 
 @Test(arguments: try files("valid"))

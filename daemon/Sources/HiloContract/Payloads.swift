@@ -147,8 +147,9 @@ public struct Media: Codable, Equatable, Sendable {
     public var artist: String
     public var lengthS: Int
     public var positionS: Int
-    public init(title: String, artist: String, lengthS: Int, positionS: Int) {
-        self.title = title; self.artist = artist; self.lengthS = lengthS; self.positionS = positionS
+    public var playing: Bool?
+    public init(title: String, artist: String, lengthS: Int, positionS: Int, playing: Bool? = nil) {
+        self.title = title; self.artist = artist; self.lengthS = lengthS; self.positionS = positionS; self.playing = playing
     }
 }
 
@@ -205,8 +206,12 @@ public struct Snapshot: Codable, Equatable, Sendable {
     public var usage: Usage
     public var hilo: HiloState
     public var media: Media?
-    public init(sessions: [SessionState], usage: Usage, hilo: HiloState, media: Media? = nil) {
+    public var face: FaceRef?
+    public var pomodoro: PomodoroState?
+    public init(sessions: [SessionState], usage: Usage, hilo: HiloState, media: Media? = nil, face: FaceRef? = nil,
+                pomodoro: PomodoroState? = nil) {
         self.sessions = sessions; self.usage = usage; self.hilo = hilo; self.media = media
+        self.face = face; self.pomodoro = pomodoro
     }
 }
 
@@ -252,4 +257,83 @@ public struct SleepWake: Codable, Equatable, Sendable {
 public struct PetAccessory: Codable, Equatable, Sendable {
     public var acc: Accessory
     public init(acc: Accessory) { self.acc = acc }
+}
+
+public struct DeviceSettings: Codable, Equatable, Sendable {
+    public var sound: Bool
+    public var volume: Int
+    public var brightness: Int
+    public init(sound: Bool, volume: Int, brightness: Int) { self.sound = sound; self.volume = volume; self.brightness = brightness }
+
+    public static let volumeRange = 0...100
+    public static let brightnessRange = 10...100
+}
+
+public struct SettingsChange: Codable, Equatable, Sendable {
+    public var sound: Bool?
+    public var volume: Int?
+    public var brightness: Int?
+    public init(sound: Bool? = nil, volume: Int? = nil, brightness: Int? = nil) {
+        self.sound = sound; self.volume = volume; self.brightness = brightness
+    }
+
+    public var isValid: Bool {
+        (sound != nil || volume != nil || brightness != nil)
+            && volume.map(DeviceSettings.volumeRange.contains) != false
+            && brightness.map(DeviceSettings.brightnessRange.contains) != false
+    }
+}
+
+public struct FaceRef: Codable, Equatable, Sendable {
+    public var hash: String
+    public init(hash: String) { self.hash = hash }
+}
+
+public struct FaceChunk: Codable, Equatable, Sendable {
+    public var hash: String
+    public var format: String
+    public var w: Int
+    public var h: Int
+    public var index: Int
+    public var count: Int
+    public var data: String
+    public init(hash: String, w: Int, h: Int, index: Int, count: Int, data: String) {
+        self.hash = hash; self.format = "rgb565"; self.w = w; self.h = h; self.index = index; self.count = count; self.data = data
+    }
+}
+
+public enum PomodoroRun: String, Codable, Sendable { case stopped, running, paused }
+public enum PomodoroPhase: String, Codable, Sendable { case work, rest = "break" }
+
+public struct PomodoroState: Codable, Equatable, Sendable {
+    public var state: PomodoroRun
+    public var phase: PomodoroPhase
+    public var endsAt: Int?
+    public var leftS: Int?
+    public var workMin: Int
+    public var breakMin: Int
+    public var cycle: Int
+    public var updatedAt: Int
+
+    public init(state: PomodoroRun, phase: PomodoroPhase, endsAt: Int? = nil, leftS: Int? = nil, workMin: Int, breakMin: Int,
+                cycle: Int, updatedAt: Int) {
+        self.state = state; self.phase = phase; self.endsAt = endsAt; self.leftS = leftS
+        self.workMin = workMin; self.breakMin = breakMin; self.cycle = cycle; self.updatedAt = updatedAt
+    }
+
+    public var isValid: Bool {
+        guard (1...90).contains(workMin), (1...60).contains(breakMin), (0...999).contains(cycle), updatedAt >= 0 else { return false }
+        switch state {
+        case .running: return endsAt != nil && leftS == nil
+        case .paused: return leftS.map { (0...5400).contains($0) } == true && endsAt == nil
+        case .stopped: return endsAt == nil && leftS == nil
+        }
+    }
+}
+
+public enum MediaAction: String, Codable, Sendable { case playPause = "play_pause", next, previous }
+
+public struct MediaControl: Codable, Equatable, Sendable {
+    public var action: MediaAction
+    public init(action: MediaAction) { self.action = action }
 }

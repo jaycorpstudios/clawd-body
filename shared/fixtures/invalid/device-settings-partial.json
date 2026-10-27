@@ -1,0 +1,13 @@
+{
+  "reason": "device.settings reports every applied value",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000053",
+    "ts": 1792900000,
+    "type": "device.settings",
+    "data": {
+      "sound": true,
+      "volume": 30
+    }
+  }
+}

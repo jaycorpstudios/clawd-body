@@ -4,8 +4,8 @@ The Mac ⇄ buddy event contract: [`events.schema.json`](events.schema.json) is 
 
 | Path | What it is |
 | :--- | :--- |
-| `events.schema.json` | JSON Schema 2020-12 for the envelope and all 21 payloads |
-| `fixtures/valid/` | One valid message per type (plus a `snapshot` with a pending request and a permission whose `detail` was redacted by `hilod`) |
+| `events.schema.json` | JSON Schema 2020-12 for the envelope and all 28 payloads |
+| `fixtures/valid/` | One valid message per type (plus a `snapshot` with a pending request, one with a face, a pomodoro and paused music, and a permission whose `detail` was redacted by `hilod`) |
 | `fixtures/invalid/` | `{ reason, event }` cases that must be rejected; each breaks exactly one rule |
 | `src/` | Validator (`validateEvent`), envelope + ULID helpers, scenarios, `buddy-emit` CLI |
 | `test/` | `node:test` suite: fixtures, type coverage, scenarios |

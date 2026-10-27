@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "id": "01K8F400000000000000000043",
+  "ts": 1792900000,
+  "type": "device.face_request",
+  "data": {
+    "hash": "254ce480c57fc0dd"
+  }
+}

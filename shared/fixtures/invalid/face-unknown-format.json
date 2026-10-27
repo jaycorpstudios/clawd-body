@@ -1,0 +1,19 @@
+{
+  "reason": "faces are RGB565 only",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000055",
+    "ts": 1792900000,
+    "host": "work",
+    "type": "host.face",
+    "data": {
+      "hash": "254ce480c57fc0dd",
+      "format": "png",
+      "w": 16,
+      "h": 16,
+      "index": 0,
+      "count": 1,
+      "data": "AAAA"
+    }
+  }
+}

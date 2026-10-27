@@ -1,0 +1,11 @@
+{
+  "reason": "settings.set changes at least one setting",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000050",
+    "ts": 1792900000,
+    "host": "work",
+    "type": "settings.set",
+    "data": {}
+  }
+}

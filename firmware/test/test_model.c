@@ -299,7 +299,7 @@ TEST(swipe_changes_view_but_not_over_a_prompt_or_sheet)
 {
     fresh();
     bm_swipe(&M, -1, now);
-    CHECK(M.view == BM_VIEW_MUSIC);
+    CHECK(M.view == BM_VIEW_POMODORO);
     bm_swipe(&M, 1, now);
     CHECK(M.view == BM_VIEW_HOME);
     bm_tap(&M, BM_TAP_USAGE, 0, now);

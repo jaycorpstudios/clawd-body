@@ -245,16 +245,102 @@ static bool parse_hilo_item(const cJSON *o, bm_hilo_item_t *it)
            req_str(o, "project", 1, 64, it->project, sizeof(it->project));
 }
 
+static field_t get_bool(const cJSON *obj, const char *key, bool *out)
+{
+    const cJSON *it = cJSON_GetObjectItemCaseSensitive(obj, key);
+    if (!it) return ABSENT;
+    if (!cJSON_IsBool(it)) return BAD;
+    *out = cJSON_IsTrue(it);
+    return PRESENT;
+}
+
 static bool parse_media(const cJSON *o, bm_media_t *media)
 {
     memset(media, 0, sizeof(*media));
     int64_t len = 0, pos = 0;
+    bool playing = true;
     bool ok = cJSON_IsObject(o) && req_str(o, "title", 1, 80, media->title, sizeof(media->title)) &&
               req_str(o, "artist", 0, 80, media->artist, sizeof(media->artist)) &&
-              req_int(o, "length_s", 0, INT32_MAX, &len) && req_int(o, "position_s", 0, INT32_MAX, &pos);
+              req_int(o, "length_s", 0, INT32_MAX, &len) && req_int(o, "position_s", 0, INT32_MAX, &pos) &&
+              get_bool(o, "playing", &playing) != BAD;
     media->length_s = (int32_t)len;
     media->position_s = (int32_t)pos;
+    media->paused = !playing;
     return ok;
+}
+
+static bool is_face_hash(const char *s)
+{
+    if (strlen(s) != 16) return false;
+    for (; *s; s++)
+        if (!((*s >= '0' && *s <= '9') || (*s >= 'a' && *s <= 'f'))) return false;
+    return true;
+}
+
+static bool parse_face_ref(const cJSON *o, char hash[17])
+{
+    return cJSON_IsObject(o) && req_str(o, "hash", 16, 16, hash, 17) && is_face_hash(hash);
+}
+
+static bool parse_pomodoro(const cJSON *o, bm_pomo_t *p)
+{
+    static const char *const STATES[] = {"stopped", "running", "paused"};
+    static const char *const PHASES[] = {"work", "break"};
+    memset(p, 0, sizeof(*p));
+    int state = enum_index(o, "state", STATES, 3), phase = enum_index(o, "phase", PHASES, 2);
+    int64_t work = 0, brk = 0, cycle = 0, updated = 0, ends = 0, left = 0;
+    if (!cJSON_IsObject(o) || state < 0 || phase < 0 || !req_int(o, "work_min", 1, 90, &work) ||
+        !req_int(o, "break_min", 1, 60, &brk) || !req_int(o, "cycle", 0, 999, &cycle) ||
+        !req_int(o, "updated_at", 0, INT64_MAX, &updated))
+        return false;
+    field_t has_ends = get_int(o, "ends_at", 0, INT64_MAX, &ends), has_left = get_int(o, "left_s", 0, 5400, &left);
+    if (has_ends == BAD || has_left == BAD) return false;
+    if ((has_ends == PRESENT) != (state == BM_POMO_RUNNING) || (has_left == PRESENT) != (state == BM_POMO_PAUSED))
+        return false;
+    p->state = (bm_pomo_run_t)state;
+    p->on_break = phase == 1;
+    p->ends_at = ends;
+    p->left_s = (int32_t)left;
+    p->work_min = (uint8_t)work;
+    p->break_min = (uint8_t)brk;
+    p->cycle = (uint16_t)cycle;
+    p->updated_at = updated;
+    return true;
+}
+
+static bool parse_settings_set(const cJSON *o, const bm_settings_t *base, bm_settings_t *out)
+{
+    *out = *base;
+    int64_t volume = 0, brightness = 0;
+    field_t sound = get_bool(o, "sound", &out->sound), vol = get_int(o, "volume", 0, 100, &volume),
+            bri = get_int(o, "brightness", 10, 100, &brightness);
+    if (!cJSON_IsObject(o) || sound == BAD || vol == BAD || bri == BAD) return false;
+    if (sound == ABSENT && vol == ABSENT && bri == ABSENT) return false;
+    if (vol == PRESENT) out->volume = (uint8_t)volume;
+    if (bri == PRESENT) out->brightness = (uint8_t)brightness;
+    return true;
+}
+
+static bool is_base64(const char *s)
+{
+    for (; *s; s++)
+        if (!((*s >= 'A' && *s <= 'Z') || (*s >= 'a' && *s <= 'z') || (*s >= '0' && *s <= '9') || *s == '+' ||
+              *s == '/' || *s == '='))
+            return false;
+    return true;
+}
+
+static bm_err_t apply_face(bm_model_t *m, int host, const cJSON *d, uint32_t now_ms)
+{
+    char hash[17], format[8];
+    int64_t w = 0, h = 0, index = 0, count = 0;
+    const cJSON *data = cJSON_GetObjectItemCaseSensitive(d, "data");
+    if (!parse_face_ref(d, hash) || !req_str(d, "format", 1, 6, format, sizeof(format)) ||
+        strcmp(format, "rgb565") != 0 || !req_int(d, "w", 16, 160, &w) || !req_int(d, "h", 16, 160, &h) ||
+        !req_int(d, "index", 0, 15, &index) || !req_int(d, "count", 1, 16, &count) || !cJSON_IsString(data) ||
+        strlen(data->valuestring) < 4 || strlen(data->valuestring) > 6000 || !is_base64(data->valuestring))
+        return BM_E_DATA;
+    return bm__on_face_chunk(m, host, hash, (int)w, (int)h, (int)index, (int)count, data->valuestring, now_ms);
 }
 
 static bool parse_hilo(const cJSON *o, bm_hilo_t *h)
@@ -292,12 +378,17 @@ static bm_err_t apply_snapshot(bm_model_t *m, int host, const cJSON *d, uint32_t
 {
     const cJSON *sessions = cJSON_GetObjectItemCaseSensitive(d, "sessions");
     const cJSON *media = cJSON_GetObjectItemCaseSensitive(d, "media");
+    const cJSON *face = cJSON_GetObjectItemCaseSensitive(d, "face");
+    const cJSON *pomo = cJSON_GetObjectItemCaseSensitive(d, "pomodoro");
     bm_usage_t usage;
     bm_hilo_t hilo;
     bm_media_t med = {0};
+    bm_pomo_t pomodoro = {0};
+    char face_hash[17];
     if (!cJSON_IsArray(sessions) || cJSON_GetArraySize(sessions) > BM_SESSIONS_PER_HOST ||
         !parse_usage(cJSON_GetObjectItemCaseSensitive(d, "usage"), &usage) ||
-        !parse_hilo(cJSON_GetObjectItemCaseSensitive(d, "hilo"), &hilo) || (media && !parse_media(media, &med)))
+        !parse_hilo(cJSON_GetObjectItemCaseSensitive(d, "hilo"), &hilo) || (media && !parse_media(media, &med)) ||
+        (face && !parse_face_ref(face, face_hash)) || (pomo && !parse_pomodoro(pomo, &pomodoro)))
         return BM_E_DATA;
     const cJSON *it;
     cJSON_ArrayForEach(it, sessions)
@@ -322,6 +413,8 @@ static bm_err_t apply_snapshot(bm_model_t *m, int host, const cJSON *d, uint32_t
     h->media = med;
     h->media.playing = media != NULL;
     h->media.received_ms = now_ms;
+    bm__on_face_ref(m, host, face ? face_hash : NULL, now_ms);
+    bm__on_pomodoro(m, host, &pomodoro, true, pomo != NULL, now_ms);
     bm__after_snapshot(m, host, now_ms);
     return BM_OK;
 }
@@ -390,6 +483,16 @@ static bm_err_t apply(bm_model_t *m, int host, const char *type, const cJSON *d,
         bm_media_t media;
         if (!parse_media(d, &media)) return BM_E_DATA;
         bm__on_media(m, host, &media, now_ms);
+    } else if (strcmp(type, "settings.set") == 0) {
+        bm_settings_t s;
+        if (!parse_settings_set(d, &m->settings, &s)) return BM_E_DATA;
+        bm__on_settings(m, &s, now_ms);
+    } else if (strcmp(type, "host.face") == 0) {
+        return apply_face(m, host, d, now_ms);
+    } else if (strcmp(type, "pomodoro.state") == 0) {
+        bm_pomo_t p;
+        if (!parse_pomodoro(d, &p)) return BM_E_DATA;
+        bm__on_pomodoro(m, host, &p, false, true, now_ms);
     } else {
         return BM_E_TYPE;
     }

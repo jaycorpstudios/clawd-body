@@ -8,7 +8,7 @@
 #error "FIXTURES_DIR must point to shared/fixtures"
 #endif
 
-static const char *const BUDDY_TO_MAC[] = {"permission.decision", "question.answer", "device."};
+static const char *const BUDDY_TO_MAC[] = {"permission.decision", "question.answer", "device.", "media.control"};
 
 static const char *const TOLERATED_INVALID[] = {
     "extra-envelope-field.json",
@@ -63,7 +63,7 @@ static void check_valid(const char *name, cJSON *root)
     const char *type = cJSON_GetObjectItem(root, "type")->valuestring;
     char *json = cJSON_PrintUnformatted(root);
     bm_err_t err = send_raw(json);
-    bool outgoing = starts_with_any(type, BUDDY_TO_MAC, 3);
+    bool outgoing = starts_with_any(type, BUDDY_TO_MAC, 4);
     if (outgoing ? err != BM_E_ENVELOPE && err != BM_E_TYPE : err != BM_OK) {
         char msg[160];
         snprintf(msg, sizeof(msg), "%s: unexpected result %d", name, err);

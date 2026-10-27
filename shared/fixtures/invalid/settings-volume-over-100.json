@@ -1,0 +1,13 @@
+{
+  "reason": "volume is 0–100",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000051",
+    "ts": 1792900000,
+    "host": "work",
+    "type": "settings.set",
+    "data": {
+      "volume": 101
+    }
+  }
+}

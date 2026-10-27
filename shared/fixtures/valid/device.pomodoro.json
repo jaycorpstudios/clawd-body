@@ -1,0 +1,15 @@
+{
+  "v": 1,
+  "id": "01K8F400000000000000000045",
+  "ts": 1792900000,
+  "type": "device.pomodoro",
+  "data": {
+    "state": "paused",
+    "phase": "break",
+    "left_s": 170,
+    "work_min": 25,
+    "break_min": 5,
+    "cycle": 3,
+    "updated_at": 1792900000
+  }
+}

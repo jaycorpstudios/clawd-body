@@ -1,0 +1,13 @@
+{
+  "reason": "brightness is 10–100, so the panel never goes dark by mistake",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000052",
+    "ts": 1792900000,
+    "host": "work",
+    "type": "settings.set",
+    "data": {
+      "brightness": 5
+    }
+  }
+}

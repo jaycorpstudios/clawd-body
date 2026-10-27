@@ -1,0 +1,18 @@
+{
+  "reason": "a paused pomodoro carries left_s, not ends_at",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000057",
+    "ts": 1792900000,
+    "type": "device.pomodoro",
+    "data": {
+      "state": "paused",
+      "phase": "work",
+      "ends_at": 1792901200,
+      "work_min": 25,
+      "break_min": 5,
+      "cycle": 0,
+      "updated_at": 1792900000
+    }
+  }
+}

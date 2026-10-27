@@ -52,6 +52,10 @@ void bm_init(bm_model_t *m, const bm_config_t *cfg, uint32_t now_ms)
     m->last_act_ms = now_ms;
     m->last_remind_ms = now_ms;
     m->acc = BM_ACC_WIZARD;
+    bm__settings_defaults(&m->settings);
+    bm__pomo_defaults(&m->pomo);
+    m->face_rx.host = -1;
+    m->sleep_card = BM_CARD_CLOCK;
 }
 
 int64_t bm_wall_ms(const bm_model_t *m, uint32_t now_ms)
@@ -229,6 +233,7 @@ static void go_sleep(bm_model_t *m, bm_by_t by, uint32_t now_ms)
 {
     static const char *const by_names[] = {"touch", "button", "long_press", "idle"};
     if (m->attn >= 0) return;
+    m->panel = false;
     m->sheet = BM_SHEET_NONE;
     m->sheet_session = -1;
     m->hold_active = false;
@@ -290,6 +295,7 @@ void bm__open_attn(bm_model_t *m, int idx, uint32_t now_ms)
     m->ov.session = -1;
     m->attn = (int8_t)idx;
     m->hold_active = false;
+    m->panel = false;
     if (!s->req.acked) {
         s->req.acked = true;
         char data[64];
@@ -427,6 +433,11 @@ void bm_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms)
     case BM_TAP_LATER: later(m, now_ms); break;
     case BM_TAP_DENY: decide(m, false, -1, now_ms); break;
     case BM_TAP_ANSWER: decide(m, true, arg, now_ms); break;
+    case BM_TAP_MEDIA: bm__media_tap(m, arg, now_ms); break;
+    case BM_TAP_POMO_TOGGLE:
+    case BM_TAP_POMO_RESET:
+    case BM_TAP_POMO_WORK:
+    case BM_TAP_POMO_BREAK: bm__pomo_tap(m, target, arg, now_ms); break;
     case BM_TAP_NONE: break;
     }
 }
@@ -467,7 +478,7 @@ void bm_swipe(bm_model_t *m, int dir, uint32_t now_ms)
         return;
     }
     m->last_act_ms = now_ms;
-    if (m->attn >= 0 || m->sheet != BM_SHEET_NONE) return;
+    if (m->attn >= 0 || m->sheet != BM_SHEET_NONE || m->panel) return;
     if (m->ov.type && m->ov.type != BM_OV_LIMIT) bm__close_overlay(m);
     next_view(m, dir < 0 ? -1 : 1);
 }
@@ -484,7 +495,8 @@ static void side_press(bm_model_t *m, uint32_t now_ms)
         bm_pairing_end(m, BM_PAIR_CANCELLED, now_ms);
         return;
     }
-    if (m->sheet != BM_SHEET_NONE) close_sheet(m);
+    if (m->panel) bm_panel(m, false, now_ms);
+    else if (m->sheet != BM_SHEET_NONE) close_sheet(m);
     else if (m->attn >= 0) later(m, now_ms);
     else if (m->ov.type && m->ov.type != BM_OV_LIMIT) bm__close_overlay(m);
     else next_view(m, 1);
@@ -575,6 +587,8 @@ void bm_link(bm_model_t *m, const char *host, bool connected, uint32_t now_ms)
     int slot = bm__host_slot(m, host, true);
     if (slot < 0 || m->hosts[slot].connected == connected) return;
     m->hosts[slot].connected = connected;
+    *(connected ? &m->hosts[slot].connected_at : &m->hosts[slot].disconnected_at) = wall_s(m, now_ms);
+    if (connected) bm__send_settings(m, (uint8_t)(1u << slot), now_ms);
     const bm_session_t *a = bm_attn_session(m);
     if (!connected && a && a->host == slot) {
         m->attn = -1;
@@ -821,9 +835,13 @@ void bm__on_hilo_task(bm_model_t *m, int host, const bm_hilo_item_t *item, int64
 void bm__on_media(bm_model_t *m, int host, const bm_media_t *media, uint32_t now_ms)
 {
     bm_media_t *dst = &m->hosts[host].media;
+    bool news = !media->paused && (!dst->playing || dst->paused || strcmp(dst->title, media->title) != 0 ||
+                                   strcmp(dst->artist, media->artist) != 0);
     *dst = *media;
     dst->playing = true;
     dst->received_ms = now_ms;
+    bm__touch(m);
+    if (!news) return;
     bm__wake(m, true, BM_BY_TOUCH, now_ms);
     char text[180];
     snprintf(text, sizeof(text), "\xE2\x99\xAA %s \xC2\xB7 %s", media->title, media->artist);
@@ -864,6 +882,8 @@ static uint32_t next_random(bm_model_t *m)
 void bm_tick(bm_model_t *m, uint32_t now_ms)
 {
     expire_requests(m, now_ms);
+    bm__settings_tick(m, now_ms);
+    bm__pomo_tick(m, now_ms);
 
     if (m->hold_active && now_ms - m->hold_start_ms >= BM_HOLD_MS) decide(m, true, -1, now_ms);
 
@@ -911,6 +931,7 @@ void bm_tick(bm_model_t *m, uint32_t now_ms)
     } else if (now_ms - m->last_act_ms > BM_IDLE_SLEEP_MS && m->attn < 0 && !m->pairing && !any_live_request(m)) {
         go_sleep(m, BM_BY_IDLE, now_ms);
     }
+    bm__sleep_card_tick(m, now_ms);
 }
 
 void bm_pairing_start(bm_model_t *m, uint32_t now_ms)

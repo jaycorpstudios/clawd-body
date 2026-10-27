@@ -128,6 +128,7 @@ int bm_media_host(const bm_model_t *m)
 
 int32_t bm_media_position_s(const bm_media_t *media, uint32_t now_ms)
 {
+    if (media->paused) return media->position_s;
     int32_t pos = media->position_s + (int32_t)((now_ms - media->received_ms) / 1000);
     return media->length_s && pos > media->length_s ? media->length_s : pos;
 }

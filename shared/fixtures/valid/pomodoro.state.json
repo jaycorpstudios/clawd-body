@@ -1,0 +1,16 @@
+{
+  "v": 1,
+  "id": "01K8F400000000000000000044",
+  "ts": 1792900000,
+  "host": "work",
+  "type": "pomodoro.state",
+  "data": {
+    "state": "running",
+    "phase": "work",
+    "ends_at": 1792901200,
+    "work_min": 25,
+    "break_min": 5,
+    "cycle": 2,
+    "updated_at": 1792899700
+  }
+}

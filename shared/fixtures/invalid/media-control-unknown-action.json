@@ -1,0 +1,12 @@
+{
+  "reason": "the buddy only asks for playback actions",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000058",
+    "ts": 1792900000,
+    "type": "media.control",
+    "data": {
+      "action": "open_url"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "reason": "face hash is 16 lowercase hex digits",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000054",
+    "ts": 1792900000,
+    "host": "work",
+    "type": "host.face",
+    "data": {
+      "hash": "XYZ",
+      "format": "rgb565",
+      "w": 16,
+      "h": 16,
+      "index": 0,
+      "count": 1,
+      "data": "AAAA"
+    }
+  }
+}

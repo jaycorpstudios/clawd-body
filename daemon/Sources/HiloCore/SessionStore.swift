@@ -49,7 +49,7 @@ public struct SessionStore: Sendable {
             hilo.current = t
         case .nowPlaying(let m):
             media = m
-        case .snapshot:
+        case .snapshot, .settingsSet, .face, .pomodoro:
             break
         }
     }

@@ -121,4 +121,19 @@ export const SCENARIOS: Record<string, Scenario> = {
       mac('usage.window_reset', {}),
     ],
   },
+  desk: {
+    description: 'Settings from Hilo, a pomodoro started on the buddy and music controls',
+    build: (nowS) => {
+      const work = { phase: 'work', work_min: 25, break_min: 5, cycle: 0 };
+      return [
+        buddy('device.settings', { sound: false, volume: 60, brightness: 100 }),
+        mac('settings.set', { sound: true, volume: 0 }),
+        buddy('device.settings', { sound: true, volume: 0, brightness: 100 }),
+        buddy('device.pomodoro', { ...work, state: 'running', ends_at: nowS + 1500, updated_at: nowS }),
+        mac('pomodoro.state', { ...work, state: 'paused', left_s: 1200, updated_at: nowS + 300 }),
+        mac('media.now_playing', { title: 'Night Build', artist: 'Tabstop', length_s: 247, position_s: 12, playing: true }),
+        buddy('media.control', { action: 'next' }),
+      ];
+    },
+  },
 };

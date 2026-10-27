@@ -15,8 +15,10 @@
       "agent.needs_permission", "agent.question", "agent.request_resolved",
       "agent.task_done", "agent.error", "agent.step",
       "usage.update", "usage.window_reset", "hilo.task_changed", "media.now_playing",
+      "settings.set", "host.face", "pomodoro.state",
       "permission.decision", "question.answer",
-      "device.ack", "device.snooze", "device.battery", "device.sleep", "device.wake", "device.pet_accessory"
+      "device.ack", "device.snooze", "device.battery", "device.sleep", "device.wake", "device.pet_accessory",
+      "device.settings", "device.face_request", "device.pomodoro", "media.control"
     ] },
     "data": { "type": "object" }
   },
@@ -26,7 +28,8 @@
         "snapshot", "session.start", "session.end",
         "agent.needs_permission", "agent.question", "agent.request_resolved",
         "agent.task_done", "agent.error", "agent.step",
-        "usage.update", "usage.window_reset", "hilo.task_changed", "media.now_playing"
+        "usage.update", "usage.window_reset", "hilo.task_changed", "media.now_playing",
+        "settings.set", "host.face", "pomodoro.state"
       ] } } },
       "then": { "required": ["host"] }
     },
@@ -50,7 +53,14 @@
     { "if": { "properties": { "type": { "const": "device.battery" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/battery" } } } },
     { "if": { "properties": { "type": { "const": "device.sleep" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/sleepWake" } } } },
     { "if": { "properties": { "type": { "const": "device.wake" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/sleepWake" } } } },
-    { "if": { "properties": { "type": { "const": "device.pet_accessory" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/petAccessory" } } } }
+    { "if": { "properties": { "type": { "const": "device.pet_accessory" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/petAccessory" } } } },
+    { "if": { "properties": { "type": { "const": "settings.set" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/settingsSet" } } } },
+    { "if": { "properties": { "type": { "const": "host.face" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/faceChunk" } } } },
+    { "if": { "properties": { "type": { "const": "pomodoro.state" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/pomodoro" } } } },
+    { "if": { "properties": { "type": { "const": "device.settings" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/settings" } } } },
+    { "if": { "properties": { "type": { "const": "device.face_request" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/faceRef" } } } },
+    { "if": { "properties": { "type": { "const": "device.pomodoro" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/pomodoro" } } } },
+    { "if": { "properties": { "type": { "const": "media.control" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/mediaControl" } } } }
   ],
   "$defs": {
     "ulid": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
@@ -215,7 +225,8 @@
         "title": { "type": "string", "minLength": 1, "maxLength": 80 },
         "artist": { "type": "string", "maxLength": 80 },
         "length_s": { "type": "integer", "minimum": 0 },
-        "position_s": { "type": "integer", "minimum": 0 }
+        "position_s": { "type": "integer", "minimum": 0 },
+        "playing": { "type": "boolean" }
       }
     },
     "sessionState": {
@@ -265,7 +276,9 @@
             }
           }
         },
-        "media": { "$ref": "#/$defs/media" }
+        "media": { "$ref": "#/$defs/media" },
+        "face": { "$ref": "#/$defs/faceRef" },
+        "pomodoro": { "$ref": "#/$defs/pomodoro" }
       }
     },
     "permissionDecision": {
@@ -310,6 +323,69 @@
       "type": "object", "additionalProperties": false,
       "required": ["acc"],
       "properties": { "acc": { "enum": ["none", "wizard", "shades", "headphones", "crown", "party", "band", "heart"] } }
+    },
+
+    "volume": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "brightness": { "type": "integer", "minimum": 10, "maximum": 100 },
+    "settings": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sound", "volume", "brightness"],
+      "properties": {
+        "sound": { "type": "boolean" },
+        "volume": { "$ref": "#/$defs/volume" },
+        "brightness": { "$ref": "#/$defs/brightness" }
+      }
+    },
+    "settingsSet": {
+      "type": "object", "additionalProperties": false, "minProperties": 1,
+      "properties": {
+        "sound": { "type": "boolean" },
+        "volume": { "$ref": "#/$defs/volume" },
+        "brightness": { "$ref": "#/$defs/brightness" }
+      }
+    },
+    "faceHash": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+    "faceRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hash"],
+      "properties": { "hash": { "$ref": "#/$defs/faceHash" } }
+    },
+    "faceChunk": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hash", "format", "w", "h", "index", "count", "data"],
+      "properties": {
+        "hash": { "$ref": "#/$defs/faceHash" },
+        "format": { "const": "rgb565" },
+        "w": { "type": "integer", "minimum": 16, "maximum": 160 },
+        "h": { "type": "integer", "minimum": 16, "maximum": 160 },
+        "index": { "type": "integer", "minimum": 0, "maximum": 15 },
+        "count": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "data": { "type": "string", "minLength": 4, "maxLength": 6000, "pattern": "^[A-Za-z0-9+/]+={0,2}$" }
+      }
+    },
+    "pomodoro": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "phase", "work_min", "break_min", "cycle", "updated_at"],
+      "properties": {
+        "state": { "enum": ["stopped", "running", "paused"] },
+        "phase": { "enum": ["work", "break"] },
+        "ends_at": { "$ref": "#/$defs/unix" },
+        "left_s": { "type": "integer", "minimum": 0, "maximum": 5400 },
+        "work_min": { "type": "integer", "minimum": 1, "maximum": 90 },
+        "break_min": { "type": "integer", "minimum": 1, "maximum": 60 },
+        "cycle": { "type": "integer", "minimum": 0, "maximum": 999 },
+        "updated_at": { "$ref": "#/$defs/unix" }
+      },
+      "allOf": [
+        { "if": { "properties": { "state": { "const": "running" } } }, "then": { "required": ["ends_at"], "not": { "required": ["left_s"] } } },
+        { "if": { "properties": { "state": { "const": "paused" } } }, "then": { "required": ["left_s"], "not": { "required": ["ends_at"] } } },
+        { "if": { "properties": { "state": { "const": "stopped" } } }, "then": { "not": { "anyOf": [{ "required": ["ends_at"] }, { "required": ["left_s"] }] } } }
+      ]
+    },
+    "mediaControl": {
+      "type": "object", "additionalProperties": false,
+      "required": ["action"],
+      "properties": { "action": { "enum": ["play_pause", "next", "previous"] } }
     }
   }
 }

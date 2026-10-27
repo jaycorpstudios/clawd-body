@@ -14,6 +14,9 @@ public enum Outbound: Equatable, Sendable {
     case usageWindowReset
     case hiloTaskChanged(HiloTask)
     case nowPlaying(Media)
+    case settingsSet(SettingsChange)
+    case face(FaceChunk)
+    case pomodoro(PomodoroState)
 
     public var type: String {
         switch self {
@@ -30,6 +33,9 @@ public enum Outbound: Equatable, Sendable {
         case .usageWindowReset: "usage.window_reset"
         case .hiloTaskChanged: "hilo.task_changed"
         case .nowPlaying: "media.now_playing"
+        case .settingsSet: "settings.set"
+        case .face: "host.face"
+        case .pomodoro: "pomodoro.state"
         }
     }
 
@@ -48,6 +54,9 @@ public enum Outbound: Equatable, Sendable {
         case .usageWindowReset: Empty()
         case .hiloTaskChanged(let p): p
         case .nowPlaying(let p): p
+        case .settingsSet(let p): p
+        case .face(let p): p
+        case .pomodoro(let p): p
         }
     }
 }
@@ -61,6 +70,10 @@ public enum Inbound: Equatable, Sendable {
     case sleep(SleepWake)
     case wake(SleepWake)
     case petAccessory(PetAccessory)
+    case settings(DeviceSettings)
+    case faceRequest(FaceRef)
+    case pomodoro(PomodoroState)
+    case mediaControl(MediaControl)
 }
 
 public struct Envelope<Body: Sendable>: Sendable {
@@ -126,6 +139,22 @@ public enum Wire {
             body = .wake(try payload(data, keys: ["by"]))
         case "device.pet_accessory":
             body = .petAccessory(try payload(data, keys: ["acc"]))
+        case "device.settings":
+            let p: DeviceSettings = try payload(data, keys: ["sound", "volume", "brightness"])
+            guard DeviceSettings.volumeRange.contains(p.volume), DeviceSettings.brightnessRange.contains(p.brightness) else {
+                throw .badPayload("setting out of range")
+            }
+            body = .settings(p)
+        case "device.face_request":
+            let p: FaceRef = try payload(data, keys: ["hash"])
+            guard p.hash.range(of: "^[0-9a-f]{16}$", options: .regularExpression) != nil else { throw .badPayload("bad face hash") }
+            body = .faceRequest(p)
+        case "device.pomodoro":
+            let p: PomodoroState = try payload(data, keys: ["state", "phase", "ends_at", "left_s", "work_min", "break_min", "cycle", "updated_at"])
+            guard p.isValid else { throw .badPayload("pomodoro out of range") }
+            body = .pomodoro(p)
+        case "media.control":
+            body = .mediaControl(try payload(data, keys: ["action"]))
         default:
             throw .unknownType(type)
         }
@@ -152,6 +181,9 @@ public enum Wire {
         case "usage.window_reset": body = .usageWindowReset
         case "hilo.task_changed": body = .hiloTaskChanged(try payload(data))
         case "media.now_playing": body = .nowPlaying(try payload(data))
+        case "settings.set": body = .settingsSet(try payload(data))
+        case "host.face": body = .face(try payload(data))
+        case "pomodoro.state": body = .pomodoro(try payload(data))
         default: throw .unknownType(type)
         }
         return Envelope(id: header.id, ts: header.ts, host: host, body: body)
@@ -192,7 +224,7 @@ extension Inbound {
         case .questionAnswer(let p): p.requestId
         case .ack(let p): p.requestId
         case .snooze(let p): p.requestId
-        case .battery, .sleep, .wake, .petAccessory: nil
+        case .battery, .sleep, .wake, .petAccessory, .settings, .faceRequest, .pomodoro, .mediaControl: nil
         }
     }
 }
@@ -208,6 +240,10 @@ extension Inbound {
         case .sleep: "device.sleep"
         case .wake: "device.wake"
         case .petAccessory: "device.pet_accessory"
+        case .settings: "device.settings"
+        case .faceRequest: "device.face_request"
+        case .pomodoro: "device.pomodoro"
+        case .mediaControl: "media.control"
         }
     }
 
@@ -220,6 +256,10 @@ extension Inbound {
         case .battery(let p): p
         case .sleep(let p), .wake(let p): p
         case .petAccessory(let p): p
+        case .settings(let p): p
+        case .faceRequest(let p): p
+        case .pomodoro(let p): p
+        case .mediaControl(let p): p
         }
     }
 }
