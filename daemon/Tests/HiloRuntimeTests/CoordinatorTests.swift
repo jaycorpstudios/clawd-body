@@ -64,6 +64,13 @@ private struct Harness {
         throw CancellationError()
     }
 
+    func ack(_ id: String) async throws {
+        let msg = #"{"v":1,"id":"\#(ULID.make())","ts":1000,"type":"device.ack","data":{"request_id":"\#(id)","seen":true}}"#
+        try await coordinator.handleBuddy(Data(msg.utf8))
+    }
+
+    func settle() async { for _ in 0..<2000 { await Task.yield() } }
+
     func buddy(_ id: String, _ decision: String) async throws {
         let msg = #"{"v":1,"id":"\#(ULID.make())","ts":1000,"type":"permission.decision","data":{"request_id":"\#(id)","decision":"\#(decision)"}}"#
         try await coordinator.handleBuddy(Data(msg.utf8))
@@ -111,6 +118,24 @@ private func behavior(_ reply: Data) -> String? {
     #expect(await h.link.field("agent.request_resolved", "outcome") == "expired")
     try await h.buddy(id, "approve")
     #expect(await h.link.types().filter { $0 == "agent.request_resolved" }.count == 2)
+}
+
+@Test func aRequestOnTheBuddysScreenGoesBackOnlyAfter10sOfInputOnTheMac() async throws {
+    let h = Harness()
+    let hook = Task { await h.coordinator.handleHook(try h.permission("npm test")) }
+    let id = try await h.pendingRequestId()
+    try await h.ack(id)
+    h.presence.present.set(true)
+    await h.settle()
+    h.presence.present.set(false)
+    await h.settle()
+    h.clock.time.set(1_000 + Coordinator.handBackAfter + 1)
+    h.presence.present.set(true)
+    await h.settle()
+    #expect(await h.link.field("agent.request_resolved", "request_id") == nil)
+    h.clock.time.set(1_000 + 2 * Coordinator.handBackAfter + 1)
+    #expect(try await hook.value.isEmpty)
+    #expect(await h.link.field("agent.request_resolved", "outcome") == "expired")
 }
 
 @Test func aSnapshotAfterAHandBackKeepsTheSessionWaitingWithNothingToAnswer() async throws {

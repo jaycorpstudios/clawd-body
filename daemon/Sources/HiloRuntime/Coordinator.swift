@@ -8,6 +8,12 @@ public protocol BuddyLink: Sendable {
 
 public protocol PresenceProbe: Sendable {
     func userIsPresent() -> Bool
+    /// No input for `seconds`, or the screen is locked.
+    func quiet(for seconds: Double) -> Bool
+}
+
+extension PresenceProbe {
+    public func quiet(for seconds: Double) -> Bool { !userIsPresent() }
 }
 
 public protocol Clock: Sendable {
@@ -34,6 +40,10 @@ public actor Coordinator {
     private var store = SessionStore()
     private var usage = UsageTracker()
     private var waiting: [String: CheckedContinuation<Resolution?, Never>] = [:]
+    /// When the buddy last acked each held request, i.e. showed it on screen.
+    private var shownOnBuddy: [String: Int] = [:]
+    static let shownWithin = 30, handBackAfter = 10
+    static let activeWithin: Double = 3
     private var buddySettings: DeviceSettings?
     private var face: RGB565Image?
     private var pomodoro: PomodoroState?
@@ -112,6 +122,9 @@ public actor Coordinator {
         case .sessionLook(let change):
             if await changeLook(change) == nil { log("buddy picked a look for unknown session \(change.session)") }
             return
+        case .ack(let ack):
+            if registry.pendingRequests.contains(where: { $0.id == ack.requestId }) { shownOnBuddy[ack.requestId] = clock.now() }
+            return
         default: return
         }
         switch result {
@@ -146,11 +159,24 @@ public actor Coordinator {
         }
     }
 
+    /// A request on the buddy's screen goes back to the Mac only after `handBackAfter` seconds of continuous input
+    /// there, so a nudged mouse does not take it away while the user reaches for the buddy.
     private func watch(id: String, expiresAt: Int) async {
+        defer { shownOnBuddy[id] = nil }
+        var activeSince: Int?
         while registry.pendingRequests.contains(where: { $0.id == id }) {
             await clock.sleep(seconds: pollSeconds)
-            if presence.userIsPresent() || clock.now() >= expiresAt, let released = registry.release(id) {
-                log("request \(id): released to the Mac (\(clock.now() >= expiresAt ? "expired" : "user back"))")
+            let now = clock.now(), expired = now >= expiresAt
+            let shown = shownOnBuddy[id].map { now - $0 < Self.shownWithin } ?? false
+            let back: Bool
+            if shown {
+                activeSince = presence.quiet(for: Self.activeWithin) ? nil : activeSince ?? now
+                back = activeSince.map { now - $0 >= Self.handBackAfter } ?? false
+            } else {
+                back = presence.userIsPresent()
+            }
+            if back || expired, let released = registry.release(id) {
+                log("request \(id): released to the Mac (\(expired ? "expired" : "user back"))")
                 waiting.removeValue(forKey: id)?.resume(returning: nil)
                 await send(.requestResolved(released))
                 return

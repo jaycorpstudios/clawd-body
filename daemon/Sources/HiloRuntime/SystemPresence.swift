@@ -13,6 +13,10 @@ public struct SystemPresence: PresenceProbe {
         !Self.screenIsLocked() && (Self.idleSeconds() ?? .infinity) < idleThresholdSeconds
     }
 
+    public func quiet(for seconds: Double) -> Bool {
+        Self.screenIsLocked() || (Self.idleSeconds() ?? .infinity) >= seconds
+    }
+
     static func screenIsLocked() -> Bool {
         guard let session = CGSessionCopyCurrentDictionary() as? [String: Any] else { return true }
         return session["CGSSessionScreenIsLocked"] as? Bool ?? false
