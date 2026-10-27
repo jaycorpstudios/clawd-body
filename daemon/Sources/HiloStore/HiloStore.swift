@@ -124,6 +124,11 @@ public final class HiloStore: @unchecked Sendable {
         try db.run("UPDATE session SET status = 'working' WHERE id = ? AND status <> 'waiting' AND ended_at IS NULL", [session])
     }
 
+    /// A working session with no event since `before` (an Esc sends no hook) reads idle until its next step.
+    public func markIdle(before: Int) throws {
+        try db.run("UPDATE session SET status = 'idle' WHERE status = 'working' AND ended_at IS NULL AND updated_at < ?", [before])
+    }
+
     public func endSession(_ session: String, now: Int) throws {
         try db.run("""
             UPDATE session SET ended_at = ?, updated_at = ?, waiting_on = NULL,

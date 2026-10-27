@@ -81,3 +81,19 @@ private func permission(_ session: String, id: String = ULID.make(), diff: Int =
     #expect(s.status == .working)
     #expect(s.since == 40)
 }
+
+@Test func aWorkingSessionWithNoEventFor10MinTurnsIdleUntilItsNextStep() throws {
+    var store = SessionStore()
+    store.apply(.sessionStart(SessionStart(session: "s1", project: "api", task: "")), now: 0)
+    store.apply(.sessionStart(SessionStart(session: "s2", project: "api", task: "")), now: 0)
+    store.apply(.needsPermission(permission("s2")), now: 10)
+    store.apply(.agentStep(AgentStep(session: "s1", kind: .read, text: "Read a")), now: 100)
+    #expect(store.idleStale(now: 699, after: 600).isEmpty)
+    #expect(store.idleStale(now: 700, after: 600) == ["s1"])
+    #expect(store.idleStale(now: 800, after: 600).isEmpty)
+    var s = try #require(store.snapshot().sessions.first { $0.session == "s1" })
+    #expect(s.status == .idle && s.since == 700)
+    store.apply(.agentStep(AgentStep(session: "s1", kind: .plan, text: "New prompt")), now: 900)
+    s = try #require(store.snapshot().sessions.first { $0.session == "s1" })
+    #expect(s.status == .working)
+}

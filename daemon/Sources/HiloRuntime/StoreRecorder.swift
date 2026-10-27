@@ -38,7 +38,7 @@ public struct StoreRecorder: Sendable {
             case .snapshot, .usageUpdate, .usageWindowReset, .hiloTaskChanged, .nowPlaying, .settingsSet, .face, .cover, .pomodoro:
                 break
             }
-            if let session = Self.session(of: message) { try store.recordActivity(session: session, now: now) }
+            if let session = message.session { try store.recordActivity(session: session, now: now) }
         } catch {
             log("store: \(error)")
         }
@@ -51,22 +51,12 @@ public struct StoreRecorder: Sendable {
         } catch { log("store: \(error)") }
     }
 
-    private static func session(of message: Outbound) -> String? {
-        switch message {
-        case .sessionStart(let s): s.session
-        case .sessionEnd(let s): s.session
-        case .agentStep(let s): s.session
-        case .needsPermission(let p): p.session
-        case .question(let q): q.session
-        case .requestResolved(let r): r.session
-        case .taskDone(let d): d.session
-        case .agentError(let e): e.session
-        case .snapshot, .usageUpdate, .usageWindowReset, .hiloTaskChanged, .nowPlaying, .settingsSet, .face, .cover, .pomodoro: nil
-        }
-    }
-
     public func look(session: String) -> SessionLook? {
         (try? store.look(session: session)) ?? nil
+    }
+
+    public func markIdle(before: Int) {
+        do { try store.markIdle(before: before) } catch { log("store: \(error)") }
     }
 
     public func saveLook(session: String, look: SessionLook) {

@@ -7,6 +7,7 @@ public struct SessionStore: Sendable {
     public static let maxSteps = 5
 
     private var sessions: [String: SessionState] = [:]
+    private var lastEvent: [String: Int] = [:]
     private var usage = Usage(sessionPct: 0, weeklyPct: 0, resetInMin: 0)
     private var hilo = HiloState(current: nil, next: [], agreementsToday: [])
     private var media: Media?
@@ -17,12 +18,14 @@ public struct SessionStore: Sendable {
     public init() {}
 
     public mutating func apply(_ message: Outbound, now: Int) {
+        if let session = message.session { lastEvent[session] = now }
         switch message {
         case .sessionStart(let s):
             sessions[s.session] = SessionState(session: s.session, project: s.project, task: s.task, status: .working, since: now, steps: [],
                                                look: s.look ?? sessions[s.session]?.look)
         case .sessionEnd(let s):
             sessions[s.session] = nil
+            lastEvent[s.session] = nil
         case .agentStep(let step):
             update(step.session, now: now) { s in
                 if s.pendingPermission == nil && s.pendingQuestion == nil { s.status = .working }
@@ -56,6 +59,13 @@ public struct SessionStore: Sendable {
         case .snapshot, .settingsSet, .face, .cover, .pomodoro:
             break
         }
+    }
+
+    /// Working sessions with no event for `seconds` turn idle (an interrupted turn sends no hook); returns them.
+    public mutating func idleStale(now: Int, after seconds: Int) -> [String] {
+        let stale = sessions.values.filter { $0.status == .working && now - (lastEvent[$0.session] ?? $0.since) >= seconds }.map(\.session)
+        for id in stale { update(id, now: now) { $0.status = .idle } }
+        return stale
     }
 
     public mutating func setHilo(_ state: HiloState) {
@@ -139,6 +149,22 @@ extension SessionStatus {
         case .working: 2
         case .done: 3
         case .idle: 4
+        }
+    }
+}
+
+extension Outbound {
+    public var session: String? {
+        switch self {
+        case .sessionStart(let s): s.session
+        case .sessionEnd(let s): s.session
+        case .agentStep(let s): s.session
+        case .needsPermission(let p): p.session
+        case .question(let q): q.session
+        case .requestResolved(let r): r.session
+        case .taskDone(let d): d.session
+        case .agentError(let e): e.session
+        case .snapshot, .usageUpdate, .usageWindowReset, .hiloTaskChanged, .nowPlaying, .settingsSet, .face, .cover, .pomodoro: nil
         }
     }
 }

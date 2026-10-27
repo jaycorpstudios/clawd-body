@@ -61,6 +61,18 @@ private func makeStore() throws -> HiloStore {
     #expect(try store.steps(session: "s1").map(\.kind) == [.ask, .ok])
 }
 
+@Test func aWorkingSessionWithNoEventFor10MinReadsIdleUntilItsNextStep() throws {
+    let store = try makeStore()
+    try store.recordStep("s1", project: "api", kind: .read, text: "Read a", status: .working, now: 100)
+    try store.recordStep("s2", project: "api", kind: .ask, text: "Bash: ls", status: .waiting, waitingOn: "Bash: ls", now: 100)
+    try store.markIdle(before: 100)
+    #expect(try store.sessions(since: 0).allSatisfy { $0.status != .idle })
+    try store.markIdle(before: 101)
+    #expect(try store.sessions(since: 0).sorted { $0.id < $1.id }.map(\.status) == [.idle, .waiting])
+    try store.markWorking("s1")
+    #expect(try store.sessions(since: 0).first { $0.id == "s1" }?.status == .working)
+}
+
 @Test func endedSessionsDropOutOfTheWindow() throws {
     let store = try makeStore()
     try store.recordSessionStart("s1", project: "api", now: 10)

@@ -305,3 +305,15 @@ private func behavior(_ reply: Data) -> String? {
         #expect(behavior(try await hook.value) == "allow")
     }
 }
+
+@Test func aSessionWithNoHookFor10MinGoesIdleOnTheBuddy() async throws {
+    let h = Harness()
+    _ = await h.coordinator.handleHook(try HookInput.decode(Data(#"{"hook_event_name":"SessionStart","session_id":"s1","cwd":"\#(repo)"}"#.utf8)))
+    h.clock.time.set(1_599)
+    await h.coordinator.tickSessions()
+    #expect(!(await h.link.types()).contains("snapshot"))
+    h.clock.time.set(1_600)
+    await h.coordinator.tickSessions()
+    let snap = try JSONSerialization.jsonObject(with: try #require(await h.link.lastData("snapshot"))) as? [String: Any]
+    #expect(((snap?["sessions"] as? [[String: Any]])?.first?["status"] as? String) == "idle")
+}

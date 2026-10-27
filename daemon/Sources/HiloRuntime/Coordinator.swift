@@ -318,6 +318,17 @@ public actor Coordinator {
         await send(.nowPlaying(next))
     }
 
+    static let idleAfter = 600
+
+    public func tickSessions() async {
+        let now = clock.now()
+        recorder?.markIdle(before: now - Self.idleAfter)
+        let stale = store.idleStale(now: now, after: Self.idleAfter)
+        guard !stale.isEmpty else { return }
+        log("idle after \(Self.idleAfter / 60) min without events: \(stale.joined(separator: ", "))")
+        await sendSnapshot()
+    }
+
     /// Runs on the Mac's clock too, so finished work phases are recorded even with the buddy away.
     public func tickPomodoro() {
         guard var p = pomodoro else { return }

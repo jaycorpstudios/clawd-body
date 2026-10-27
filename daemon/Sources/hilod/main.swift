@@ -84,6 +84,7 @@ Task.detached {
 Task.detached {
     while true {
         await coordinator.tickPomodoro()
+        await coordinator.tickSessions()
         try? await Task.sleep(for: .seconds(5))
     }
 }
