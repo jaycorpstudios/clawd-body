@@ -63,13 +63,23 @@ int64_t bm_wall_ms(const bm_model_t *m, uint32_t now_ms)
     return m->clock_known ? (int64_t)now_ms + m->wall_offset_ms : 0;
 }
 
+static void stamp_unknown_link_times(bm_model_t *m, uint32_t now_ms)
+{
+    for (int i = 0; i < BM_MAX_HOSTS; i++) {
+        bm_host_t *h = &m->hosts[i];
+        if (h->used && h->connected && !h->connected_at) h->connected_at = wall_s(m, now_ms);
+    }
+}
+
 void bm__observe_ts(bm_model_t *m, int64_t ts, bool exact, uint32_t now_ms)
 {
     int64_t wall = ts * 1000;
     if (exact || !m->clock_known || wall - bm_wall_ms(m, now_ms) >= 1000) {
+        bool first = !m->clock_known;
         m->wall_offset_ms = wall - (int64_t)now_ms;
         m->clock_known = true;
         m->clock_synced++;
+        if (first) stamp_unknown_link_times(m, now_ms);
     }
 }
 
@@ -78,6 +88,7 @@ void bm_clock_from_rtc(bm_model_t *m, int64_t unix_s, uint32_t now_ms)
     if (m->clock_known) return;
     m->wall_offset_ms = unix_s * 1000 - (int64_t)now_ms;
     m->clock_known = true;
+    stamp_unknown_link_times(m, now_ms);
     bm__touch(m);
 }
 
@@ -94,6 +105,7 @@ int bm__host_slot(bm_model_t *m, const char *name, bool create)
         if (!m->hosts[i].connected) slot = i;
     if (slot < 0) return -1;
     bm__clear_host(m, slot);
+    if (m->face_rx.host == slot) m->face_rx.count = 0;
     memset(&m->hosts[slot], 0, sizeof(m->hosts[slot]));
     m->hosts[slot].used = true;
     bm__copy(m->hosts[slot].name, sizeof(m->hosts[slot].name), name);

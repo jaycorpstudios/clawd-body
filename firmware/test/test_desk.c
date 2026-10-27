@@ -413,3 +413,123 @@ TEST(base64_decoder_rejects_bad_input)
     CHECK(bm_base64_decode("TWFuTWFuTWFu", out, sizeof(out)) == 0);
     CHECK(bm_base64_decode("TWF", out, sizeof(out)) == 0);
 }
+
+TEST(link_up_before_the_clock_is_stamped_when_the_clock_arrives)
+{
+    now = 1000;
+    bm_config_t cfg = {0};
+    bm_init(&M, &cfg, now);
+    bm_link(&M, "work", true, now);
+    int w = bm__host_slot(&M, "work", false);
+    CHECK(!M.clock_known && M.hosts[w].connected_at == 0);
+    advance(1500);
+    CHECK(snapshot("work", "") == BM_OK);
+    CHECK(M.hosts[w].connected_at == wall_now());
+
+    bm_init(&M, &cfg, now);
+    bm_link(&M, "work", true, now);
+    bm_clock_from_rtc(&M, BASE_TS, now);
+    CHECK(M.hosts[bm__host_slot(&M, "work", false)].connected_at == BASE_TS);
+}
+
+TEST(pomodoro_needs_the_clock_to_start)
+{
+    now = 1000;
+    bm_config_t cfg = {0};
+    bm_init(&M, &cfg, now);
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    CHECK(M.pomo.state == BM_POMO_STOPPED);
+    bm_tap(&M, BM_TAP_POMO_WORK, 1, now);
+    CHECK(M.pomo.work_min == 30 && M.pomo.updated_at == 0);
+}
+
+TEST(pomodoro_flips_exactly_at_ends_at)
+{
+    fresh();
+    CHECK(snapshot("work", "") == BM_OK);
+    char fmt[256];
+    snprintf(fmt, sizeof(fmt), "{%s}", POMO_25);
+    int64_t t = wall_now();
+    CHECK(send("work", "pomodoro.state", fmt, t + 10, t) == BM_OK);
+    advance(9000);
+    CHECK(!M.pomo.on_break && bm_pomo_left_s(&M, now) == 1);
+    advance(1000);
+    CHECK(M.pomo.on_break && M.pomo.cycle == 1 && M.pomo.ends_at == t + 10 + 5 * 60);
+    CHECK(bm_pomo_left_s(&M, now) == 5 * 60);
+    CHECK(heard(BM_SND_DONE));
+}
+
+TEST(pomodoro_tie_from_a_snapshot_keeps_mine_but_a_live_change_wins)
+{
+    fresh();
+    CHECK(snapshot("work", "") == BM_OK);
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    int64_t mine = M.pomo.updated_at;
+    outs_t o;
+    drain(&o);
+    char extra[300];
+    snprintf(extra, sizeof(extra),
+             "\"pomodoro\":{\"state\":\"stopped\",\"phase\":\"work\",\"work_min\":50,\"break_min\":10,\"cycle\":0,"
+             "\"updated_at\":%lld}",
+             mine);
+    CHECK(snapshot("home", extra) == BM_OK);
+    CHECK(M.pomo.state == BM_POMO_RUNNING && M.pomo.work_min == 25);
+    drain(&o);
+    CHECK(count_out(&o, "device.pomodoro") == 0);
+
+    CHECK(send("home", "pomodoro.state",
+               "{\"state\":\"stopped\",\"phase\":\"work\",\"work_min\":50,\"break_min\":10,\"cycle\":0,"
+               "\"updated_at\":%lld}",
+               mine) == BM_OK);
+    CHECK(M.pomo.state == BM_POMO_STOPPED && M.pomo.work_min == 50);
+    drain(&o);
+    const bm_out_t *b = find_out(&o, "device.pomodoro");
+    CHECK(b && b->hosts == 0xff);
+}
+
+TEST(pomodoro_counted_alone_is_handed_back_to_a_mac_that_reconnects_stale)
+{
+    fresh();
+    CHECK(snapshot("work", "") == BM_OK);
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    int64_t started = M.pomo.updated_at, first_end = M.pomo.ends_at;
+    bm_link(&M, "work", false, now);
+    bm_link(&M, "home", false, now);
+    advance(31 * 60 * 1000);
+    CHECK(M.pomo.cycle == 1 && !M.pomo.on_break && M.pomo.ends_at == first_end + 30 * 60);
+    CHECK(M.pomo.updated_at == started);
+
+    bm_link(&M, "work", true, now);
+    outs_t o;
+    drain(&o);
+    char extra[300];
+    snprintf(extra, sizeof(extra),
+             "\"pomodoro\":{\"state\":\"running\",\"phase\":\"work\",\"ends_at\":%lld,\"work_min\":25,"
+             "\"break_min\":5,\"cycle\":0,\"updated_at\":%lld}",
+             first_end, started - 1);
+    CHECK(snapshot("work", extra) == BM_OK);
+    CHECK(M.pomo.cycle == 1 && M.pomo.ends_at == first_end + 30 * 60);
+    drain(&o);
+    const bm_out_t *back = find_out(&o, "device.pomodoro");
+    CHECK(back && back->hosts == 1u << bm__host_slot(&M, "work", false));
+    CHECK(strstr(back->json, "\"cycle\":1"));
+}
+
+TEST(pomodoro_from_a_mac_with_the_same_stamp_after_a_restart_does_not_reset_the_count)
+{
+    fresh();
+    CHECK(snapshot("work", "") == BM_OK);
+    char fmt[256];
+    snprintf(fmt, sizeof(fmt), "{%s}", POMO_25);
+    int64_t t = wall_now();
+    CHECK(send("work", "pomodoro.state", fmt, t + 1500, t) == BM_OK);
+    advance(26 * 60 * 1000);
+    CHECK(M.pomo.cycle == 1 && M.pomo.on_break);
+    char extra[300];
+    snprintf(extra, sizeof(extra),
+             "\"pomodoro\":{\"state\":\"running\",\"phase\":\"work\",\"ends_at\":%lld,\"work_min\":25,"
+             "\"break_min\":5,\"cycle\":0,\"updated_at\":%lld}",
+             t + 1500, t);
+    CHECK(snapshot("work", extra) == BM_OK);
+    CHECK(M.pomo.cycle == 1 && M.pomo.on_break);
+}
