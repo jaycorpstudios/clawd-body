@@ -305,6 +305,13 @@ static void scene_sleep(void)
     shot("sleep-computers-none");
 }
 
+static void focus_shot(const char *name)
+{
+    go_view(BM_VIEW_POMODORO);
+    CHECK(M.view == BM_VIEW_POMODORO);
+    shot(name);
+}
+
 static void pomo_snapshot(const char *state)
 {
     CHECK(send("work", "pomodoro.state", "%s", state) == BM_OK);
@@ -323,11 +330,11 @@ static void scene_focus(void)
 
     bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
     run(41000);
-    shot("focus-running-work");
+    focus_shot("focus-running-work");
 
     bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
     run(500);
-    shot("focus-paused");
+    focus_shot("focus-paused");
 
     bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
     int64_t t = bm_wall_ms(&M, now) / 1000;
@@ -337,12 +344,12 @@ static void scene_focus(void)
              "\"cycle\":3,\"updated_at\":%lld}",
              (long long)(t + 140), (long long)t);
     pomo_snapshot(state);
-    shot("focus-break-cycle-3");
+    focus_shot("focus-break-cycle-3");
 
     bm_link(&M, "work", false, now);
     bm_link(&M, "home", false, now);
     run(3000);
-    shot("focus-link-down");
+    focus_shot("focus-link-down");
 
     run(50 * 1000);
     bm_touch_wake(&M, now);
