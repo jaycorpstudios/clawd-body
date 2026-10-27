@@ -222,8 +222,15 @@ final class AppModel {
     func startPairing() { control("pair") }
     func cancelPairing() { control("pair-cancel") }
 
-    private func control(_ op: String) {
-        let reply = LocalSocket.request(path: LocalSocket.defaultPath, op: op, body: Data(), timeoutSeconds: 2)
+    /// The buddy applies it and reports back; the controls follow `daemonStatus.settings`, never this request.
+    func changeSettings(_ change: SettingsChange) {
+        guard let body = try? JSONEncoder().encode(change) else { return }
+        control("settings", body: body)
+        refreshSoon()
+    }
+
+    private func control(_ op: String, body: Data = Data()) {
+        let reply = LocalSocket.request(path: LocalSocket.defaultPath, op: op, body: body, timeoutSeconds: 2)
         if let status = reply.flatMap({ try? JSONDecoder().decode(DaemonStatus.self, from: $0) }) { daemonStatus = status }
     }
 

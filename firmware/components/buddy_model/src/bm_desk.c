@@ -116,13 +116,9 @@ void bm_panel(bm_model_t *m, bool open, uint32_t now_ms)
         return;
     }
     m->last_act_ms = now_ms;
-    if (open && (m->attn >= 0 || m->pairing)) return;
+    if (open && (m->attn >= 0 || m->pairing || m->sheet != BM_SHEET_NONE)) return;
     if (m->panel == open) return;
     m->panel = open;
-    if (open) {
-        m->sheet = BM_SHEET_NONE;
-        m->sheet_session = -1;
-    }
     bm__touch(m);
 }
 

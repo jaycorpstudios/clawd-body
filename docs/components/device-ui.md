@@ -18,6 +18,15 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 4. **Hilo**: current task with a timer, next tasks and today's agreements. Tapping opens the detail.
 5. **Music**: generated pixel-art cover, title, artist and progress.
 
+## Settings panel (proposal, not in the prototype)
+
+`buddy-sim.html` has no settings screen (its only sound control is the console's Sound toggle), so this is a proposal in the simulator's style.
+
+- **Open**: swipe down anywhere (not over a permission screen, a sheet or the pairing screen). **Close**: swipe up, tap below the panel, or the side button.
+- **Look**: a 330 px sheet sliding from the top in 220 ms (ease-out) over the current view, background `#0d0c0b` with a `#1f1c19` bottom border and 28 px corners, like the agent rows; the rest of the screen dims to 60 % black. A 44×5 px grabber sits at its bottom edge.
+- **Controls**, top to bottom: a full-width **Sound** button (speaker icon, "Sound", "On" in done green on a dark green fill, or "Off" in dim gray); **Volume** slider 0–100 (done green, half opacity while sound is off); **Brightness** slider 10–100 % (needs-you amber). Values show at the right of each label in JetBrains Mono.
+- **Behavior**: each change applies at once (volume to the codec, brightness to the panel); the Macs get one `device.settings` once the finger rests for 400 ms. Turning sound on plays the Button cue as feedback. Values persist on the buddy across reboots; Hilo › Setup shows and changes the same three.
+
 ## Pet
 
 - Pixel art on a 32×32 grid: elliptical body with light and dark edge, antenna with a glowing tip in the status color, little feet and arms.
@@ -52,4 +61,4 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 | Problem | low-passed square, low register | falling intervals | error, 80 % usage, limit, battery, disconnect |
 | Info | short, high sine blips | 1 to 3 notes | new session, denied, song, button |
 
-Exact notes and durations live in `SOUNDS` inside the prototype. On the firmware `buddy_model/src/bm_synth.c` synthesizes the same notes, waveforms, envelopes, vibrato, bell overtone and low-pass filter at 22 050 Hz and plays them through the ES8311 codec; sound is a build option for now ([pending](../plans/open-questions.md#firmware)).
+Exact notes and durations live in `SOUNDS` inside the prototype. On the firmware `buddy_model/src/bm_synth.c` synthesizes the same notes, waveforms, envelopes, vibrato, bell overtone and low-pass filter at 22 050 Hz and plays them through the ES8311 codec. Sound is always built in and off by default; the settings panel (or Hilo) turns it on and sets the volume.

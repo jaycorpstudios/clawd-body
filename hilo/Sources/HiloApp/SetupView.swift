@@ -1,4 +1,5 @@
 import SwiftUI
+import HiloContract
 import HiloRuntime
 
 struct SetupView: View {
@@ -16,6 +17,7 @@ struct SetupView: View {
             step(2, "Run hilod", done: model.daemonRunning) { daemonCard }
             step(3, "Pair the buddy", done: model.daemonStatus?.buddy.link == .connected) { buddyCard }
             step(4, "Usage on the buddy", done: false, optional: true) { usageCard }
+            step(5, "Buddy settings", done: false, optional: true) { BuddySettingsCard() }
         }
         .onAppear {
             guard !nameLoaded else { return }
@@ -146,5 +148,50 @@ struct SetupView: View {
             Text(text).foregroundStyle(Theme.secondary)
         }
         .font(.system(size: 12.5))
+    }
+}
+
+/// Same controls as the buddy's top panel. Values come from the buddy's `device.settings`, so both stay in step.
+struct BuddySettingsCard: View {
+    @Environment(AppModel.self) private var model
+    @State private var volume = 60.0
+    @State private var brightness = 100.0
+    @State private var editing = false
+
+    var body: some View {
+        let reported = model.daemonStatus?.settings
+        VStack(alignment: .leading, spacing: 14) {
+            Text(reported == nil ? "Connect the buddy to change its settings. They live on the buddy, so its own panel (swipe down from the top) shows the same values."
+                 : "Changes apply on the buddy, which confirms them; swiping down on the buddy opens the same panel.")
+                .foregroundStyle(Theme.secondary)
+            Toggle(isOn: Binding(get: { reported?.sound == true }, set: { model.changeSettings(SettingsChange(sound: $0)) })) {
+                Text("Sound")
+            }
+            .toggleStyle(.switch)
+            slider("Volume", value: $volume, range: 0...100, unit: "") { model.changeSettings(SettingsChange(volume: $0)) }
+                .opacity(reported?.sound == true ? 1 : 0.5)
+            slider("Brightness", value: $brightness, range: 10...100, unit: "%") { model.changeSettings(SettingsChange(brightness: $0)) }
+        }
+        .disabled(reported == nil)
+        .onAppear(perform: sync)
+        .onChange(of: reported) { sync() }
+    }
+
+    private func sync() {
+        guard !editing, let s = model.daemonStatus?.settings else { return }
+        volume = Double(s.volume)
+        brightness = Double(s.brightness)
+    }
+
+    private func slider(_ title: String, value: Binding<Double>, range: ClosedRange<Double>, unit: String,
+                        commit: @escaping (Int) -> Void) -> some View {
+        HStack(spacing: 12) {
+            Text(title).frame(width: 84, alignment: .leading)
+            Slider(value: value, in: range, step: 1) { active in
+                editing = active
+                if !active { commit(Int(value.wrappedValue)) }
+            }
+            Text("\(Int(value.wrappedValue))\(unit)").font(Theme.mono).monospacedDigit().frame(width: 48, alignment: .trailing)
+        }
     }
 }

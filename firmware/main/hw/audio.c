@@ -18,7 +18,7 @@
 static const char *TAG = "audio";
 static QueueHandle_t queue;
 static esp_codec_dev_handle_t codec;
-static int out_volume;
+static volatile int out_volume;
 static float *mix;
 static int16_t *pcm;
 
@@ -45,9 +45,11 @@ static void audio_task(void *arg)
             esp_codec_dev_set_out_vol(codec, out_volume);
             open = true;
         }
+        esp_codec_dev_set_out_vol(codec, out_volume);
         int64_t t0 = esp_log_timestamp();
         int err = esp_codec_dev_write(codec, pcm, (int)(n * sizeof(int16_t)));
-        ESP_LOGI(TAG, "sound %d: %u samples in %lld ms (%d)", snd, (unsigned)n, (long long)(esp_log_timestamp() - t0), err);
+        ESP_LOGI(TAG, "sound %d: %u samples in %lld ms at volume %d (%d)", snd, (unsigned)n,
+                 (long long)(esp_log_timestamp() - t0), out_volume, err);
     }
 }
 
@@ -66,6 +68,11 @@ bool audio_init(int volume)
     if (xTaskCreate(audio_task, "audio", TASK_STACK, NULL, 4, NULL) != pdPASS) return false;
     ESP_LOGI(TAG, "ES8311 ready, volume %d", volume);
     return true;
+}
+
+void audio_set_volume(int volume)
+{
+    out_volume = volume;
 }
 
 void audio_play(bm_sound_t snd)

@@ -2,7 +2,7 @@
 
 ESP-IDF v5.5.6 + LVGL 9 for the Waveshare ESP32-S3-Touch-AMOLED-2.16. Spec: [docs/components/firmware.md](../docs/components/firmware.md).
 
-Status: all five views, pet, alerts, permission screen, sheets and the pairing screen drawn with LVGL from the model. NimBLE peripheral with the contract GATT service, passkey pairing and two links, verified on the board with one Mac. `CONFIG_BUDDY_DEMO` swaps BLE for a scripted demo Mac (`main/demo.c`). Battery (AXP2101) and RTC (PCF85063) are read on the board; sound cues are synthesized and played through the ES8311 when built with `CONFIG_BUDDY_SOUND` (off by default).
+Status: all five views, pet, alerts, permission screen, sheets and the pairing screen drawn with LVGL from the model. NimBLE peripheral with the contract GATT service, passkey pairing and two links, verified on the board with one Mac. `CONFIG_BUDDY_DEMO` swaps BLE for a scripted demo Mac (`main/demo.c`). Battery (AXP2101) and RTC (PCF85063) are read on the board; sound cues are synthesized and played through the ES8311 when the sound setting is on (off by default; swipe down for the settings panel, or Hilo › Setup).
 
 ## Layout
 
@@ -46,13 +46,7 @@ Demo variant (scripted Mac instead of BLE, LVGL frame rate logged every second),
 scripts/idf.sh -B build-demo -D SDKCONFIG=build-demo/sdkconfig -D 'SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.demo' build
 ```
 
-Sound variant (the cues on, codec volume 60 out of 100), also built apart:
-
-```sh
-scripts/idf.sh -B build-sound -D SDKCONFIG=build-sound/sdkconfig -D 'SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.sound' build
-```
-
-Panel brightness: `CONFIG_BUDDY_BRIGHTNESS` (awake, default 100 %) and `CONFIG_BUDDY_SLEEP_BRIGHTNESS` (sleep clock, default 20 %) in `menuconfig` › Hilo Buddy.
+Sound, volume and awake brightness are device settings (NVS namespace `buddy_ui`), not build options. The sleep clock's brightness ceiling is `CONFIG_BUDDY_SLEEP_BRIGHTNESS` (default 20 %) in `menuconfig` › Hilo Buddy.
 
 Flashing (`scripts/idf.sh -p <port> flash monitor`) needs maintainer approval ([approval policy](../docs/approval-policy.md)).
 

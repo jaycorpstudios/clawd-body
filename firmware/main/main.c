@@ -15,6 +15,7 @@
 #include "hw/power.h"
 #include "hw/audio.h"
 #include "hw/ext_rtc.h"
+#include "settings_store.h"
 #include "ui/ui.h"
 
 #define SIDE_BUTTON GPIO_NUM_18
@@ -22,6 +23,7 @@
 #define HEAP_LOG_MS 60000
 #define POWER_POLL_MS 5000
 #define BATTERY_LOG_MS 60000
+#define SETTINGS_SAVE_MS 2000
 
 static const char *TAG = "buddy";
 static bm_model_t *model;
@@ -133,13 +135,32 @@ static void power_cb(lv_timer_t *t)
     if (p.battery) bm_set_battery(model, p.pct, p.charging, now);
 }
 
-static void follow_sleep_brightness(void)
+static void follow_brightness(void)
 {
-    static bool dimmed;
-    if (model->sleeping == dimmed) return;
-    dimmed = model->sleeping;
-    int pct = dimmed ? CONFIG_BUDDY_SLEEP_BRIGHTNESS : CONFIG_BUDDY_BRIGHTNESS;
+    static int applied = -1;
+    int awake = model->settings.brightness;
+    int pct = model->sleeping && CONFIG_BUDDY_SLEEP_BRIGHTNESS < awake ? CONFIG_BUDDY_SLEEP_BRIGHTNESS : awake;
+    if (pct == applied) return;
+    applied = pct;
     if (bsp_display_brightness_set(pct) == ESP_OK) ESP_LOGI(TAG, "brightness %d%%", pct);
+}
+
+static uint32_t settings_saved_rev;
+
+static void follow_settings(uint32_t now)
+{
+    static uint32_t applied_rev, changed_at;
+    const bm_settings_t *s = &model->settings;
+    if (model->settings_rev != applied_rev) {
+        applied_rev = model->settings_rev;
+        changed_at = now;
+        audio_set_volume(s->volume);
+        ESP_LOGI(TAG, "settings sound %d, volume %u, brightness %u%%", s->sound, s->volume, s->brightness);
+    }
+    if (settings_saved_rev != applied_rev && now - changed_at >= SETTINGS_SAVE_MS) {
+        settings_saved_rev = applied_rev;
+        if (settings_store_save(s)) ESP_LOGI(TAG, "settings saved");
+    }
 }
 
 static void io_cb(lv_timer_t *t)
@@ -149,9 +170,11 @@ static void io_cb(lv_timer_t *t)
     poll_button(now);
     pump_link(now);
     bm_sound_t snd;
-    while (bm_sound_pop(model, &snd)) audio_play(snd);
+    while (bm_sound_pop(model, &snd))
+        if (model->settings.sound) audio_play(snd);
     sync_rtc();
-    follow_sleep_brightness();
+    follow_settings(now);
+    follow_brightness();
 }
 
 static void heap_log_cb(lv_timer_t *t)
@@ -173,8 +196,11 @@ void app_main(void)
     bsp_display_lock(-1);
     uint32_t now = lv_tick_get();
     bm_init(model, &cfg, now);
+    bm_settings_t saved;
+    if (settings_store_load(&saved)) bm_settings_load(model, &saved);
+    settings_saved_rev = model->settings_rev;
     ui_init(model);
-    bsp_display_brightness_set(CONFIG_BUDDY_BRIGHTNESS);
+    follow_brightness();
     int64_t rtc_s;
     if (ext_rtc_init() && ext_rtc_read(&rtc_s)) {
         bm_clock_from_rtc(model, rtc_s, now);
@@ -189,9 +215,7 @@ void app_main(void)
         lv_timer_create(power_cb, POWER_POLL_MS, NULL);
     }
 #endif
-#if CONFIG_BUDDY_SOUND
-    audio_init(CONFIG_BUDDY_SOUND_VOLUME);
-#endif
+    audio_init(model->settings.volume);
     side_button_init();
     lv_timer_create(io_cb, IO_PERIOD_MS, NULL);
     lv_timer_create(heap_log_cb, HEAP_LOG_MS, NULL);

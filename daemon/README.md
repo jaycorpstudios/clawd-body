@@ -39,6 +39,21 @@ Hold the side button 5 s on the buddy's Home view, then run `hilod --pair`. macO
 
 `hilod` embeds an `Info.plist` with `NSBluetoothAlwaysUsageDescription`; the first run asks for Bluetooth permission.
 
+## Socket ops
+
+One request per connection on the Unix socket: the first line is the op, the rest its body. Only the same user can connect.
+
+| Op | Body | Reply | Used by |
+| :--- | :--- | :--- | :--- |
+| `hook` | Claude Code hook JSON | What the hook prints | `hilo hook` |
+| `usage` | `rate_limits` JSON | `ok` | `hilo statusline` |
+| `hilo` | — | `ok`; re-sends the snapshot | CLI, MCP, app after a store change |
+| `buddy` | A buddy → Mac message | `ok` or `rejected` | `hilo buddy` (development) |
+| `status` | — | `DaemonStatus` JSON: host, buddy link and pairing, transcript tokens, and the buddy's last `device.settings` | Hilo app |
+| `pair` / `pair-cancel` | — | `DaemonStatus` | Setup |
+| `host` | Display name | `DaemonStatus`; saves `config.json`, re-links | Setup |
+| `settings` | `{ sound?, volume?, brightness? }` | `DaemonStatus`; sends `settings.set` (the buddy's answer shows up in a later `status`) | Setup |
+
 ## Try it without a buddy
 
 `--stdout` writes every Mac → buddy message to stdout, one per line, instead of using BLE.

@@ -11,9 +11,9 @@ static void gesture_cb(lv_event_t *e)
     (void)e;
     lv_indev_t *indev = lv_indev_active();
     lv_dir_t dir = lv_indev_get_gesture_dir(indev);
-    if (dir != LV_DIR_LEFT && dir != LV_DIR_RIGHT) return;
     lv_indev_wait_release(indev);
-    bm_swipe(ui.m, dir == LV_DIR_LEFT ? 1 : -1, lv_tick_get());
+    if (dir == LV_DIR_BOTTOM || dir == LV_DIR_TOP) bm_panel(ui.m, dir == LV_DIR_BOTTOM, lv_tick_get());
+    else bm_swipe(ui.m, dir == LV_DIR_LEFT ? 1 : -1, lv_tick_get());
 }
 
 static void refresh(uint32_t now_ms)
@@ -22,6 +22,7 @@ static void refresh(uint32_t now_ms)
     ui_overlay_update(now_ms);
     ui_attn_update(now_ms);
     ui_sheet_update(now_ms);
+    ui_panel_update(now_ms);
     ui_misc_update(now_ms);
     ui_pair_update(now_ms);
     ui_bar_update(now_ms);
@@ -72,6 +73,7 @@ void ui_init(bm_model_t *m)
     ui_overlay_create(ui.scr);
     ui_attn_create(ui.scr);
     ui_sheet_create(ui.scr);
+    ui_panel_create(ui.scr);
     ui_misc_create(ui.scr);
     ui_pair_create(ui.scr);
     for (int i = 0; i < BM_AGENT_ROWS; i++) ui.rows[i].session = -1;

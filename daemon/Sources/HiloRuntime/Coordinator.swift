@@ -34,6 +34,7 @@ public actor Coordinator {
     private var store = SessionStore()
     private var usage = UsageTracker()
     private var waiting: [String: CheckedContinuation<Resolution?, Never>] = [:]
+    private var buddySettings: DeviceSettings?
 
     public init(host: String, mapper: HookMapper, link: BuddyLink, presence: PresenceProbe,
                 clock: Clock = SystemClock(), pollSeconds: Double = 2, recorder: StoreRecorder? = nil,
@@ -72,6 +73,10 @@ public actor Coordinator {
         switch envelope.body {
         case .permissionDecision(let d): result = registry.decide(d, now: clock.now())
         case .questionAnswer(let a): result = registry.answer(a, now: clock.now())
+        case .settings(let s):
+            buddySettings = s
+            log("buddy settings: sound \(s.sound ? "on" : "off"), volume \(s.volume), brightness \(s.brightness)%")
+            return
         default: return
         }
         switch result {
@@ -151,6 +156,17 @@ public actor Coordinator {
 
     public func buddyLink(up: Bool) {
         recorder?.buddyLink(up: up, now: clock.now())
+        if !up { buddySettings = nil }
+    }
+
+    /// What the buddy last reported; nil until it does (or while the link is down).
+    public var settings: DeviceSettings? { buddySettings }
+
+    /// The buddy applies it and answers with `device.settings`, which is what Hilo then shows.
+    public func changeSettings(_ change: SettingsChange) async -> Bool {
+        guard change.isValid else { return false }
+        await send(.settingsSet(change))
+        return true
     }
 
     private func send(_ message: Outbound) async {

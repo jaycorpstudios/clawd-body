@@ -1,4 +1,5 @@
 import Foundation
+import HiloContract
 
 public struct BuddyStatus: Codable, Equatable, Sendable {
     public enum Link: String, Codable, Sendable {
@@ -22,10 +23,11 @@ public struct DaemonStatus: Codable, Equatable, Sendable {
     public var host: String
     public var buddy: BuddyStatus
     public var tokensFromTranscripts: Bool
+    public var settings: DeviceSettings?
 
-    public init(host: String, buddy: BuddyStatus, tokensFromTranscripts: Bool) {
-        self.host = host; self.buddy = buddy; self.tokensFromTranscripts = tokensFromTranscripts
+    public init(host: String, buddy: BuddyStatus, tokensFromTranscripts: Bool, settings: DeviceSettings? = nil) {
+        self.host = host; self.buddy = buddy; self.tokensFromTranscripts = tokensFromTranscripts; self.settings = settings
     }
 
-    enum CodingKeys: String, CodingKey { case host, buddy, tokensFromTranscripts = "tokens_from_transcripts" }
+    enum CodingKeys: String, CodingKey { case host, buddy, tokensFromTranscripts = "tokens_from_transcripts", settings }
 }

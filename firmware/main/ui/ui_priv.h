@@ -130,6 +130,9 @@ void ui_pair_create(lv_obj_t *scr);
 void ui_pair_update(uint32_t now_ms);
 void ui_pair_frame(void);
 
+void ui_panel_create(lv_obj_t *scr);
+void ui_panel_update(uint32_t now_ms);
+
 void ui_misc_create(lv_obj_t *scr);
 void ui_misc_update(uint32_t now_ms);
 void ui_misc_frame(uint32_t now_ms);

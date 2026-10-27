@@ -29,10 +29,11 @@ Spare parts available: PAM8403 amplifiers and 8 Ω 0.5 W speakers, in case the o
    - **View details**: opens a sheet with full information (diff, directory, risk).
 5. **Detail sheets** opened by tapping: agent (recent activity, tokens, diff, error or summary), usage (per-session breakdown) and Hilo task (notes, agreements, linked sessions).
 6. **Side button**: a click goes back, closes an alert or moves to the next view; with a permission open it means "Later". Holding it puts the screen to sleep.
-7. **Idle**: after 60 s without activity (unless decisions are pending) shows a dimmed clock that moves every few seconds to avoid AMOLED burn-in. The panel drops to `CONFIG_BUDDY_SLEEP_BRIGHTNESS` (20 %) on the sleep clock and returns to `CONFIG_BUDDY_BRIGHTNESS` (100 %) on wake; both are build options until there is a device setting.
+7. **Idle**: after 60 s without activity (unless decisions are pending) shows a dimmed clock that moves every few seconds to avoid AMOLED burn-in. The panel drops to `CONFIG_BUDDY_SLEEP_BRIGHTNESS` (20 %, build option) on the sleep clock, or to the brightness setting if that is lower, and returns to the brightness setting on wake.
 8. **Reminder** for pending decisions every 25 s (Attention sound family).
 9. **Multi-Mac**: bonded with one or two Macs. The top bar shows each link's state; sessions of a disconnected Mac are dimmed.
 10. **Battery**: indicator in the top bar and an alert at 15 %.
+11. **Settings panel**: swipe down for sound on/off, volume and brightness ([device UI](device-ui.md#settings-panel-proposal-not-in-the-prototype)). Kept in NVS under the namespace `buddy_ui` (a 4-byte blob, saved 2 s after the last change); NimBLE's bonds stay in `nimble_bond`, untouched. Hilo changes them with `settings.set`; the buddy answers every change, and every Mac link that binds, with `device.settings`.
 
 ## Non-functional requirements
 
@@ -61,7 +62,7 @@ The portable model (`firmware/components/buddy_model/`) follows the prototype; w
 
 - **AXP2101** (0x34): read only. Battery present, USB present, charge direction, fuel-gauge percent and battery voltage, polled every 5 s and fed to `bm_set_battery`, which owns the 15 % alert and the charging toast. The PMU's power-on defaults already enable the gauge and the battery ADC; nothing is written to it.
 - **PCF85063** (0x51): time registers only, UTC, BCD.
-- **ES8311** (through the BSP's `bsp_audio_codec_speaker_init` and `esp_codec_dev`): with `CONFIG_BUDDY_SOUND`, an audio task renders each cue the model queues into PSRAM and writes it to I²S; the codec (and its power amplifier) closes after 2 s without sound. The cue renderer is portable and covered by the host tests.
+- **ES8311** (through the BSP's `bsp_audio_codec_speaker_init` and `esp_codec_dev`): an audio task renders each cue the model queues into PSRAM and writes it to I²S at the volume setting; cues are dropped while the sound setting is off. The codec (and its power amplifier) closes after 2 s without sound. The cue renderer is portable and covered by the host tests.
 
 ## Out of scope for now
 
