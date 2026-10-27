@@ -18,6 +18,7 @@ struct SetupView: View {
             step(3, "Pair the buddy", done: model.daemonStatus?.buddy.link == .connected) { buddyCard }
             step(4, "Usage on the buddy", done: false, optional: true) { usageCard }
             step(5, "Buddy settings", done: false, optional: true) { BuddySettingsCard() }
+            step(6, "Picture for this Mac", done: model.daemonStatus?.face != nil, optional: true) { ProfileCard() }
         }
         .onAppear {
             guard !nameLoaded else { return }

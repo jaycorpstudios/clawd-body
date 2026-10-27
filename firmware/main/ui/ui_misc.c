@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "esp_heap_caps.h"
 #include "ui_priv.h"
+
+#define FACE_PX 240
 
 void ui_bar_create(lv_obj_t *scr)
 {
@@ -88,6 +91,62 @@ void ui_bar_update(uint32_t now_ms)
     lv_obj_set_style_bg_color(ui.batt_lvl, ui_hex(ui.m->battery_pct <= 20 ? BM_C_ERR : BM_C_DONE), 0);
 }
 
+static void face_scale(const bm_face_t *f)
+{
+    if (!ui.face_px) return;
+    for (int y = 0; y < FACE_PX; y++) {
+        const uint16_t *src = &f->px[y * f->h / FACE_PX * f->w];
+        for (int x = 0; x < FACE_PX; x++) ui.face_px[y * FACE_PX + x] = src[x * f->w / FACE_PX];
+    }
+    lv_obj_invalidate(ui.sleep_face);
+}
+
+static int connected_count(void)
+{
+    int n = 0;
+    for (int i = 0; i < BM_MAX_HOSTS; i++) n += ui.m->hosts[i].used && ui.m->hosts[i].connected;
+    return n;
+}
+
+static int known_count(void)
+{
+    int n = 0;
+    for (int i = 0; i < BM_MAX_HOSTS; i++) n += ui.m->hosts[i].used;
+    return n;
+}
+
+static void sleep_card_update(uint32_t now_ms)
+{
+    int card = ui.m->sleep_card;
+    bool face = card >= 0, computers = card == BM_CARD_COMPUTERS;
+    ui_show(ui.sleep_face, face);
+    ui_show(ui.sleep_name, face);
+    ui_show(ui.sleep_pet->img, !face);
+    ui_show(ui.sleep_clock, !face && !computers);
+    ui_show(ui.sleep_ago, face || computers);
+    ui_show(ui.sleep_hint, !face);
+    if (face) {
+        const bm_host_t *h = &ui.m->hosts[card];
+        if (card != ui.face_card || ui.m->faces_rev != ui.face_rev) face_scale(&h->face);
+        char label[17], ago[24];
+        bm_host_label(h->name, label, sizeof(label));
+        lv_label_set_text(ui.sleep_name, label);
+        int64_t at = h->connected ? h->connected_at : h->disconnected_at;
+        if (at) {
+            bm_fmt_ago(bm_wall_ms(ui.m, now_ms) - at * 1000, ago, sizeof(ago));
+            lv_label_set_text_fmt(ui.sleep_ago, "%s %s", h->connected ? "connected" : "seen", ago);
+        } else {
+            lv_label_set_text(ui.sleep_ago, h->connected ? "connected" : "not seen yet");
+        }
+    } else if (computers) {
+        int n = connected_count();
+        if (n) lv_label_set_text_fmt(ui.sleep_ago, "%d Mac%s connected", n, n == 1 ? "" : "s");
+        else lv_label_set_text(ui.sleep_ago, "no Mac connected");
+    }
+    ui.face_card = (int8_t)card;
+    ui.face_rev = ui.m->faces_rev;
+}
+
 static void sleep_tap_cb(lv_event_t *e)
 {
     (void)e;
@@ -119,10 +178,29 @@ void ui_misc_create(lv_obj_t *scr)
     lv_obj_center(ui.sleep_inner);
     lv_obj_set_flex_flow(ui.sleep_inner, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(ui.sleep_inner, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    ui.sleep_name = ui_label(ui.sleep_inner, &font_mono_bold_18, 0x8a8178, "");
+    lv_obj_set_style_margin_bottom(ui.sleep_name, 12, 0);
     ui.sleep_pet = ui_pet_create(ui.sleep_inner, 128);
     lv_obj_set_style_opa(ui.sleep_pet->img, 179, 0);
+    ui.face_px = heap_caps_calloc_prefer(FACE_PX * FACE_PX, 2, 2, MALLOC_CAP_SPIRAM, MALLOC_CAP_DEFAULT);
+    ui.face_dsc.header.magic = LV_IMAGE_HEADER_MAGIC;
+    ui.face_dsc.header.cf = LV_COLOR_FORMAT_RGB565;
+    ui.face_dsc.header.w = FACE_PX;
+    ui.face_dsc.header.h = FACE_PX;
+    ui.face_dsc.header.stride = FACE_PX * 2;
+    ui.face_dsc.data = (const uint8_t *)ui.face_px;
+    ui.face_dsc.data_size = FACE_PX * FACE_PX * 2;
+    ui.sleep_face = lv_image_create(ui.sleep_inner);
+    lv_image_set_src(ui.sleep_face, &ui.face_dsc);
+    lv_obj_set_style_radius(ui.sleep_face, 28, 0);
+    lv_obj_set_style_clip_corner(ui.sleep_face, true, 0);
+    lv_obj_set_style_opa(ui.sleep_face, 200, 0);
     ui.sleep_clock = ui_label(ui.sleep_inner, &font_pixel_92, 0x5c564f, "--:--");
-    lv_obj_set_style_margin_top(ui_label(ui.sleep_inner, &font_mono_16, 0x4a453f, "tap to wake"), 4, 0);
+    ui.sleep_ago = ui_label(ui.sleep_inner, &font_mono_17, 0x5c564f, "");
+    lv_obj_set_style_margin_top(ui.sleep_ago, 14, 0);
+    ui.sleep_hint = ui_label(ui.sleep_inner, &font_mono_16, 0x4a453f, "tap to wake");
+    lv_obj_set_style_margin_top(ui.sleep_hint, 4, 0);
+    ui.face_card = BM_CARD_CLOCK;
     ui_show(ui.sleep, false);
 }
 
@@ -137,12 +215,14 @@ void ui_misc_update(uint32_t now_ms)
         lv_obj_set_style_bg_color(ui.toast, ui_hex(ui.m->toast_color), 0);
     }
     ui_show(ui.sleep, ui.m->sleeping);
+    if (ui.m->sleeping) sleep_card_update(now_ms);
     lv_obj_align(ui.sleep_inner, LV_ALIGN_CENTER, ui.m->sleep_dx, ui.m->sleep_dy);
-    (void)now_ms;
 }
 
 void ui_misc_frame(uint32_t now_ms)
 {
-    if (ui.m->sleeping) ui_pet_draw(ui.sleep_pet, BM_PET_SLEEP, BM_PET_MAIN_HUE, ui.m->acc, 0);
     (void)now_ms;
+    if (!ui.m->sleeping || ui.m->sleep_card >= 0) return;
+    if (ui.m->sleep_card == BM_CARD_COMPUTERS) ui_pet_computers(ui.sleep_pet, known_count(), connected_count());
+    else ui_pet_draw(ui.sleep_pet, BM_PET_SLEEP, BM_PET_MAIN_HUE, ui.m->acc, 0);
 }

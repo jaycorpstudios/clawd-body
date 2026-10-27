@@ -24,10 +24,12 @@ public struct DaemonStatus: Codable, Equatable, Sendable {
     public var buddy: BuddyStatus
     public var tokensFromTranscripts: Bool
     public var settings: DeviceSettings?
+    public var face: String?
 
-    public init(host: String, buddy: BuddyStatus, tokensFromTranscripts: Bool, settings: DeviceSettings? = nil) {
-        self.host = host; self.buddy = buddy; self.tokensFromTranscripts = tokensFromTranscripts; self.settings = settings
+    public init(host: String, buddy: BuddyStatus, tokensFromTranscripts: Bool, settings: DeviceSettings? = nil, face: String? = nil) {
+        self.host = host; self.buddy = buddy; self.tokensFromTranscripts = tokensFromTranscripts
+        self.settings = settings; self.face = face
     }
 
-    enum CodingKeys: String, CodingKey { case host, buddy, tokensFromTranscripts = "tokens_from_transcripts", settings }
+    enum CodingKeys: String, CodingKey { case host, buddy, tokensFromTranscripts = "tokens_from_transcripts", settings, face }
 }

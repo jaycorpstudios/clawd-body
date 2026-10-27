@@ -58,3 +58,15 @@ TEST(cover_is_opaque_and_depends_on_the_title)
     CHECK(memcmp(a, b, sizeof(a)) != 0);
     for (int i = 0; i < BM_COVER_GRID * BM_COVER_GRID; i++) CHECK((a[i] >> 24) == 0xff);
 }
+
+TEST(computers_draw_one_monitor_per_known_mac_lit_when_connected)
+{
+    bm_computers_render(buf, 0, 0, 0);
+    CHECK(AT(buf, 9, 8) == 0xff3a3631 && AT(buf, 1, 8) == 0);
+    bm_computers_render(buf, 2, 1, 0);
+    CHECK(AT(buf, 1, 8) == 0xff8a9bd6 && AT(buf, 17, 8) == 0xff3a3631);
+    bm_computers_render(other, 2, 2, 0);
+    CHECK(AT(other, 17, 8) == 0xff8a9bd6);
+    bm_computers_render(other, 2, 1, 0.5f);
+    CHECK(memcmp(buf, other, sizeof(buf)) != 0);
+}

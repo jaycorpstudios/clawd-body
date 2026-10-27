@@ -158,14 +158,26 @@ static void pet_upscale(ui_pet_t *p)
     }
 }
 
+static void pet_show(ui_pet_t *p, const uint32_t *px)
+{
+    if (memcmp(px, p->px, sizeof(p->px)) == 0) return;
+    memcpy(p->px, px, sizeof(p->px));
+    pet_upscale(p);
+    lv_obj_invalidate(p->img);
+}
+
+void ui_pet_computers(ui_pet_t *p, int known, int connected)
+{
+    static uint32_t px[BM_PET_GRID * BM_PET_GRID];
+    bm_computers_render(px, known, connected, ui.t);
+    pet_show(p, px);
+}
+
 void ui_pet_draw(ui_pet_t *p, bm_pet_state_t state, uint16_t hue, bm_acc_t acc, float seed)
 {
     static uint32_t px[BM_PET_GRID * BM_PET_GRID];
     bm_pet_render(px, state, ui.t, hue, acc, seed);
-    if (memcmp(px, p->px, sizeof(px)) == 0) return;
-    memcpy(p->px, px, sizeof(px));
-    pet_upscale(p);
-    lv_obj_invalidate(p->img);
+    pet_show(p, px);
 }
 
 void ui_session_pet(ui_pet_t *p, const bm_session_t *s)

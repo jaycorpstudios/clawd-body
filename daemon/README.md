@@ -53,6 +53,7 @@ One request per connection on the Unix socket: the first line is the op, the res
 | `pair` / `pair-cancel` | — | `DaemonStatus` | Setup |
 | `host` | Display name | `DaemonStatus`; saves `config.json`, re-links | Setup |
 | `settings` | `{ sound?, volume?, brightness? }` | `DaemonStatus`; sends `settings.set` (the buddy's answer shows up in a later `status`) | Setup |
+| `face` | — | `DaemonStatus`; reloads `face.png` next to `config.json`, scales it to 120×120 RGB565 (ImageIO/CoreGraphics) and sends it, or clears it if the file is gone | Setup |
 
 ## Try it without a buddy
 

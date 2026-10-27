@@ -10,6 +10,8 @@ public struct SessionStore: Sendable {
     private var usage = Usage(sessionPct: 0, weeklyPct: 0, resetInMin: 0)
     private var hilo = HiloState(current: nil, next: [], agreementsToday: [])
     private var media: Media?
+    private var face: FaceRef?
+    private var pomodoro: PomodoroState?
 
     public init() {}
 
@@ -62,12 +64,24 @@ public struct SessionStore: Sendable {
         usage = value
     }
 
+    public mutating func setFace(_ value: FaceRef?) {
+        face = value
+    }
+
+    public mutating func setPomodoro(_ value: PomodoroState?) {
+        pomodoro = value
+    }
+
+    public mutating func setMedia(_ value: Media?) {
+        media = value
+    }
+
     public func snapshot(maxBytes: Int = Framing.maxMessageSize, host: String = "work") -> Snapshot {
         var ordered = sessions.values.sorted { a, b in
             a.status.priority != b.status.priority ? a.status.priority < b.status.priority : a.since > b.since
         }
         ordered = Array(ordered.prefix(Self.maxSessions))
-        var snap = Snapshot(sessions: ordered, usage: usage, hilo: hilo, media: media)
+        var snap = Snapshot(sessions: ordered, usage: usage, hilo: hilo, media: media, face: face, pomodoro: pomodoro)
         let fits = { (s: Snapshot) in ((try? Wire.encode(.snapshot(s), host: host).count) ?? .max) <= maxBytes }
 
         if !fits(snap) { snap.sessions = snap.sessions.map { var s = $0; s.steps = nil; return s } }

@@ -321,3 +321,31 @@ void bm_cover_render(uint32_t argb[BM_COVER_GRID * BM_COVER_GRID], const char *t
             argb[y * BM_COVER_GRID + x] = hsl(fmodf(hue + v * 18 + 360, 360), (60 + v * 12) / 100, (22 + (v + 2) * 11) / 100);
         }
 }
+
+static void fill(uint32_t *argb, int x, int y, int w, int h, uint32_t c)
+{
+    for (int j = y; j < y + h; j++)
+        for (int i = x; i < x + w; i++)
+            if (i >= 0 && i < BM_PET_GRID && j >= 0 && j < BM_PET_GRID) argb[j * BM_PET_GRID + i] = c;
+}
+
+/* One small monitor per known Mac (at least one): lit with a blinking prompt when connected, dark otherwise. */
+void bm_computers_render(uint32_t argb[BM_PET_GRID * BM_PET_GRID], int known, int connected, float t)
+{
+    for (int i = 0; i < BM_PET_GRID * BM_PET_GRID; i++) argb[i] = 0;
+    int n = known < 1 ? 1 : known > 2 ? 2 : known;
+    for (int k = 0; k < n; k++) {
+        bool on = k < connected;
+        int x = n == 1 ? 9 : 1 + k * 16, y = 8;
+        uint32_t frame = on ? 0xff8a9bd6 : 0xff3a3631, screen = on ? 0xff1d2a55 : 0xff141210;
+        fill(argb, x, y, 14, 11, frame);
+        fill(argb, x + 1, y + 1, 12, 8, screen);
+        fill(argb, x + 5, y + 11, 4, 2, frame);
+        fill(argb, x + 3, y + 13, 8, 1, frame);
+        if (!on) continue;
+        float phase = t + (float)k * 0.37f;
+        fill(argb, x + 2, y + 3, 4, 1, 0xff5b8cff);
+        fill(argb, x + 2, y + 5, 7, 1, 0xff7cc8ff);
+        if ((int)(phase * 2) % 2 == 0) fill(argb, x + 10, y + 5, 1, 2, 0xfff3ede4);
+    }
+}

@@ -27,6 +27,15 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 - **Controls**, top to bottom: a full-width **Sound** button (speaker icon, "Sound", "On" in done green on a dark green fill, or "Off" in dim gray); **Volume** slider 0–100 (done green, half opacity while sound is off); **Brightness** slider 10–100 % (needs-you amber). Values show at the right of each label in JetBrains Mono.
 - **Behavior**: each change applies at once (volume to the codec, brightness to the panel); the Macs get one `device.settings` once the finger rests for 400 ms. Turning sound on plays the Button cue as feedback. Values persist on the buddy across reboots; Hilo › Setup shows and changes the same three.
 
+## Idle rotation (proposal, not in the prototype)
+
+The prototype's sleep screen is the dimmed clock only. The rotation keeps its look and its 6 s anti burn-in shift.
+
+- **Order**: every 8 s the sleep screen moves to the next card: clock → one card per registered Mac that has a picture (slot order) → clock. If no Mac has a picture, it alternates clock → computers.
+- **Mac card**: the Mac's Setup name on top (JetBrains Mono bold 18, `#8a8178`), the picture at 240×240 with 28 px corners at 80 % opacity, and "connected 2 h ago" or "seen 3 h ago" below (JetBrains Mono 17, `#5c564f`, the clock's gray). A Mac without a picture has no card.
+- **Computers card**: the clock's pet slot shows a 32×32 pixel monitor per known Mac (one when none), lit blue with a blinking prompt when connected, dark otherwise, and "1 Mac connected" / "2 Macs connected" / "no Mac connected" below.
+- The panel stays at the sleep brightness on every card.
+
 ## Pet
 
 - Pixel art on a 32×32 grid: elliptical body with light and dark edge, antenna with a glowing tip in the status color, little feet and arms.

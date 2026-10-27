@@ -10,7 +10,7 @@ public protocol BuddyControl: Sendable {
 
 extension BLECentral: BuddyControl {}
 
-/// Socket ops the Hilo app uses to set this Mac up: `status`, `pair`, `pair-cancel`, `host` and `settings`. Each replies with a `DaemonStatus`.
+/// Socket ops the Hilo app uses to set this Mac up: `status`, `pair`, `pair-cancel`, `host`, `settings` and `face`. Each replies with a `DaemonStatus`.
 public struct ControlOps: Sendable {
     private let coordinator: Coordinator
     private let buddy: BuddyControl?
@@ -32,6 +32,8 @@ public struct ControlOps: Sendable {
             _ = buddy?.startPairing()
         case "pair-cancel":
             buddy?.cancelPairing()
+        case "face":
+            await coordinator.setFace(FaceImage.load(URL(filePath: HiloConfig.facePath(configPath: configPath))))
         case "settings":
             guard let change = try? JSONDecoder().decode(SettingsChange.self, from: body),
                   await coordinator.changeSettings(change) else { return Data("rejected: bad settings\n".utf8) }
@@ -56,7 +58,7 @@ public struct ControlOps: Sendable {
         let status = DaemonStatus(host: await coordinator.currentHost,
                                   buddy: buddy?.status() ?? BuddyStatus(link: .noBluetooth),
                                   tokensFromTranscripts: tokensFromTranscripts,
-                                  settings: await coordinator.settings)
+                                  settings: await coordinator.settings, face: await coordinator.faceHash)
         return (try? JSONEncoder().encode(status)) ?? Data()
     }
 }

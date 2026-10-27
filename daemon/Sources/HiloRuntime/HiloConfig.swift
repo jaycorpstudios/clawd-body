@@ -19,6 +19,11 @@ public struct HiloConfig: Codable, Equatable, Sendable {
         return base.appending(path: "Hilo/config.json").path(percentEncoded: false)
     }
 
+    /// The profile picture Setup saves next to `config.json`; never inside the repo.
+    public static func facePath(configPath: String = defaultPath) -> String {
+        URL(filePath: configPath).deletingLastPathComponent().appending(path: "face.png").path(percentEncoded: false)
+    }
+
     public static func load(path: String = defaultPath) -> HiloConfig {
         guard let data = FileManager.default.contents(atPath: path),
               let config = try? JSONDecoder().decode(HiloConfig.self, from: data) else { return HiloConfig() }

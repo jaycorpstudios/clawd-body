@@ -11,3 +11,5 @@ void bm_pet_render(uint32_t argb[BM_PET_GRID * BM_PET_GRID], bm_pet_state_t stat
 #define BM_COVER_GRID 16
 
 void bm_cover_render(uint32_t argb[BM_COVER_GRID * BM_COVER_GRID], const char *title);
+
+void bm_computers_render(uint32_t argb[BM_PET_GRID * BM_PET_GRID], int known, int connected, float t);

@@ -85,8 +85,12 @@ typedef struct {
     ui_pet_t *pair_pet;
 
     lv_obj_t *toast, *toast_lbl;
-    lv_obj_t *sleep, *sleep_inner, *sleep_clock;
+    lv_obj_t *sleep, *sleep_inner, *sleep_clock, *sleep_face, *sleep_name, *sleep_ago, *sleep_hint;
     ui_pet_t *sleep_pet;
+    lv_image_dsc_t face_dsc;
+    uint16_t *face_px;
+    int8_t face_card;
+    uint32_t face_rev;
 } ui_t;
 
 extern ui_t ui;
@@ -104,6 +108,7 @@ void ui_symbolize(char *dst, size_t n, const char *src);
 
 ui_pet_t *ui_pet_create(lv_obj_t *parent, int32_t size);
 void ui_pet_draw(ui_pet_t *p, bm_pet_state_t state, uint16_t hue, bm_acc_t acc, float seed);
+void ui_pet_computers(ui_pet_t *p, int known, int connected);
 void ui_session_pet(ui_pet_t *p, const bm_session_t *s);
 
 void ui_bar_create(lv_obj_t *scr);

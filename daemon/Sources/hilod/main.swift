@@ -81,6 +81,8 @@ if tokensFromTranscripts {
     }
 }
 
+if let face = FaceImage.load(URL(filePath: HiloConfig.facePath())) { Task { await coordinator.setFace(face) } }
+
 let control = ControlOps(coordinator: coordinator, buddy: central, tokensFromTranscripts: tokensFromTranscripts)
 
 do {

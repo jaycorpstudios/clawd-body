@@ -35,6 +35,7 @@ public actor Coordinator {
     private var usage = UsageTracker()
     private var waiting: [String: CheckedContinuation<Resolution?, Never>] = [:]
     private var buddySettings: DeviceSettings?
+    private var face: FaceImage?
 
     public init(host: String, mapper: HookMapper, link: BuddyLink, presence: PresenceProbe,
                 clock: Clock = SystemClock(), pollSeconds: Double = 2, recorder: StoreRecorder? = nil,
@@ -76,6 +77,11 @@ public actor Coordinator {
         case .settings(let s):
             buddySettings = s
             log("buddy settings: sound \(s.sound ? "on" : "off"), volume \(s.volume), brightness \(s.brightness)%")
+            return
+        case .faceRequest(let ref):
+            guard let face, face.hash == ref.hash else { return log("buddy asked for face \(ref.hash), which this Mac no longer has") }
+            log("buddy asked for this Mac's face")
+            for chunk in face.chunks { await send(.face(chunk)) }
             return
         default: return
         }
@@ -161,6 +167,18 @@ public actor Coordinator {
 
     /// What the buddy last reported; nil until it does (or while the link is down).
     public var settings: DeviceSettings? { buddySettings }
+
+    public var faceHash: String? { face?.hash }
+
+    /// A new picture goes out at once; the next snapshot names it (or, with nil, tells the buddy to drop it).
+    public func setFace(_ image: FaceImage?) async {
+        guard image != face else { return }
+        face = image
+        store.setFace(image.map { FaceRef(hash: $0.hash) })
+        log(image.map { "face \($0.hash)" } ?? "no face")
+        if let image { for chunk in image.chunks { await send(.face(chunk)) } }
+        await sendSnapshot()
+    }
 
     /// The buddy applies it and answers with `device.settings`, which is what Hilo then shows.
     public func changeSettings(_ change: SettingsChange) async -> Bool {

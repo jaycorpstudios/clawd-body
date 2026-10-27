@@ -163,6 +163,17 @@ static void follow_settings(uint32_t now)
     }
 }
 
+static void follow_faces(void)
+{
+    static uint32_t seen_rev;
+    if (model->faces_rev == seen_rev) return;
+    seen_rev = model->faces_rev;
+    for (int i = 0; i < BM_MAX_HOSTS; i++) {
+        const bm_host_t *h = &model->hosts[i];
+        if (h->used) ESP_LOGI(TAG, "face host %d %s %s", i, h->name, h->has_face ? h->face.hash : "none");
+    }
+}
+
 static void io_cb(lv_timer_t *t)
 {
     (void)t;
@@ -174,6 +185,7 @@ static void io_cb(lv_timer_t *t)
         if (model->settings.sound) audio_play(snd);
     sync_rtc();
     follow_settings(now);
+    follow_faces();
     follow_brightness();
 }
 

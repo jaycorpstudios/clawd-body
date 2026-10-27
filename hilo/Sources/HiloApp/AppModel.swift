@@ -1,5 +1,7 @@
 import AppKit
 import Foundation
+import ImageIO
+import UniformTypeIdentifiers
 import HiloContract
 import HiloRuntime
 import HiloStore
@@ -221,6 +223,35 @@ final class AppModel {
 
     func startPairing() { control("pair") }
     func cancelPairing() { control("pair-cancel") }
+
+    var facePath: String { HiloConfig.facePath() }
+
+    /// Writes the cropped square (at most 480 px) next to `config.json`, or deletes it, and lets `hilod` pick it up.
+    func saveFace(_ square: CGImage?) {
+        let url = URL(filePath: facePath)
+        do {
+            if let square {
+                try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                let side = min(square.width, 480)
+                guard let ctx = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
+                                          space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                          bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return }
+                ctx.interpolationQuality = .high
+                ctx.draw(square, in: CGRect(x: 0, y: 0, width: side, height: side))
+                guard let scaled = ctx.makeImage(),
+                      let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else { return }
+                CGImageDestinationAddImage(dest, scaled, nil)
+                guard CGImageDestinationFinalize(dest) else { daemonError = "Cannot save the picture"; return }
+            } else if FileManager.default.fileExists(atPath: facePath) {
+                try FileManager.default.removeItem(at: url)
+            }
+        } catch {
+            daemonError = "Cannot save the picture: \(error)"
+            return
+        }
+        control("face")
+        refreshSoon()
+    }
 
     /// The buddy applies it and reports back; the controls follow `daemonStatus.settings`, never this request.
     func changeSettings(_ change: SettingsChange) {
