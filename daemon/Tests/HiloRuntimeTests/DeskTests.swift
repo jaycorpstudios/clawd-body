@@ -87,6 +87,26 @@ private func solidImage(width: Int, height: Int, rgb: (UInt8, UInt8, UInt8)) -> 
         #expect(FaceImage(pixels: try #require(Data(base64Encoded: chunk.data))).hash == chunk.hash)
     }
 
+    @Test func aRebootedBuddyGetsTheSameFaceBackOnRequest() async throws {
+        let link = DeskLink()
+        let coordinator = Coordinator(host: "work", mapper: HookMapper(repoRoot: { _ in nil }), link: link, presence: DeskAway())
+        let face = try #require(FaceImage.render(solidImage(width: 64, height: 64, rgb: (0, 200, 0))))
+        await coordinator.setFace(face)
+        let first = await link.raw.count
+        await coordinator.buddyLink(up: false)
+        await coordinator.buddyLink(up: true)
+        await coordinator.sendSnapshot()
+        guard case .snapshot(let snap) = await link.decoded().last else { Issue.record("no snapshot"); return }
+        #expect(snap.face == FaceRef(hash: face.hash))
+        #expect(await link.raw.count == first + 1)
+
+        try await coordinator.handleBuddy(buddyMessage("device.face_request", #"{"hash":"\#(face.hash)"}"#))
+        let resent = await link.decoded().suffix(7).compactMap { if case .face(let c) = $0 { c } else { nil } }
+        #expect(resent == face.chunks)
+        try await coordinator.handleBuddy(buddyMessage("device.face_request", #"{"hash":"\#(face.hash)"}"#))
+        #expect(await link.raw.count == first + 15)
+    }
+
     @Test func coordinatorSendsTheFaceAnswersRequestsAndClearsIt() async throws {
         let link = DeskLink()
         let coordinator = Coordinator(host: "work", mapper: HookMapper(repoRoot: { _ in nil }), link: link, presence: DeskAway())
