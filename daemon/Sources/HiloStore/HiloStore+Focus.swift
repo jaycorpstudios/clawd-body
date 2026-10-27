@@ -1,15 +1,23 @@
 import Foundation
+import HiloContract
 
 /// Finished Pomodoro work phases, each linked to the task in progress when it ended.
 extension HiloStore {
-    public func recordFocusCycles(_ count: Int, workMin: Int, now: Int) throws {
-        guard count > 0 else { return }
-        let task = try currentTask()?.id
+    /// Saved with the cycles it finished in one transaction, so a restarted `hilod` neither loses nor repeats them.
+    public func saveFocus(_ state: PomodoroState, finishedCycles: Int, now: Int) throws {
+        let task = finishedCycles > 0 ? try currentTask()?.id : nil
+        let json = String(decoding: try JSONEncoder().encode(state), as: UTF8.self)
         try db.transaction {
-            for _ in 0..<count {
-                try db.run("INSERT INTO focus_cycle (ended_at, work_min, task_id) VALUES (?, ?, ?)", [now, workMin, task])
+            for _ in 0..<max(0, finishedCycles) {
+                try db.run("INSERT INTO focus_cycle (ended_at, work_min, task_id) VALUES (?, ?, ?)", [now, state.workMin, task])
             }
+            try db.run("INSERT INTO focus_state (id, json) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET json = excluded.json", [json])
         }
+    }
+
+    public func focusState() throws -> PomodoroState? {
+        guard let json = try db.rows("SELECT json FROM focus_state WHERE id = 1").first?.text(0) else { return nil }
+        return try? JSONDecoder().decode(PomodoroState.self, from: Data(json.utf8))
     }
 
     public func focusCycles(since: Int) throws -> (count: Int, minutes: Int) {

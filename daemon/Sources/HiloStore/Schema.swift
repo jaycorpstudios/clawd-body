@@ -46,6 +46,9 @@ enum Schema {
           task_id INTEGER REFERENCES task(id) ON DELETE SET NULL);
         CREATE INDEX focus_cycle_end ON focus_cycle(ended_at);
         """,
+        """
+        CREATE TABLE focus_state (id INTEGER PRIMARY KEY CHECK (id = 1), json TEXT NOT NULL);
+        """,
     ]
 
     static func migrate(_ db: Database) throws {

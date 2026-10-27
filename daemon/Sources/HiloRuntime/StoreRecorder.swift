@@ -64,8 +64,12 @@ public struct StoreRecorder: Sendable {
         }
     }
 
-    public func recordFocus(cycles: Int, workMin: Int, now: Int) {
-        do { try store.recordFocusCycles(cycles, workMin: workMin, now: now) } catch { log("store: \(error)") }
+    public func saveFocus(_ state: PomodoroState, finishedCycles: Int, now: Int) {
+        do { try store.saveFocus(state, finishedCycles: finishedCycles, now: now) } catch { log("store: \(error)") }
+    }
+
+    public func savedFocus() -> PomodoroState? {
+        do { return try store.focusState() } catch { log("store: \(error)"); return nil }
     }
 
     public func buddyLink(up: Bool, now: Int) {

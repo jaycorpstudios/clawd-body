@@ -39,6 +39,7 @@ public actor Coordinator {
     private var pomodoro: PomodoroState?
     private var media: (value: Media, at: Int)?
     private var player: MediaPlayer?
+    private let mediaCommands = DispatchQueue(label: "hilod.media")
 
     public init(host: String, mapper: HookMapper, link: BuddyLink, presence: PresenceProbe,
                 clock: Clock = SystemClock(), pollSeconds: Double = 2, recorder: StoreRecorder? = nil,
@@ -46,6 +47,8 @@ public actor Coordinator {
         self.host = host; self.mapper = mapper; self.link = link
         self.presence = presence; self.clock = clock; self.pollSeconds = pollSeconds
         self.recorder = recorder; self.log = log
+        pomodoro = recorder?.savedFocus()
+        store.setPomodoro(pomodoro)
     }
 
     /// Returns what the hook command must print to stdout.
@@ -89,8 +92,11 @@ public actor Coordinator {
         case .mediaControl(let c):
             guard let player else { return log("buddy media control ignored: no player") }
             log("buddy media control: \(c.action.rawValue)")
-            player.control(c.action)
-            await updateMedia(player.current())
+            mediaCommands.async { [self] in
+                player.control(c.action)
+                let now = player.current()
+                Task { await updateMedia(now) }
+            }
             return
         case .faceRequest(let ref):
             guard let face, face.hash == ref.hash else { return log("buddy asked for face \(ref.hash), which this Mac no longer has") }
@@ -198,8 +204,9 @@ public actor Coordinator {
 
     public func setPlayer(_ player: MediaPlayer) { self.player = player }
 
-    public func pollMedia() async {
-        guard let player else { return }
+    /// AppleScript can block for seconds (a pending Automation prompt, a hung app), so it runs off the actor.
+    public nonisolated func pollMedia() async {
+        guard let player = await player else { return }
         await updateMedia(player.current())
     }
 
@@ -246,7 +253,10 @@ public actor Coordinator {
     private func adopt(_ next: PomodoroState) {
         var p = next
         p.advance(to: clock.now())
-        if let old = pomodoro, p.cycle > old.cycle { recorder?.recordFocus(cycles: p.cycle - old.cycle, workMin: p.workMin, now: clock.now()) }
+        if p != pomodoro {
+            let finished = pomodoro.map { max(0, p.cycle - $0.cycle) } ?? 0
+            recorder?.saveFocus(p, finishedCycles: finished, now: clock.now())
+        }
         pomodoro = p
         store.setPomodoro(p)
     }

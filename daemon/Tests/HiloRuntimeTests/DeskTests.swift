@@ -161,6 +161,55 @@ final class DeskClock: Clock, @unchecked Sendable {
         #expect(back.updatedAt == 10500 && back.cycle == 2)
     }
 
+    private func restarted() -> Coordinator {
+        Coordinator(host: "work", mapper: HookMapper(repoRoot: { _ in nil }), link: link, presence: DeskAway(),
+                    clock: clock, recorder: StoreRecorder(store: store))
+    }
+
+    @Test func aRestartMidCycleNeitherLosesNorRepeatsCycles() async throws {
+        _ = await coordinator.changePomodoro(.toggle)
+        clock.set(10_000 + 25 * 60 + 1)
+        await coordinator.tickPomodoro()
+        #expect(try store.focusCycles(since: 0).count == 1)
+
+        clock.set(10_000 + (25 + 5 + 25) * 60 + 1)
+        let second = restarted()
+        #expect(await second.focus?.cycle == 1)
+        await second.tickPomodoro()
+        let after = await second.focus
+        #expect(after?.cycle == 2 && after?.phase == .rest)
+        #expect(try store.focusCycles(since: 0).count == 2)
+
+        let third = restarted()
+        await third.tickPomodoro()
+        await third.tickPomodoro()
+        #expect(try store.focusCycles(since: 0).count == 2)
+        await third.sendSnapshot()
+        guard case .snapshot(let snap) = await link.decoded().last else { Issue.record("no snapshot"); return }
+        #expect(snap.pomodoro?.cycle == 2)
+    }
+
+    @Test func theBuddyEchoingTheSameStateAfterARestartAddsNothing() async throws {
+        _ = await coordinator.changePomodoro(.toggle)
+        clock.set(10_000 + 25 * 60 + 1)
+        await coordinator.tickPomodoro()
+        let mine = try #require(await coordinator.focus)
+        let second = restarted()
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        let echo = String(decoding: try encoder.encode(mine), as: UTF8.self)
+        try await second.handleBuddy(buddyMessage("device.pomodoro", echo))
+        #expect(await second.focus == mine)
+        #expect(try store.focusCycles(since: 0).count == 1)
+    }
+
+    @Test func aFreshStoreStartsWithoutAFocusState() async throws {
+        #expect(await coordinator.focus == nil)
+        await coordinator.sendSnapshot()
+        guard case .snapshot(let snap) = await link.decoded().last else { Issue.record("no snapshot"); return }
+        #expect(snap.pomodoro == nil)
+    }
+
     @Test func pomodoroOpParsesCommands() async throws {
         #expect(ControlOps.pomodoroCommand(Data(#"{"action":"toggle"}"#.utf8)) == .toggle)
         #expect(ControlOps.pomodoroCommand(Data(#"{"action":"durations","work_min":50}"#.utf8)) == .durations(work: 50, rest: nil))
@@ -221,6 +270,139 @@ final class FakePlayer: MediaPlayer, @unchecked Sendable {
         await coordinator.setPlayer(player)
         try await coordinator.handleBuddy(buddyMessage("media.control", #"{"action":"next"}"#))
         try await coordinator.handleBuddy(buddyMessage("media.control", #"{"action":"play_pause"}"#))
+        try await until { player.received.count == 2 }
         #expect(player.received == [.next, .playPause])
     }
+}
+
+func until(_ condition: @Sendable () async -> Bool, timeout: Double = 2) async throws {
+    let deadline = Date().addingTimeInterval(timeout)
+    while await !condition() {
+        guard Date() < deadline else { Issue.record("timed out"); return }
+        try await Task.sleep(for: .milliseconds(5))
+    }
+}
+
+final class ScriptedApps: @unchecked Sendable {
+    private let lock = NSLock()
+    private var runningIds: Set<String> = []
+    private var replies: [String: (String?, Int?)] = [:]
+    private var scripts: [String] = []
+    private var t = 0
+    private var logs: [String] = []
+
+    func open(_ id: String, reply: (String?, Int?)) { lock.withLock { runningIds.insert(id); replies[id] = reply } }
+    func quit(_ id: String) { lock.withLock { _ = runningIds.remove(id) } }
+    func advance(_ seconds: Int) { lock.withLock { t += seconds } }
+    var ran: [String] { lock.withLock { scripts } }
+    var logged: [String] { lock.withLock { logs } }
+
+    func player() -> AppleScriptPlayer {
+        AppleScriptPlayer(
+            log: { line in self.lock.withLock { self.logs.append(line) } },
+            isRunning: { id in self.lock.withLock { self.runningIds.contains(id) } },
+            script: { source in
+                self.lock.withLock {
+                    self.scripts.append(source)
+                    guard let id = self.replies.keys.first(where: { source.contains("\"\($0)\"") }) else { return (nil, -1728) }
+                    return self.runningIds.contains(id) ? self.replies[id]! : (nil, -600)
+                }
+            },
+            now: { self.lock.withLock { self.t } })
+    }
+}
+
+@Suite struct AppleScriptPlayerTests {
+    let spotify = "com.spotify.client", music = "com.apple.Music"
+    let apps = ScriptedApps()
+
+    @Test func noPlayerOpenRunsNoScriptAndShowsNothing() {
+        let player = apps.player()
+        #expect(player.current() == nil)
+        player.control(.playPause)
+        #expect(apps.ran.isEmpty)
+    }
+
+    @Test func aPlayingAppWinsOverAPausedOneAndGetsTheControls() {
+        apps.open(spotify, reply: ("Low Tide\tThe Pixels\t214000\t61\tpaused", nil))
+        apps.open(music, reply: ("Fan Noise\tTabstop\t180\t20\tplaying", nil))
+        let player = apps.player()
+        #expect(player.current()?.title == "Fan Noise")
+        player.control(.next)
+        #expect(apps.ran.last == "with timeout of 5 seconds\ntell application id \"\(music)\" to next track\nend timeout")
+        #expect(apps.ran.allSatisfy { $0.hasPrefix("with timeout of 5 seconds\n") })
+    }
+
+    @Test func aDeniedAppIsSkippedLoggedOnceAndRetriedLater() {
+        apps.open(spotify, reply: (nil, -1743))
+        apps.open(music, reply: ("Fan Noise\tTabstop\t180\t20\tplaying", nil))
+        let player = apps.player()
+        #expect(player.current()?.title == "Fan Noise")
+        #expect(player.current()?.title == "Fan Noise")
+        #expect(apps.ran.filter { $0.contains(spotify) }.count == 1)
+        #expect(apps.logged.count == 1 && apps.logged[0].contains("denied"))
+
+        apps.advance(AppleScriptPlayer.retryDeniedAfter)
+        _ = player.current()
+        #expect(apps.ran.filter { $0.contains(spotify) }.count == 2)
+        #expect(apps.logged.count == 1)
+
+        apps.open(spotify, reply: ("Low Tide\tThe Pixels\t214000\t61\tplaying", nil))
+        apps.advance(AppleScriptPlayer.retryDeniedAfter)
+        #expect(player.current()?.title == "Low Tide")
+        #expect(apps.logged.last?.contains("allowed") == true)
+    }
+
+    @Test func anAppQuittingMidwayClearsTheMediaAndIgnoresControls() {
+        apps.open(spotify, reply: ("Low Tide\tThe Pixels\t214000\t61\tplaying", nil))
+        let player = apps.player()
+        #expect(player.current() != nil)
+        apps.quit(spotify)
+        player.control(.playPause)
+        #expect(!apps.ran.contains { $0.contains("playpause") })
+        #expect(player.current() == nil)
+
+        apps.open(spotify, reply: ("Low Tide\tThe Pixels\t214000\t61\tplaying", nil))
+        _ = player.current()
+        apps.quit(spotify)
+        apps.open(spotify, reply: (nil, -600))
+        #expect(player.current() == nil)
+    }
+
+    @Test func aSlowPlayerDoesNotHoldUpTheDaemon() async throws {
+        let gate = DispatchSemaphore(value: 0), entered = Flag()
+        let slow = SlowPlayer(gate: gate, entered: entered)
+        let coordinator = Coordinator(host: "work", mapper: HookMapper(repoRoot: { _ in nil }), link: DeskLink(), presence: DeskAway(),
+                                      clock: DeskClock(10_000))
+        await coordinator.setPlayer(slow)
+        let poll = Task { await coordinator.pollMedia() }
+        try await until { entered.isSet }
+        let answered = Flag()
+        Task { _ = await coordinator.currentHost; answered.set() }
+        try await until { answered.isSet }
+        let blocked = !answered.isSet
+        gate.signal()
+        gate.signal()
+        await poll.value
+        #expect(!blocked)
+        try await coordinator.handleBuddy(buddyMessage("media.control", #"{"action":"next"}"#))
+    }
+}
+
+final class SlowPlayer: MediaPlayer, @unchecked Sendable {
+    let gate: DispatchSemaphore, entered: Flag
+    init(gate: DispatchSemaphore, entered: Flag) { self.gate = gate; self.entered = entered }
+    func current() -> Media? {
+        entered.set()
+        gate.wait()
+        return nil
+    }
+    func control(_ action: MediaAction) {}
+}
+
+final class Flag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = false
+    func set() { lock.withLock { value = true } }
+    var isSet: Bool { lock.withLock { value } }
 }
