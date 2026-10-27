@@ -6,12 +6,18 @@ public struct HiloConfig: Codable, Equatable, Sendable {
 
     public var host: String?
     public var tokensFromTranscripts: Bool?
+    /// nil means on.
+    public var musicSpotify: Bool?
+    public var musicApp: Bool?
 
-    public init(host: String? = nil, tokensFromTranscripts: Bool? = nil) {
+    public init(host: String? = nil, tokensFromTranscripts: Bool? = nil, musicSpotify: Bool? = nil, musicApp: Bool? = nil) {
         self.host = host; self.tokensFromTranscripts = tokensFromTranscripts
+        self.musicSpotify = musicSpotify; self.musicApp = musicApp
     }
 
-    enum CodingKeys: String, CodingKey { case host, tokensFromTranscripts = "tokens_from_transcripts" }
+    enum CodingKeys: String, CodingKey {
+        case host, tokensFromTranscripts = "tokens_from_transcripts", musicSpotify = "music_spotify", musicApp = "music_app"
+    }
 
     public static var defaultPath: String {
         if let path = ProcessInfo.processInfo.environment["HILO_CONFIG"] { return path }

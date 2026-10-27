@@ -12,6 +12,7 @@ public struct SessionStore: Sendable {
     private var media: Media?
     private var face: ImageRef?
     private var pomodoro: PomodoroState?
+    private var mediaEnabled = true
 
     public init() {}
 
@@ -76,12 +77,18 @@ public struct SessionStore: Sendable {
         media = value
     }
 
+    public mutating func setMediaEnabled(_ on: Bool) {
+        mediaEnabled = on
+        if !on { media = nil }
+    }
+
     public func snapshot(maxBytes: Int = Framing.maxMessageSize, host: String = "work") -> Snapshot {
         var ordered = sessions.values.sorted { a, b in
             a.status.priority != b.status.priority ? a.status.priority < b.status.priority : a.since > b.since
         }
         ordered = Array(ordered.prefix(Self.maxSessions))
-        var snap = Snapshot(sessions: ordered, usage: usage, hilo: hilo, media: media, face: face, pomodoro: pomodoro)
+        var snap = Snapshot(sessions: ordered, usage: usage, hilo: hilo, media: media, face: face, pomodoro: pomodoro,
+                            mediaEnabled: mediaEnabled ? nil : false)
         let fits = { (s: Snapshot) in ((try? Wire.encode(.snapshot(s), host: host).count) ?? .max) <= maxBytes }
 
         if !fits(snap) { snap.sessions = snap.sessions.map { var s = $0; s.steps = nil; return s } }

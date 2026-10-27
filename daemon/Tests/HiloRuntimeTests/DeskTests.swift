@@ -311,6 +311,24 @@ final class FakePlayer: MediaPlayer, @unchecked Sendable {
         try await until { player.received.count == 2 }
         #expect(player.received == [.next, .playPause])
     }
+
+    @Test func turningBothAppsOffClearsTheMusicAndTellsTheBuddy() async throws {
+        await coordinator.updateMedia(Media(title: "Low Tide", artist: "The Pixels", lengthS: 214, positionS: 10, playing: true))
+        await coordinator.followMusic(spotify: false, app: true)
+        #expect(await link.types() == ["media.now_playing"])
+
+        await coordinator.followMusic(spotify: false, app: false)
+        guard case .snapshot(let off) = await link.decoded().last else { Issue.record("no snapshot"); return }
+        #expect(off.media == nil && off.mediaEnabled == false)
+        let encoded = String(decoding: try #require(await link.raw.last), as: UTF8.self)
+        #expect(encoded.contains(#""media_enabled":false"#))
+        await coordinator.updateMedia(Media(title: "Late", artist: "", lengthS: 9, positionS: 1, playing: true))
+        #expect(await link.types().last == "snapshot")
+
+        await coordinator.followMusic(spotify: true, app: false)
+        guard case .snapshot(let on) = await link.decoded().last else { Issue.record("no snapshot"); return }
+        #expect(on.mediaEnabled == nil)
+    }
 }
 
 func until(_ condition: @Sendable () async -> Bool, timeout: Double = 2) async throws {
@@ -391,6 +409,21 @@ final class ScriptedApps: @unchecked Sendable {
         apps.advance(AppleScriptPlayer.retryDeniedAfter)
         #expect(player.current()?.title == "Low Tide")
         #expect(apps.logged.last?.contains("allowed") == true)
+    }
+
+    @Test func anAppTurnedOffIsNeverAskedAndLosesTheControls() {
+        apps.open(spotify, reply: ("Low Tide\tThe Pixels\t214000\t61\tplaying", nil))
+        apps.open(music, reply: ("Fan Noise\tTabstop\t180\t20\tpaused", nil))
+        let player = apps.player()
+        #expect(player.current()?.title == "Low Tide")
+        player.follow(spotify: false, music: true)
+        player.control(.next)
+        #expect(!apps.ran.contains { $0.contains("next track") })
+        let before = apps.ran.filter { $0.contains(spotify) }.count
+        #expect(player.current()?.title == "Fan Noise")
+        player.follow(spotify: false, music: false)
+        #expect(player.current() == nil)
+        #expect(apps.ran.filter { $0.contains(spotify) }.count == before)
     }
 
     @Test func anAppQuittingMidwayClearsTheMediaAndIgnoresControls() {

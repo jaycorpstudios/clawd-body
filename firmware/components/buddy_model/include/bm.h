@@ -206,6 +206,7 @@ typedef struct {
     bm_usage_t usage;
     bm_hilo_t hilo;
     bm_media_t media;
+    bool music_off;
     bool has_face;
     bm_face_t face;
 } bm_host_t;
@@ -432,6 +433,7 @@ uint32_t bm_usage_color(int pct);
 int32_t bm_usage_reset_s(const bm_usage_t *u, uint32_t now_ms);
 int bm_hilo_host(const bm_model_t *m);
 int bm_media_host(const bm_model_t *m);
+bool bm_view_shown(const bm_model_t *m, bm_view_t view);
 const bm_cover_t *bm_media_cover(const bm_model_t *m);
 bool bm_cover_waiting(const bm_model_t *m, uint32_t now_ms);
 int32_t bm_media_position_s(const bm_media_t *media, uint32_t now_ms);

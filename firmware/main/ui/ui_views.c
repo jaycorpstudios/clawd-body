@@ -446,16 +446,32 @@ static void strip_x_cb(void *obj, int32_t v)
     lv_obj_set_x(obj, v);
 }
 
+static int slot_of(int view)
+{
+    int slot = 0;
+    for (int i = 0; i < view; i++) slot += bm_view_shown(ui.m, (bm_view_t)i);
+    return slot;
+}
+
 static void update_strip(void)
 {
-    static int shown = -1;
+    static int shown = -1, music = -1;
     int view = ui.m->view;
+    if (music != bm_view_shown(ui.m, BM_VIEW_MUSIC)) {
+        music = bm_view_shown(ui.m, BM_VIEW_MUSIC);
+        for (int i = 0; i < BM_VIEWS; i++) {
+            ui_show(ui.views[i], bm_view_shown(ui.m, (bm_view_t)i));
+            ui_show(ui.dots[i], bm_view_shown(ui.m, (bm_view_t)i));
+            lv_obj_set_x(ui.views[i], slot_of(i) * SCREEN);
+        }
+        shown = -1;
+    }
     for (int i = 0; i < BM_VIEWS; i++) {
         lv_obj_set_width(ui.dots[i], i == view ? 24 : 8);
         lv_obj_set_style_bg_color(ui.dots[i], ui_hex(i == view ? C_FG : 0x34302b), 0);
     }
     if (shown == view) return;
-    int32_t target = -view * SCREEN;
+    int32_t target = -slot_of(view) * SCREEN;
     if (shown < 0) {
         lv_obj_set_x(ui.strip, target);
     } else {

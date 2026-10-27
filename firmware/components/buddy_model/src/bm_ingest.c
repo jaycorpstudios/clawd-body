@@ -388,6 +388,7 @@ static bm_err_t apply_snapshot(bm_model_t *m, int host, const cJSON *d, uint32_t
     const cJSON *media = cJSON_GetObjectItemCaseSensitive(d, "media");
     const cJSON *face = cJSON_GetObjectItemCaseSensitive(d, "face");
     const cJSON *pomo = cJSON_GetObjectItemCaseSensitive(d, "pomodoro");
+    const cJSON *media_on = cJSON_GetObjectItemCaseSensitive(d, "media_enabled");
     bm_usage_t usage;
     bm_hilo_t hilo;
     bm_media_t med = {0};
@@ -396,7 +397,8 @@ static bm_err_t apply_snapshot(bm_model_t *m, int host, const cJSON *d, uint32_t
     if (!cJSON_IsArray(sessions) || cJSON_GetArraySize(sessions) > BM_SESSIONS_PER_HOST ||
         !parse_usage(cJSON_GetObjectItemCaseSensitive(d, "usage"), &usage) ||
         !parse_hilo(cJSON_GetObjectItemCaseSensitive(d, "hilo"), &hilo) || (media && !parse_media(media, &med)) ||
-        (face && !parse_face_ref(face, face_hash)) || (pomo && !parse_pomodoro(pomo, &pomodoro)))
+        (face && !parse_face_ref(face, face_hash)) || (pomo && !parse_pomodoro(pomo, &pomodoro)) ||
+        (media_on && !cJSON_IsBool(media_on)))
         return BM_E_DATA;
     const cJSON *it;
     cJSON_ArrayForEach(it, sessions)
@@ -421,6 +423,8 @@ static bm_err_t apply_snapshot(bm_model_t *m, int host, const cJSON *d, uint32_t
     h->media = med;
     h->media.playing = media != NULL;
     h->media.received_ms = now_ms;
+    h->music_off = cJSON_IsFalse(media_on);
+    if (!bm_view_shown(m, m->view)) m->view = BM_VIEW_POMODORO;
     bm__want_cover(m, host, now_ms);
     bm__on_face_ref(m, host, face ? face_hash : NULL, now_ms);
     bm__on_pomodoro(m, host, &pomodoro, true, pomo != NULL, now_ms);

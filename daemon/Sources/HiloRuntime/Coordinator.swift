@@ -210,6 +210,22 @@ public actor Coordinator {
 
     public func setPlayer(_ player: MediaPlayer) { self.player = player }
 
+    private var music = (spotify: true, app: true)
+
+    /// With both off the buddy drops what was playing and may hide its Music view.
+    public func followMusic(spotify: Bool, app: Bool) async {
+        player?.follow(spotify: spotify, music: app)
+        let wasOn = music.spotify || music.app
+        music = (spotify, app)
+        guard wasOn != (spotify || app) else { return }
+        log("music: \(spotify || app ? "following \([spotify ? "Spotify" : nil, app ? "Music" : nil].compactMap { $0 }.joined(separator: " and "))" : "off")")
+        if !(spotify || app) { media = nil; cover = nil }
+        store.setMediaEnabled(spotify || app)
+        await sendSnapshot()
+    }
+
+    public var followedMusic: (spotify: Bool, app: Bool) { music }
+
     /// AppleScript can block for seconds (a pending Automation prompt, a hung app), so it runs off the actor.
     public nonisolated func pollMedia() async {
         guard let player = await player else { return }
@@ -220,7 +236,7 @@ public actor Coordinator {
     /// without `media` when playback stops.
     public func updateMedia(_ playing: Media?) async {
         let now = clock.now()
-        guard var next = playing else {
+        guard var next = playing, music.spotify || music.app else {
             cover = nil
             guard media != nil else { return }
             media = nil

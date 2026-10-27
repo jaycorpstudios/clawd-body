@@ -441,6 +441,31 @@ TEST(paused_music_stays_put_and_controls_go_to_the_playing_mac)
     CHECK(count_out(&o, "media.control") == 0);
 }
 
+TEST(music_view_hides_only_when_every_mac_follows_no_music)
+{
+    fresh();
+    CHECK(snapshot("home", "\"media_enabled\":false") == BM_OK);
+    CHECK(bm_view_shown(&M, BM_VIEW_MUSIC));
+    CHECK(snapshot("work", "\"media_enabled\":false") == BM_OK);
+    CHECK(!bm_view_shown(&M, BM_VIEW_MUSIC));
+    M.view = BM_VIEW_HILO;
+    bm_swipe(&M, 1, now);
+    CHECK(M.view == BM_VIEW_POMODORO);
+    bm_swipe(&M, -1, now);
+    CHECK(M.view == BM_VIEW_HILO);
+
+    CHECK(snapshot("work", "") == BM_OK);
+    CHECK(bm_view_shown(&M, BM_VIEW_MUSIC));
+    bm_swipe(&M, 1, now);
+    CHECK(M.view == BM_VIEW_MUSIC);
+    CHECK(snapshot("work", "\"media_enabled\":false") == BM_OK);
+    CHECK(M.view == BM_VIEW_POMODORO);
+
+    CHECK(snapshot("work", "\"media_enabled\":true") == BM_OK);
+    CHECK(bm_view_shown(&M, BM_VIEW_MUSIC));
+    CHECK(snapshot("work", "\"media_enabled\":0") == BM_E_DATA);
+}
+
 TEST(base64_decoder_rejects_bad_input)
 {
     uint8_t out[8];

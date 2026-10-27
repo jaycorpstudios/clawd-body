@@ -44,6 +44,9 @@ final class AppModel {
     var daemonRunning = false
     var buddyConnected = false
     var daemonStatus: DaemonStatus?
+    /// hilod's view, from the `music` op; `musicHere` is this app's own Automation consent.
+    var musicStatus: MusicStatus?
+    var musicHere: [String: AutomationAccess] = [:]
     var daemonError: String?
     var config = HiloConfig.load()
     var selectedTask: Int?

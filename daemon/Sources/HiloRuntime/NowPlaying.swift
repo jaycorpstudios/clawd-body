@@ -8,10 +8,12 @@ public protocol MediaPlayer: Sendable {
     func control(_ action: MediaAction)
     /// Encoded image bytes of the current track's cover; may block, so callers run it off the coordinator.
     func artwork() -> Data?
+    func follow(spotify: Bool, music: Bool)
 }
 
 extension MediaPlayer {
     public func artwork() -> Data? { nil }
+    public func follow(spotify: Bool, music: Bool) {}
 }
 
 /// Spotify and Music.app over AppleScript: only apps already running are asked (asking launches them), and only
@@ -26,8 +28,8 @@ public final class AppleScriptPlayer: MediaPlayer, @unchecked Sendable {
     public typealias DataScript = @Sendable (String) -> (output: Data?, error: Int?)
     public typealias Download = @Sendable (URL) -> Data?
 
-    static let spotify = "com.spotify.client"
-    static let apps = [App(bundleId: spotify, durationDivisor: 1000), App(bundleId: "com.apple.Music", durationDivisor: 1)]
+    public static let spotify = "com.spotify.client", music = "com.apple.Music"
+    static let apps = [App(bundleId: spotify, durationDivisor: 1000), App(bundleId: music, durationDivisor: 1)]
     static let automationDenied = -1743
     /// Lets a permission granted later in System Settings take effect without restarting `hilod`.
     static let retryDeniedAfter = 300
@@ -35,6 +37,7 @@ public final class AppleScriptPlayer: MediaPlayer, @unchecked Sendable {
     private let lock = NSLock()
     private var source: String?
     private var denied: [String: Int] = [:]
+    private var followed: Set<String> = [spotify, music]
     private let isRunning: @Sendable (String) -> Bool
     private let script: Script
     private let dataScript: DataScript
@@ -54,7 +57,8 @@ public final class AppleScriptPlayer: MediaPlayer, @unchecked Sendable {
 
     public func current() -> Media? {
         var paused: (Media, String)?
-        for app in Self.apps where isRunning(app.bundleId) {
+        let followed = lock.withLock { self.followed }
+        for app in Self.apps where followed.contains(app.bundleId) && isRunning(app.bundleId) {
             guard let media = query(app) else { continue }
             if media.playing != false {
                 lock.withLock { source = app.bundleId }
@@ -83,6 +87,13 @@ public final class AppleScriptPlayer: MediaPlayer, @unchecked Sendable {
                 .flatMap(ArtworkDownload.allowedURL).flatMap(download)
         }
         return run("tell application id \"\(app)\" to return raw data of artwork 1 of current track", app: app, with: dataScript)
+    }
+
+    public func follow(spotify: Bool, music: Bool) {
+        lock.withLock {
+            followed = Set([spotify ? Self.spotify : nil, music ? Self.music : nil].compactMap { $0 })
+            if let s = source, !followed.contains(s) { source = nil }
+        }
     }
 
     static func parse(_ line: String, durationDivisor: Double) -> Media? {

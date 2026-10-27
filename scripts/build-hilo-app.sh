@@ -31,6 +31,7 @@ cat > "$app/Contents/Info.plist" <<PLIST
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>ATSApplicationFontsPath</key><string>Fonts</string>
+  <key>NSAppleEventsUsageDescription</key><string>Hilo asks Spotify and Music what is playing so the buddy can show it.</string>
 </dict>
 </plist>
 PLIST

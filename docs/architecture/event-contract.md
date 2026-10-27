@@ -52,6 +52,7 @@ Senders produce exactly the schema: no extra fields in the envelope or any paylo
 | `media` | Same as `media.now_playing`; omitted when nothing plays. |
 | `face` | `{ hash }` of this Mac's profile picture; omitted when it has none (the buddy then drops the face it holds for this host). |
 | `pomodoro` | The Mac's pomodoro (same shape as `pomodoro.state`); omitted when it has never been set. |
+| `media_enabled` | Optional; only `false` is sent: this Mac follows no music app (both switches off in Hilo › Setup), so it sends no `media`. The buddy hides its Music view when every Mac it knows says so; absent means on. |
 
 A snapshot must fit the 8 KB message cap ([framing](ble-transport.md#framing)). The daemon trims in this order until it fits: steps, then diffs, then `why` / `summary` / `error`, then whole sessions from the lowest priority (`waiting` > `error` > `working` > `done` > `idle`). The worst case (8 sessions, each with a pending permission) fits after the third step; see `SessionStoreTests`.
 

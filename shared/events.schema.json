@@ -280,6 +280,7 @@
           }
         },
         "media": { "$ref": "#/$defs/media" },
+        "media_enabled": { "type": "boolean" },
         "face": { "$ref": "#/$defs/faceRef" },
         "pomodoro": { "$ref": "#/$defs/pomodoro" }
       }

@@ -255,6 +255,18 @@ const bm_cover_t *bm_media_cover(const bm_model_t *m)
     return strcmp(m->hosts[mh].media.cover, m->cover.hash) == 0 ? &m->cover : NULL;
 }
 
+bool bm_view_shown(const bm_model_t *m, bm_view_t view)
+{
+    if (view != BM_VIEW_MUSIC) return true;
+    bool any = false;
+    for (int i = 0; i < BM_MAX_HOSTS; i++) {
+        if (!m->hosts[i].used) continue;
+        if (!m->hosts[i].music_off) return true;
+        any = true;
+    }
+    return !any;
+}
+
 bool bm_cover_waiting(const bm_model_t *m, uint32_t now_ms)
 {
     int mh = bm_media_host(m);

@@ -1,0 +1,16 @@
+{
+  "reason": "media_enabled is a plain flag",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000065",
+    "ts": 1792900000,
+    "host": "home",
+    "type": "snapshot",
+    "data": {
+      "sessions": [],
+      "usage": { "session_pct": 12, "weekly_pct": 8, "reset_in_min": 200 },
+      "hilo": { "current": null, "next": [], "agreements_today": [] },
+      "media_enabled": "no"
+    }
+  }
+}

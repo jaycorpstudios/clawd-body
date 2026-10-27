@@ -534,7 +534,8 @@ void bm_touch_wake(bm_model_t *m, uint32_t now_ms)
 
 static void next_view(bm_model_t *m, int dir)
 {
-    m->view = (bm_view_t)(((int)m->view + dir + BM_VIEWS) % BM_VIEWS);
+    do m->view = (bm_view_t)(((int)m->view + dir + BM_VIEWS) % BM_VIEWS);
+    while (!bm_view_shown(m, m->view));
     bm__touch(m);
 }
 

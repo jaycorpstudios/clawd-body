@@ -210,10 +210,12 @@ public struct Snapshot: Codable, Equatable, Sendable {
     public var media: Media?
     public var face: ImageRef?
     public var pomodoro: PomodoroState?
+    /// Only `false` is ever sent: this Mac follows no music app, so the buddy can hide its Music view.
+    public var mediaEnabled: Bool?
     public init(sessions: [SessionState], usage: Usage, hilo: HiloState, media: Media? = nil, face: ImageRef? = nil,
-                pomodoro: PomodoroState? = nil) {
+                pomodoro: PomodoroState? = nil, mediaEnabled: Bool? = nil) {
         self.sessions = sessions; self.usage = usage; self.hilo = hilo; self.media = media
-        self.face = face; self.pomodoro = pomodoro
+        self.face = face; self.pomodoro = pomodoro; self.mediaEnabled = mediaEnabled
     }
 }
 

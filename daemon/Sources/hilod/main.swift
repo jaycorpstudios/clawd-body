@@ -72,6 +72,7 @@ if let store {
 
 Task.detached {
     await coordinator.setPlayer(AppleScriptPlayer(log: log))
+    await coordinator.followMusic(spotify: config.musicSpotify ?? true, app: config.musicApp ?? true)
     while true {
         await coordinator.pollMedia()
         try? await Task.sleep(for: .seconds(3))

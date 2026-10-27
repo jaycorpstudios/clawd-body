@@ -11,17 +11,18 @@ public protocol BuddyControl: Sendable {
 
 extension BLECentral: BuddyControl {}
 
-/// Socket ops the Hilo app uses: `status`, `pair`, `pair-cancel`, `host`, `settings`, `face` and `pomodoro`. Each replies with a `DaemonStatus`.
+/// Socket ops the Hilo app uses: `status`, `pair`, `pair-cancel`, `host`, `settings`, `face`, `pomodoro` and `music`. Each replies with a `DaemonStatus`.
 public struct ControlOps: Sendable {
     private let coordinator: Coordinator
     private let buddy: BuddyControl?
     private let configPath: String
     private let tokensFromTranscripts: Bool
+    private let access: @Sendable (String) -> AutomationAccess
 
     public init(coordinator: Coordinator, buddy: BuddyControl?, configPath: String = HiloConfig.defaultPath,
-                tokensFromTranscripts: Bool) {
+                tokensFromTranscripts: Bool, access: @escaping @Sendable (String) -> AutomationAccess = AutomationAccess.check) {
         self.coordinator = coordinator; self.buddy = buddy
-        self.configPath = configPath; self.tokensFromTranscripts = tokensFromTranscripts
+        self.configPath = configPath; self.tokensFromTranscripts = tokensFromTranscripts; self.access = access
     }
 
     /// nil for an op this handler does not own.
@@ -42,6 +43,12 @@ public struct ControlOps: Sendable {
             guard let command = Self.pomodoroCommand(body), await coordinator.changePomodoro(command) else {
                 return Data("rejected: bad pomodoro command\n".utf8)
             }
+        case "music":
+            let config = HiloConfig.load(path: configPath)
+            await coordinator.followMusic(spotify: config.musicSpotify ?? true, app: config.musicApp ?? true)
+            let (spotify, app) = await coordinator.followedMusic
+            return await status(music: MusicStatus(spotify: spotify, app: app, spotifyAccess: access(AppleScriptPlayer.spotify),
+                                                   appAccess: access(AppleScriptPlayer.music)))
         case "host":
             guard let name = HiloConfig.hostName(from: String(decoding: body, as: UTF8.self)) else {
                 return Data("rejected: empty host name\n".utf8)
@@ -59,12 +66,12 @@ public struct ControlOps: Sendable {
         return await status()
     }
 
-    private func status() async -> Data {
+    private func status(music: MusicStatus? = nil) async -> Data {
         let status = DaemonStatus(host: await coordinator.currentHost,
                                   buddy: buddy?.status() ?? BuddyStatus(link: .noBluetooth),
                                   tokensFromTranscripts: tokensFromTranscripts,
                                   settings: await coordinator.settings, face: await coordinator.faceHash,
-                                  pomodoro: await coordinator.focus)
+                                  pomodoro: await coordinator.focus, music: music)
         return (try? JSONEncoder().encode(status)) ?? Data()
     }
 

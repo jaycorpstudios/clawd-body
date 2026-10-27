@@ -411,6 +411,19 @@ static void scene_music(void)
     bm_tap_overlay(&M, now);
     run(4000);
     shot("music-mac-disconnected");
+
+    linked();
+    go_view(BM_VIEW_MUSIC);
+    for (int i = 0; i < 2; i++)
+        CHECK(send(i ? "home" : "work", "snapshot",
+                   "{\"sessions\":[],\"usage\":{\"session_pct\":42,\"weekly_pct\":18,\"reset_in_min\":100},"
+                   "\"hilo\":{\"current\":null,\"next\":[],\"agreements_today\":[]},\"media_enabled\":false}") == BM_OK);
+    run(600);
+    CHECK(M.view == BM_VIEW_POMODORO);
+    shot("music-off-skipped-to-focus");
+    bm_swipe(&M, -1, now);
+    run(600);
+    shot("music-off-hilo-next-to-focus");
 }
 
 static void scene_panel(void)

@@ -32,7 +32,8 @@ struct OpsPresent: PresenceProbe { func userIsPresent() -> Bool { true } }
     let ops: ControlOps
 
     init() {
-        ops = ControlOps(coordinator: coordinator, buddy: buddy, configPath: path, tokensFromTranscripts: true)
+        ops = ControlOps(coordinator: coordinator, buddy: buddy, configPath: path, tokensFromTranscripts: true,
+                         access: { $0 == "com.spotify.client" ? .allowed : .notRunning })
     }
 
     func decode(_ data: Data?) throws -> DaemonStatus {
@@ -72,5 +73,30 @@ struct OpsPresent: PresenceProbe { func userIsPresent() -> Bool { true } }
         try HiloConfig(host: "work", tokensFromTranscripts: true).save(path: path)
         _ = await ops.handle(op: "host", body: Data("Studio".utf8))
         #expect(HiloConfig.load(path: path) == HiloConfig(host: "studio", tokensFromTranscripts: true))
+    }
+
+    @Test func musicReloadsTheSwitchesAndReportsAutomation() async throws {
+        let fresh = try decode(await ops.handle(op: "music", body: Data()))
+        #expect(fresh.music == MusicStatus(spotify: true, app: true, spotifyAccess: .allowed, appAccess: .notRunning))
+        try HiloConfig(host: "work", musicSpotify: false).save(path: path)
+        let off = try decode(await ops.handle(op: "music", body: Data()))
+        #expect(off.music?.spotify == false && off.music?.app == true)
+        #expect(try decode(await ops.handle(op: "status", body: Data())).music == nil)
+    }
+
+    @Test func musicSwitchesRoundTripAndDefaultToOn() throws {
+        try HiloConfig(musicSpotify: false, musicApp: true).save(path: path)
+        let text = String(decoding: try #require(FileManager.default.contents(atPath: path)), as: UTF8.self)
+        #expect(text.contains(#""music_spotify" : false"#) && text.contains(#""music_app" : true"#))
+        #expect(HiloConfig.load(path: path) == HiloConfig(musicSpotify: false, musicApp: true))
+        #expect(HiloConfig().musicSpotify == nil)
+    }
+
+    @Test func automationCodesMapToStates() {
+        #expect(AutomationAccess.access(0) == .allowed)
+        #expect(AutomationAccess.access(-1743) == .denied)
+        #expect(AutomationAccess.access(-1744) == .notAsked)
+        #expect(AutomationAccess.access(-600) == .notRunning)
+        #expect(AutomationAccess.access(-50) == .unknown)
     }
 }
