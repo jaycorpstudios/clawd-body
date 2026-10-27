@@ -291,6 +291,25 @@ final class AppModel {
         }
     }
 
+    /// A finished week read straight from the store; the current week comes from the refreshed fields instead.
+    func week(start: Int, end: Int) -> (report: WeekReport, perDay: [Int: Int])? {
+        guard let store else { return nil }
+        do {
+            return (try store.weekReport(start: start, end: end, now: Self.now), try store.activeSecondsPerDay(since: start, until: end))
+        } catch {
+            errorMessage = "\(error)"
+            return nil
+        }
+    }
+
+    func export(_ markdown: String, name: String) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
+        panel.nameFieldStringValue = name
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do { try Data(markdown.utf8).write(to: url, options: .atomic) } catch { errorMessage = "Cannot save \(url.lastPathComponent): \(error)" }
+    }
+
     func copy(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)

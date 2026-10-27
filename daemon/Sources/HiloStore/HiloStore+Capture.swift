@@ -47,22 +47,23 @@ extension HiloStore {
         }
     }
 
-    /// Active seconds per project name since `since` (spans are clipped at `since`).
-    public func activeSeconds(since: Int) throws -> [String: Int] {
+    /// Active seconds per project name between `since` and `until` (spans are clipped at both).
+    public func activeSeconds(since: Int, until: Int = Int.max) throws -> [String: Int] {
         var out: [String: Int] = [:]
         for r in try db.rows("""
-            SELECT p.name, sum(a.ts_end - max(a.ts_start, ?)) FROM activity a JOIN project p ON p.id = a.project_id
-            WHERE a.ts_end > ? GROUP BY p.name
-            """, [since, since]) {
+            SELECT p.name, sum(min(a.ts_end, ?) - max(a.ts_start, ?)) FROM activity a JOIN project p ON p.id = a.project_id
+            WHERE a.ts_end > ? AND a.ts_start < ? GROUP BY p.name
+            """, [until, since, since, until]) {
             out[r.text(0) ?? ""] = r.int(1) ?? 0
         }
         return out
     }
 
-    /// Active seconds per day start (local calendar) since `since`, all projects together.
-    public func activeSecondsPerDay(since: Int, calendar: Calendar = .current) throws -> [Int: Int] {
+    /// Active seconds per day start (local calendar) between `since` and `until`, all projects together.
+    public func activeSecondsPerDay(since: Int, until: Int = Int.max, calendar: Calendar = .current) throws -> [Int: Int] {
         var out: [Int: Int] = [:]
-        for r in try db.rows("SELECT max(ts_start, ?), ts_end FROM activity WHERE ts_end > ?", [since, since]) {
+        for r in try db.rows("SELECT max(ts_start, ?), min(ts_end, ?) FROM activity WHERE ts_end > ? AND ts_start < ?",
+                             [since, until, since, until]) {
             let start = r.int(0) ?? 0, end = r.int(1) ?? 0
             let day = Int(calendar.startOfDay(for: Date(timeIntervalSince1970: TimeInterval(start))).timeIntervalSince1970)
             out[day, default: 0] += end - start

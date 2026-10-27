@@ -25,9 +25,12 @@ public struct WeekReport: Sendable {
     public var activeSeconds: Int { projects.reduce(0) { $0 + $1.active } }
     public var sessionSeconds: Int { projects.reduce(0) { $0 + $1.sessionSeconds } }
 
-    public init(start: Int, now: Int, sessions: [SessionRecord], active: [String: Int], commits: [CommitRecord],
-                tasks: [HiloTaskRecord], agreements: [Agreement], projects known: [Project]) {
-        let closed = tasks.filter { $0.status == .done && ($0.doneAt ?? 0) >= start }
+    /// `end` bounds a past week; records from later weeks are left out.
+    public init(start: Int, end: Int = Int.max, now: Int, sessions all: [SessionRecord], active: [String: Int],
+                commits allCommits: [CommitRecord], tasks: [HiloTaskRecord], agreements: [Agreement], projects known: [Project]) {
+        let now = min(now, end)
+        let sessions = all.filter { $0.startedAt < end }, commits = allCommits.filter { $0.ts < end }
+        let closed = tasks.filter { $0.status == .done && ($0.doneAt ?? 0) >= start && ($0.doneAt ?? 0) < end }
         var rows: [String: ProjectWeek] = [:]
         func row(_ project: Project?, named given: String? = nil) -> String {
             let name = given ?? project?.name ?? Self.noProject
@@ -45,7 +48,7 @@ public struct WeekReport: Sendable {
         self.start = start
         self.projects = rows.values.sorted { ($0.active, $0.sessionSeconds, $1.name) > ($1.active, $1.sessionSeconds, $0.name) }
         self.closed = closed
-        self.agreements = agreements.filter { $0.status == .confirmed && $0.ts >= start }
+        self.agreements = agreements.filter { $0.status == .confirmed && $0.ts >= start && $0.ts < end }
         self.sessionCount = sessions.count
         self.commitCount = commits.count
     }
@@ -86,8 +89,9 @@ extension HiloStore {
         Int((calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? calendar.startOfDay(for: date)).timeIntervalSince1970)
     }
 
-    public func weekReport(start: Int, now: Int) throws -> WeekReport {
-        WeekReport(start: start, now: now, sessions: try sessions(since: start), active: try activeSeconds(since: start),
+    public func weekReport(start: Int, end: Int = Int.max, now: Int) throws -> WeekReport {
+        WeekReport(start: start, end: end, now: now, sessions: try sessions(since: start),
+                   active: try activeSeconds(since: start, until: end),
                    commits: try commits(since: start), tasks: try tasks(doneSince: start), agreements: try agreements(),
                    projects: try projects())
     }

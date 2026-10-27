@@ -33,6 +33,14 @@ private func seeded() throws -> HiloStore {
         #expect(report.markdown.hasSuffix("## Agreements\n- Ship on Friday (api)"))
     }
 
+    @Test func pastWeekLeavesOutWhatCameAfterItsEnd() throws {
+        let report = try seeded().weekReport(start: 0, end: 1_400, now: 1_900)
+        let api = try #require(report.projects.first { $0.name == "api" })
+        #expect(api.commits == 0 && api.closed.isEmpty && api.active == 400)
+        #expect(report.agreements.map(\.text) == ["Ship on Friday"])
+        #expect(try seeded().weekReport(start: 0, end: 1_250, now: 1_900).agreements.isEmpty)
+    }
+
     @Test func emptyWeekSaysSo() throws {
         let dir = FileManager.default.temporaryDirectory.appending(path: "hilo-reports-\(UUID().uuidString)")
         let empty = try HiloStore(path: dir.appending(path: "hilo.sqlite").path(percentEncoded: false))

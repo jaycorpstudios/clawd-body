@@ -3,22 +3,44 @@ import HiloStore
 
 struct WeekView: View {
     @Environment(AppModel.self) private var model
+    @State private var offset = 0
 
-    private var report: WeekReport {
-        WeekReport(start: AppModel.startOfWeek, now: AppModel.now, sessions: model.weekSessions, active: model.activeWeek,
-                   commits: model.weekCommits, tasks: model.weekTasks, agreements: model.agreements, projects: model.projects)
+    private var start: Int {
+        let first = Date(timeIntervalSince1970: TimeInterval(AppModel.startOfWeek))
+        return Int((Calendar.current.date(byAdding: .weekOfYear, value: offset, to: first) ?? first).timeIntervalSince1970)
+    }
+
+    private var end: Int {
+        let first = Date(timeIntervalSince1970: TimeInterval(start))
+        return Int((Calendar.current.date(byAdding: .weekOfYear, value: 1, to: first) ?? first).timeIntervalSince1970)
+    }
+
+    private var data: (report: WeekReport, perDay: [Int: Int]) {
+        if offset < 0, let past = model.week(start: start, end: end) { return past }
+        return (WeekReport(start: AppModel.startOfWeek, now: AppModel.now, sessions: model.weekSessions, active: model.activeWeek,
+                           commits: model.weekCommits, tasks: model.weekTasks, agreements: model.agreements, projects: model.projects),
+                model.activePerDay)
     }
 
     var body: some View {
-        let report = self.report
+        let (report, perDay) = data
         return VStack(alignment: .leading, spacing: 22) {
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("This week").font(Theme.title(30))
-                    Text("Since \(Format.day(AppModel.startOfWeek)) · from this Mac's sessions, commits, tasks and agreements").foregroundStyle(Theme.secondary)
+                    Text(offset == 0 ? "This week" : offset == -1 ? "Last week" : "Week of \(Format.day(start))").font(Theme.title(30))
+                    Text(subtitle).foregroundStyle(Theme.secondary)
                 }
                 Spacer()
-                Button("Copy as Markdown") { model.copy(report.markdown) }.buttonStyle(PrimaryButtonStyle())
+                HStack(spacing: 8) {
+                    Button { offset -= 1 } label: { Image(systemName: "chevron.left") }
+                        .buttonStyle(SecondaryButtonStyle()).help("Previous week").keyboardShortcut("[", modifiers: .command)
+                    Button { offset += 1 } label: { Image(systemName: "chevron.right") }
+                        .buttonStyle(SecondaryButtonStyle()).help("Next week").keyboardShortcut("]", modifiers: .command).disabled(offset == 0)
+                    if offset != 0 { Button("This week") { offset = 0 }.buttonStyle(SecondaryButtonStyle()) }
+                    Button("Copy") { model.copy(report.markdown) }.buttonStyle(SecondaryButtonStyle()).help("Copy as Markdown")
+                    Button("Export .md") { model.export(report.markdown, name: "week-\(Self.fileDay(start)).md") }
+                        .buttonStyle(PrimaryButtonStyle()).help("Export to Markdown")
+                }
             }
             HStack(spacing: 14) {
                 total(Format.duration(report.activeSeconds), "active")
@@ -29,12 +51,12 @@ struct WeekView: View {
                 total("\(report.agreements.count)", "agreements")
             }
             HStack(alignment: .top, spacing: 20) {
-                hoursPerDay.frame(maxWidth: .infinity)
+                hoursPerDay(perDay).frame(maxWidth: .infinity)
                 tasksClosed(report.closed).frame(maxWidth: .infinity)
             }
             VStack(alignment: .leading, spacing: 12) {
                 SectionLabel(text: "Per project")
-                if report.projects.isEmpty { Text("Nothing recorded this week yet.").foregroundStyle(Theme.secondary) }
+                if report.projects.isEmpty { Text(offset == 0 ? "Nothing recorded this week yet." : "Nothing recorded that week.").foregroundStyle(Theme.secondary) }
                 let longest = max(1, report.projects.map(\.active).max() ?? 1)
                 ForEach(report.projects) { p in
                     VStack(alignment: .leading, spacing: 8) {
@@ -58,17 +80,26 @@ struct WeekView: View {
         }
     }
 
-    private var days: [(start: Int, seconds: Int)] {
+    private var subtitle: String {
+        let range = offset == 0 ? "Since \(Format.day(start))" : "\(Format.day(start)) – \(Format.day(end - 86_400))"
+        return "\(range) · from this Mac's sessions, commits, tasks and agreements"
+    }
+
+    static func fileDay(_ ts: Int) -> String {
+        Date(timeIntervalSince1970: TimeInterval(ts)).formatted(.iso8601.year().month().day())
+    }
+
+    private func days(_ perDay: [Int: Int]) -> [(start: Int, seconds: Int)] {
         let cal = Calendar.current
-        let first = Date(timeIntervalSince1970: TimeInterval(AppModel.startOfWeek))
+        let first = Date(timeIntervalSince1970: TimeInterval(start))
         return (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: first) }.map {
             let start = Int(cal.startOfDay(for: $0).timeIntervalSince1970)
-            return (start, model.activePerDay[start] ?? 0)
+            return (start, perDay[start] ?? 0)
         }
     }
 
-    private var hoursPerDay: some View {
-        let days = days
+    private func hoursPerDay(_ perDay: [Int: Int]) -> some View {
+        let days = days(perDay)
         let longest = max(1, days.map(\.seconds).max() ?? 1)
         let today = AppModel.startOfToday
         return VStack(alignment: .leading, spacing: 10) {
@@ -103,7 +134,7 @@ struct WeekView: View {
     private func tasksClosed(_ closed: [HiloTaskRecord]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Tasks closed · \(closed.count)").font(Theme.title(17))
-            if closed.isEmpty { Text("No tasks closed this week yet.").foregroundStyle(Theme.secondary) }
+            if closed.isEmpty { Text(offset == 0 ? "No tasks closed this week yet." : "No tasks closed that week.").foregroundStyle(Theme.secondary) }
             ForEach(closed.sorted { ($0.doneAt ?? 0) > ($1.doneAt ?? 0) }) { t in
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
                     Text("✓").fontWeight(.bold).foregroundStyle(Color(hex: "#4fd39a"))
