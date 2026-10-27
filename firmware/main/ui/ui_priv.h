@@ -62,7 +62,10 @@ typedef struct {
 
     lv_obj_t *hilo_day, *hilo_card, *hilo_now, *hilo_proj, *hilo_time, *hilo_next[BM_MAX_NEXT], *hilo_agree;
 
-    lv_obj_t *cover, *song, *artist, *song_bar, *song_cur, *song_len;
+    lv_obj_t *cover, *song, *artist, *song_bar, *song_cur, *song_len, *song_play;
+
+    ui_pet_t *pomo_pet;
+    lv_obj_t *pomo_cycle, *pomo_time, *pomo_phase, *pomo_bar, *pomo_steps, *pomo_work, *pomo_break, *pomo_play;
     lv_image_dsc_t cover_dsc;
     uint32_t cover_px[BM_COVER_GRID * BM_COVER_GRID];
     char cover_title[81];

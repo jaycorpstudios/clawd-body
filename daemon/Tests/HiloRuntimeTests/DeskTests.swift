@@ -3,6 +3,7 @@ import Foundation
 import Testing
 import HiloContract
 import HiloCore
+import HiloStore
 @testable import HiloRuntime
 
 actor DeskLink: BuddyLink {
@@ -104,5 +105,69 @@ private func solidImage(width: Int, height: Int, rgb: (UInt8, UInt8, UInt8)) -> 
         guard case .snapshot(let cleared) = await link.decoded().last else { Issue.record("no snapshot"); return }
         #expect(cleared.face == nil)
         #expect(await coordinator.faceHash == nil)
+    }
+}
+
+final class DeskClock: Clock, @unchecked Sendable {
+    private let lock = NSLock()
+    private var t: Int
+    init(_ t: Int) { self.t = t }
+    func now() -> Int { lock.withLock { t } }
+    func set(_ v: Int) { lock.withLock { t = v } }
+    func sleep(seconds: Double) async { await Task.yield() }
+}
+
+@Suite struct PomodoroFlowTests {
+    let link = DeskLink()
+    let clock = DeskClock(10_000)
+    let store: HiloStore
+    let coordinator: Coordinator
+
+    init() throws {
+        let path = FileManager.default.temporaryDirectory.appending(path: "hilo-pomo-\(UUID().uuidString).sqlite")
+        store = try HiloStore(path: path.path(percentEncoded: false))
+        coordinator = Coordinator(host: "work", mapper: HookMapper(repoRoot: { _ in nil }), link: link, presence: DeskAway(),
+                                  clock: clock, recorder: StoreRecorder(store: store))
+    }
+
+    @Test func commandsGoToTheBuddyAndIntoTheSnapshot() async throws {
+        #expect(await coordinator.changePomodoro(.toggle))
+        guard case .pomodoro(let p) = await link.decoded().last else { Issue.record("no pomodoro"); return }
+        #expect(p.state == .running && p.endsAt == 10_000 + 25 * 60)
+        await coordinator.sendSnapshot()
+        guard case .snapshot(let snap) = await link.decoded().last else { Issue.record("no snapshot"); return }
+        #expect(snap.pomodoro == p)
+        #expect(await coordinator.changePomodoro(.durations(work: 40, rest: nil)) == false)
+    }
+
+    @Test func finishedWorkIsRecordedWithTheCurrentTask() async throws {
+        let task = try store.addTask("Write the focus view", project: "hilo-app", status: .doing, now: 9_000)
+        _ = await coordinator.changePomodoro(.toggle)
+        clock.set(10_000 + 25 * 60 + 1)
+        await coordinator.tickPomodoro()
+        #expect(await coordinator.focus?.phase == .rest)
+        #expect(try store.focusCycles(task: task.id) == 1)
+        #expect(try store.focusCycles(since: 0) == (1, 25))
+    }
+
+    @Test func newerBuddyStateWinsAndOlderGetsTheMacsBack() async throws {
+        let newer = #"{"state":"paused","phase":"work","left_s":600,"work_min":30,"break_min":5,"cycle":2,"updated_at":10500}"#
+        try await coordinator.handleBuddy(buddyMessage("device.pomodoro", newer))
+        #expect(await coordinator.focus?.leftS == 600)
+        #expect(await link.raw.isEmpty)
+        let older = #"{"state":"stopped","phase":"work","work_min":25,"break_min":5,"cycle":0,"updated_at":9000}"#
+        try await coordinator.handleBuddy(buddyMessage("device.pomodoro", older))
+        guard case .pomodoro(let back) = await link.decoded().last else { Issue.record("no reply"); return }
+        #expect(back.updatedAt == 10500 && back.cycle == 2)
+    }
+
+    @Test func pomodoroOpParsesCommands() async throws {
+        #expect(ControlOps.pomodoroCommand(Data(#"{"action":"toggle"}"#.utf8)) == .toggle)
+        #expect(ControlOps.pomodoroCommand(Data(#"{"action":"durations","work_min":50}"#.utf8)) == .durations(work: 50, rest: nil))
+        #expect(ControlOps.pomodoroCommand(Data(#"{"action":"durations"}"#.utf8)) == nil)
+        #expect(ControlOps.pomodoroCommand(Data(#"{"action":"skip"}"#.utf8)) == nil)
+        let ops = ControlOps(coordinator: coordinator, buddy: nil, configPath: "/nonexistent/config.json", tokensFromTranscripts: false)
+        let reply = try #require(await ops.handle(op: "pomodoro", body: Data(#"{"action":"toggle"}"#.utf8)))
+        #expect(try JSONDecoder().decode(DaemonStatus.self, from: reply).pomodoro?.state == .running)
     }
 }

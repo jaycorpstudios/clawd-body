@@ -350,6 +350,7 @@ void bm_panel(bm_model_t *m, bool open, uint32_t now_ms);
 
 int32_t bm_pomo_left_s(const bm_model_t *m, uint32_t now_ms);
 float bm_pomo_progress(const bm_model_t *m, uint32_t now_ms);
+bm_pet_state_t bm_pomo_pet(const bm_model_t *m);
 
 #define BM_CARD_CLOCK (-1)
 #define BM_CARD_COMPUTERS (-2)

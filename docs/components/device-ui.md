@@ -16,7 +16,8 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 2. **Agents**: up to 5 rows ordered: needs you, failed, working, done, idle. Each row has avatar, name, Mac and task, status and time. Tapping a row opens its detail.
 3. **Usage**: one ring per connected Mac (usage is kept per Mac): 5 h window ring (orange; amber at 80 % or more; red at 100 %), countdown, weekly bar and token sparkline. Tapping the ring opens the breakdown.
 4. **Hilo**: current task with a timer, next tasks and today's agreements. Tapping opens the detail.
-5. **Music**: generated pixel-art cover, title, artist and progress.
+5. **Music**: generated pixel-art cover, title, artist and progress. Previous, play/pause and next are live (proposal: the prototype draws them but does nothing): they go to the Mac that is playing, play shows while paused, and they dim when that Mac is not connected.
+6. **Focus** (proposal, below).
 
 ## Settings panel (proposal, not in the prototype)
 
@@ -26,6 +27,16 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 - **Look**: a 330 px sheet sliding from the top in 220 ms (ease-out) over the current view, background `#0d0c0b` with a `#1f1c19` bottom border and 28 px corners, like the agent rows; the rest of the screen dims to 60 % black. A 44×5 px grabber sits at its bottom edge.
 - **Controls**, top to bottom: a full-width **Sound** button (speaker icon, "Sound", "On" in done green on a dark green fill, or "Off" in dim gray); **Volume** slider 0–100 (done green, half opacity while sound is off); **Brightness** slider 10–100 % (needs-you amber). Values show at the right of each label in JetBrains Mono.
 - **Behavior**: each change applies at once (volume to the codec, brightness to the panel); the Macs get one `device.settings` once the finger rests for 400 ms. Turning sound on plays the Button cue as feedback. Values persist on the buddy across reboots; Hilo › Setup shows and changes the same three.
+
+## Focus view (proposal, not in the prototype)
+
+- Title "Focus" with "N done" (finished work phases) at the right, like the other titles.
+- The main pet (hue 22, its accessory) at 96 px, beside the phase ("WORK" in working orange, "BREAK" in done green, "· PAUSED" appended, dim gray while stopped) and the time left in Pixelify 58 px.
+- A full-width progress track in the phase color.
+- While stopped: WORK and BREAK steppers (− value +, 5 min steps up to 90 for work, 1 min up to 60 for break). Hidden while running or paused.
+- Round buttons: reset and a larger play/pause. Play dims until the buddy knows the time.
+- Pet: working during work, happy during the break, idle when paused or stopped. A phase change shows a toast ("Break time" / "Back to work") and plays Success / Start when sound is on.
+- Hilo › Focus shows the same timer with the same pet look.
 
 ## Idle rotation (proposal, not in the prototype)
 

@@ -70,6 +70,13 @@ if let store {
     }
 }
 
+Task.detached {
+    while true {
+        await coordinator.tickPomodoro()
+        try? await Task.sleep(for: .seconds(5))
+    }
+}
+
 if tokensFromTranscripts {
     let transcripts = TranscriptTokens()
     Task.detached {

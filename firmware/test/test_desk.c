@@ -304,6 +304,20 @@ TEST(pomodoro_pause_resume_reset_and_durations)
     CHECK(M.pomo.updated_at == wall_now());
 }
 
+TEST(pomodoro_pet_works_rests_and_idles)
+{
+    fresh();
+    CHECK(snapshot("work", "") == BM_OK);
+    CHECK(bm_pomo_pet(&M) == BM_PET_IDLE);
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    CHECK(bm_pomo_pet(&M) == BM_PET_WORKING);
+    advance(25 * 60000);
+    CHECK(M.pomo.on_break && bm_pomo_pet(&M) == BM_PET_HAPPY);
+    bm_touch_wake(&M, now);
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    CHECK(M.pomo.state == BM_POMO_PAUSED && bm_pomo_pet(&M) == BM_PET_IDLE);
+}
+
 TEST(pomodoro_newer_on_the_buddy_wins_over_a_snapshot)
 {
     fresh();

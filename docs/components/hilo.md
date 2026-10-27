@@ -26,6 +26,7 @@ Visual reference approved as direction: `prototypes/hilo/`. Dark theme only, wit
 | **Sessions** | `Sessions.dc.html` | Table of this Mac's sessions (avatar, status, linked task, Warp tab, duration, tokens — from the local transcripts when `tokens_from_transcripts` is on, otherwise "—" —, last action); banner when a session needs you; detail with timeline and `claude --resume <id>`; automatic-capture status panel |
 | **Week** | `Week.dc.html` | Totals (active time, tasks closed, sessions, agreements); per-project summary drafted by Claude and editable; hours per project and per day; closed tasks; Markdown copy/export |
 | **Agreements** | `Agreements.dc.html` | Log by date with project, context, origin (meeting, session, manual) and linked task; **To confirm** column with agreements Claude detected in sessions — nothing enters the log without confirmation |
+| **Focus** | — (no prototype) | Pomodoro shared with the buddy through `hilod` (socket op `pomodoro`, state in `status`): the main pet, phase, time left, progress, Start/Pause (space) and Reset, work and break durations while stopped, and today's finished cycles. `hilod` flips phases on its own clock and records each finished work phase in `focus_cycle`, linked to the task in progress |
 | **Resume context** | `Resume.dc.html` | Per project: where you left off, suggested next step, open threads, files touched, recent agreements, commands to get back in |
 | **Setup** | — (no prototype) | Six steps: name this Mac (Work / Home presets or free text, normalized to the contract's `host` and saved in `config.json`; applied live through `hilod`'s socket op `host`, which drops the BLE link so the buddy rebinds it), run `hilod` (Start installs the LaunchAgent `dev.hilo.hilod` for the copy bundled in `Hilo.app`, so it also runs at login; Stop removes it; Restart reinstalls it; same code as `hilo install` / `uninstall`), pair the buddy (guided: hold 5 s, Start pairing, type the passkey in the macOS dialog; progress from socket ops `pair`, `pair-cancel` and `status`), usage (status line command to copy, transcript-token toggle), and the buddy's settings (sound, volume, brightness: the same controls as the buddy's top panel, sent with the socket op `settings` and shown from the buddy's own `device.settings`, so both always agree; disabled while the buddy is not connected), and this Mac's picture for the buddy's idle rotation (pick an image, zoom and drag it inside a square, saved as a ≤ 480 px PNG `face.png` next to `config.json`, never in the repo; socket op `face` makes `hilod` send it). Opens by itself when `config.json` does not exist yet |
 
@@ -42,6 +43,7 @@ Shared chrome: top bar with ⌘K search, buddy status with its pet, and the Mac'
 | `git_commit` | `repo, hash, branch, message, ts, project_id?, task_id?` (implemented) |
 | `agreement` | `id, project_id, task_id?, text, context, origin[meeting\|session\|manual], status[confirmed\|pending], ts` |
 | `activity` | `project_id, ts_start, ts_end` (implemented; 5 min gap = pause) |
+| `focus_cycle` | `id, ended_at, work_min, task_id?` (implemented; one row per finished Pomodoro work phase) |
 
 ## CLI
 

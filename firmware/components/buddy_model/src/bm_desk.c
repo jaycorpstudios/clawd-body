@@ -311,6 +311,12 @@ float bm_pomo_progress(const bm_model_t *m, uint32_t now_ms)
     return done < 0 ? 0 : done > 1 ? 1 : done;
 }
 
+bm_pet_state_t bm_pomo_pet(const bm_model_t *m)
+{
+    if (m->pomo.state != BM_POMO_RUNNING) return BM_PET_IDLE;
+    return m->pomo.on_break ? BM_PET_HAPPY : BM_PET_WORKING;
+}
+
 static void pomo_changed(bm_model_t *m, uint32_t now_ms)
 {
     m->pomo.updated_at = m->clock_known ? wall_s(m, now_ms) : 0;

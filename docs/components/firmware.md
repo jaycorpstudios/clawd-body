@@ -18,7 +18,7 @@ Spare parts available: PAM8403 amplifiers and 8 Ω 0.5 W speakers, in case the o
 
 ## Functional requirements
 
-1. **Five rotating views**: Home, Agents, Usage, Hilo and Music. Switched by swiping or with the side button.
+1. **Six rotating views**: Home, Agents, Usage, Hilo, Music and Focus (Pomodoro, a proposal: see [device UI](device-ui.md#focus-view-proposal-not-in-the-prototype)). Switched by swiping or with the side button. Music's previous / play-pause / next send `media.control` to the Mac that is playing; Focus runs on the buddy's clock, so it keeps going with every link down and re-syncs through `pomodoro.state` / `device.pomodoro` (newer `updated_at` wins).
 2. **Animated pet** with states (idle, working, alert, happy, error, worried, sleep) and accessories. Each agent has its own hue and accessory.
 3. **Full-screen alerts**: task done (confetti), error, usage warning at 80 %, limit at 100 %, connect and disconnect, low battery.
 4. **Permission or question screen**: shows project, Mac, tool, command and reason.

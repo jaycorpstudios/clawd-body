@@ -8,12 +8,13 @@ import HiloStore
 import Observation
 
 enum AppSection: String, CaseIterable, Identifiable {
-    case today = "Today", sessions = "Sessions", week = "Week", agreements = "Agreements", resume = "Resume context", setup = "Setup"
+    case today = "Today", focus = "Focus", sessions = "Sessions", week = "Week", agreements = "Agreements", resume = "Resume context", setup = "Setup"
     var id: String { rawValue }
 
     var icon: String {
         switch self {
         case .today: "calendar"
+        case .focus: "timer"
         case .sessions: "terminal"
         case .week: "chart.bar"
         case .agreements: "checklist"
@@ -35,6 +36,7 @@ final class AppModel {
     var activeToday: [String: Int] = [:]
     var activeWeek: [String: Int] = [:]
     var activePerDay: [Int: Int] = [:]
+    var focusToday: (count: Int, minutes: Int) = (0, 0)
     var weekCommits: [CommitRecord] = []
     var projects: [Project] = []
     var daemonRunning = false
@@ -84,6 +86,8 @@ final class AppModel {
             if capture.2 != weekCommits { weekCommits = capture.2 }
             let perDay = try store.activeSecondsPerDay(since: Self.startOfWeek)
             if perDay != activePerDay { activePerDay = perDay }
+            let focus = try store.focusCycles(since: Self.startOfToday)
+            if focus != focusToday { focusToday = focus }
             let state = try store.daemonState()
             let reply = LocalSocket.request(path: LocalSocket.defaultPath, op: "status", body: Data(), timeoutSeconds: 1)
             let running = reply != nil
@@ -258,6 +262,11 @@ final class AppModel {
         guard let body = try? JSONEncoder().encode(change) else { return }
         control("settings", body: body)
         refreshSoon()
+    }
+
+    func pomodoro(_ command: [String: Any]) {
+        guard let body = try? JSONSerialization.data(withJSONObject: command) else { return }
+        control("pomodoro", body: body)
     }
 
     private func control(_ op: String, body: Data = Data()) {

@@ -36,6 +36,7 @@ public actor Coordinator {
     private var waiting: [String: CheckedContinuation<Resolution?, Never>] = [:]
     private var buddySettings: DeviceSettings?
     private var face: FaceImage?
+    private var pomodoro: PomodoroState?
 
     public init(host: String, mapper: HookMapper, link: BuddyLink, presence: PresenceProbe,
                 clock: Clock = SystemClock(), pollSeconds: Double = 2, recorder: StoreRecorder? = nil,
@@ -77,6 +78,11 @@ public actor Coordinator {
         case .settings(let s):
             buddySettings = s
             log("buddy settings: sound \(s.sound ? "on" : "off"), volume \(s.volume), brightness \(s.brightness)%")
+            return
+        case .pomodoro(let p):
+            if let mine = pomodoro, p.updatedAt < mine.updatedAt { return await send(.pomodoro(mine)) }
+            log("buddy pomodoro: \(p.state.rawValue) \(p.phase.rawValue), cycle \(p.cycle)")
+            adopt(p)
             return
         case .faceRequest(let ref):
             guard let face, face.hash == ref.hash else { return log("buddy asked for face \(ref.hash), which this Mac no longer has") }
@@ -178,6 +184,37 @@ public actor Coordinator {
         log(image.map { "face \($0.hash)" } ?? "no face")
         if let image { for chunk in image.chunks { await send(.face(chunk)) } }
         await sendSnapshot()
+    }
+
+    public var focus: PomodoroState? { pomodoro }
+
+    /// Runs on the Mac's clock too, so finished work phases are recorded even with the buddy away.
+    public func tickPomodoro() {
+        guard var p = pomodoro else { return }
+        p.advance(to: clock.now())
+        adopt(p)
+    }
+
+    public func changePomodoro(_ command: PomodoroCommand) async -> Bool {
+        let now = clock.now()
+        var p = pomodoro ?? .stopped(now: now)
+        p.advance(to: now)
+        switch command {
+        case .toggle: p.toggle(now: now)
+        case .reset: p.reset(now: now)
+        case .durations(let work, let rest): guard p.setDurations(work: work, rest: rest, now: now) else { return false }
+        }
+        adopt(p)
+        await send(.pomodoro(p))
+        return true
+    }
+
+    private func adopt(_ next: PomodoroState) {
+        var p = next
+        p.advance(to: clock.now())
+        if let old = pomodoro, p.cycle > old.cycle { recorder?.recordFocus(cycles: p.cycle - old.cycle, workMin: p.workMin, now: clock.now()) }
+        pomodoro = p
+        store.setPomodoro(p)
     }
 
     /// The buddy applies it and answers with `device.settings`, which is what Hilo then shows.

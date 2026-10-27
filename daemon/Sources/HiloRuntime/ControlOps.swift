@@ -1,5 +1,6 @@
 import Foundation
 import HiloContract
+import HiloCore
 
 public protocol BuddyControl: Sendable {
     func status() -> BuddyStatus
@@ -10,7 +11,7 @@ public protocol BuddyControl: Sendable {
 
 extension BLECentral: BuddyControl {}
 
-/// Socket ops the Hilo app uses to set this Mac up: `status`, `pair`, `pair-cancel`, `host`, `settings` and `face`. Each replies with a `DaemonStatus`.
+/// Socket ops the Hilo app uses: `status`, `pair`, `pair-cancel`, `host`, `settings`, `face` and `pomodoro`. Each replies with a `DaemonStatus`.
 public struct ControlOps: Sendable {
     private let coordinator: Coordinator
     private let buddy: BuddyControl?
@@ -37,6 +38,10 @@ public struct ControlOps: Sendable {
         case "settings":
             guard let change = try? JSONDecoder().decode(SettingsChange.self, from: body),
                   await coordinator.changeSettings(change) else { return Data("rejected: bad settings\n".utf8) }
+        case "pomodoro":
+            guard let command = Self.pomodoroCommand(body), await coordinator.changePomodoro(command) else {
+                return Data("rejected: bad pomodoro command\n".utf8)
+            }
         case "host":
             guard let name = HiloConfig.hostName(from: String(decoding: body, as: UTF8.self)) else {
                 return Data("rejected: empty host name\n".utf8)
@@ -58,7 +63,26 @@ public struct ControlOps: Sendable {
         let status = DaemonStatus(host: await coordinator.currentHost,
                                   buddy: buddy?.status() ?? BuddyStatus(link: .noBluetooth),
                                   tokensFromTranscripts: tokensFromTranscripts,
-                                  settings: await coordinator.settings, face: await coordinator.faceHash)
+                                  settings: await coordinator.settings, face: await coordinator.faceHash,
+                                  pomodoro: await coordinator.focus)
         return (try? JSONEncoder().encode(status)) ?? Data()
+    }
+
+    private struct PomodoroBody: Decodable {
+        var action: String
+        var workMin: Int?
+        var breakMin: Int?
+        enum CodingKeys: String, CodingKey { case action, workMin = "work_min", breakMin = "break_min" }
+    }
+
+    /// `{"action":"toggle"}`, `{"action":"reset"}` or `{"action":"durations","work_min":50,"break_min":10}`.
+    static func pomodoroCommand(_ body: Data) -> PomodoroCommand? {
+        guard let b = try? JSONDecoder().decode(PomodoroBody.self, from: body) else { return nil }
+        switch b.action {
+        case "toggle": return .toggle
+        case "reset": return .reset
+        case "durations" where b.workMin != nil || b.breakMin != nil: return .durations(work: b.workMin, rest: b.breakMin)
+        default: return nil
+        }
     }
 }

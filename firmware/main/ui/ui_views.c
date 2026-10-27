@@ -310,9 +310,90 @@ static void create_music(lv_obj_t *v)
     lv_obj_set_flex_align(ctl, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(ctl, 44, 0);
     lv_obj_set_style_margin_top(ctl, 6, 0);
-    ui_label(ctl, &lv_font_montserrat_24, C_FG, LV_SYMBOL_PREV);
-    ui_label(ctl, &lv_font_montserrat_32, C_FG, LV_SYMBOL_PAUSE);
-    ui_label(ctl, &lv_font_montserrat_24, C_FG, LV_SYMBOL_NEXT);
+    lv_obj_t *prev = ui_label(ctl, &lv_font_montserrat_24, C_FG, LV_SYMBOL_PREV);
+    ui.song_play = ui_label(ctl, &lv_font_montserrat_32, C_FG, LV_SYMBOL_PAUSE);
+    lv_obj_t *next = ui_label(ctl, &lv_font_montserrat_24, C_FG, LV_SYMBOL_NEXT);
+    lv_obj_t *buttons[] = {ui.song_play, next, prev};
+    for (int i = 0; i < 3; i++) {
+        lv_obj_set_ext_click_area(buttons[i], 18);
+        ui_on_tap(buttons[i], BM_TAP_MEDIA, i);
+    }
+}
+
+static lv_obj_t *round_button(lv_obj_t *parent, int32_t size, const lv_font_t *font, const char *symbol, bm_tap_t tap,
+                              int arg)
+{
+    lv_obj_t *b = ui_box(parent);
+    lv_obj_set_size(b, size, size);
+    lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_border_width(b, 2, 0);
+    lv_obj_set_style_border_color(b, ui_hex(0x2f2c28), 0);
+    lv_obj_set_style_bg_color(b, ui_hex(0x161412), 0);
+    lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
+    lv_obj_set_ext_click_area(b, 8);
+    lv_obj_t *l = ui_label(b, font, C_FG, symbol);
+    lv_obj_center(l);
+    ui_on_tap(b, tap, arg);
+    return l;
+}
+
+static lv_obj_t *stepper(lv_obj_t *parent, const char *name, bm_tap_t tap)
+{
+    lv_obj_t *col = ui_box(parent);
+    lv_obj_set_size(col, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(col, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_text_letter_space(ui_label(col, &font_mono_15, C_DIM, name), 1, 0);
+    lv_obj_t *row = ui_box(col);
+    lv_obj_set_size(row, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_style_margin_top(row, 6, 0);
+    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(row, 10, 0);
+    round_button(row, 40, &lv_font_montserrat_16, LV_SYMBOL_MINUS, tap, -1);
+    lv_obj_t *value = ui_label(row, &font_mono_bold_23, C_FG, "");
+    lv_obj_set_width(value, 64);
+    lv_obj_set_style_text_align(value, LV_TEXT_ALIGN_CENTER, 0);
+    round_button(row, 40, &lv_font_montserrat_16, LV_SYMBOL_PLUS, tap, 1);
+    return value;
+}
+
+static void create_pomodoro(lv_obj_t *v)
+{
+    title_row(v, "Focus", &ui.pomo_cycle);
+    lv_obj_set_flex_align(v, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_t *mid = ui_box(v);
+    lv_obj_set_size(mid, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(mid, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(mid, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(mid, 18, 0);
+    ui.pomo_pet = ui_pet_create(mid, 96);
+    lv_obj_t *texts = ui_box(mid);
+    lv_obj_set_size(texts, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(texts, LV_FLEX_FLOW_COLUMN);
+    ui.pomo_phase = ui_label(texts, &font_mono_bold_18, BM_C_WORK, "");
+    lv_obj_set_style_text_letter_space(ui.pomo_phase, 2, 0);
+    ui.pomo_time = ui_label(texts, &font_pixel_58, C_FG, "25:00");
+
+    ui.pomo_bar = ui_track(v, CONTENT_W, BM_C_WORK);
+    lv_obj_set_style_margin_top(ui.pomo_bar, 10, 0);
+
+    ui.pomo_steps = ui_box(v);
+    lv_obj_set_size(ui.pomo_steps, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_set_style_margin_top(ui.pomo_steps, 14, 0);
+    lv_obj_set_flex_flow(ui.pomo_steps, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(ui.pomo_steps, LV_FLEX_ALIGN_SPACE_AROUND, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    ui.pomo_work = stepper(ui.pomo_steps, "WORK", BM_TAP_POMO_WORK);
+    ui.pomo_break = stepper(ui.pomo_steps, "BREAK", BM_TAP_POMO_BREAK);
+
+    lv_obj_t *ctl = ui_box(v);
+    lv_obj_set_size(ctl, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_style_margin_top(ctl, 14, 0);
+    lv_obj_set_flex_flow(ctl, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(ctl, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(ctl, 28, 0);
+    round_button(ctl, 52, &lv_font_montserrat_24, LV_SYMBOL_REFRESH, BM_TAP_POMO_RESET, 0);
+    ui.pomo_play = round_button(ctl, 68, &lv_font_montserrat_32, LV_SYMBOL_PLAY, BM_TAP_POMO_TOGGLE, 0);
 }
 
 void ui_views_create(lv_obj_t *scr)
@@ -325,6 +406,7 @@ void ui_views_create(lv_obj_t *scr)
     create_usage(ui.views[BM_VIEW_USAGE]);
     create_hilo(ui.views[BM_VIEW_HILO]);
     create_music(ui.views[BM_VIEW_MUSIC]);
+    create_pomodoro(ui.views[BM_VIEW_POMODORO]);
 
     lv_obj_t *dots = ui_box(scr);
     lv_obj_set_size(dots, SCREEN, 8);
@@ -538,9 +620,30 @@ static void update_music(uint32_t now_ms)
         bm_cover_render(ui.cover_px, title);
         lv_obj_invalidate(ui.cover);
     }
+    lv_label_set_text(ui.song_play, media && media->paused ? LV_SYMBOL_PLAY : LV_SYMBOL_PAUSE);
+    lv_obj_set_style_opa(lv_obj_get_parent(ui.song_play), media && ui.m->hosts[mh].connected ? LV_OPA_COVER : LV_OPA_40, 0);
     int32_t len = media ? media->length_s : 0;
     lv_label_set_text_fmt(ui.song_len, "%d:%02d", (int)(len / 60), (int)(len % 60));
     (void)now_ms;
+}
+
+static void update_pomodoro(void)
+{
+    const bm_pomo_t *p = &ui.m->pomo;
+    bool stopped = p->state == BM_POMO_STOPPED;
+    uint32_t color = p->on_break ? BM_C_DONE : BM_C_WORK;
+    static const char *const phases[2][3] = {{"WORK", "WORK", "WORK \xC2\xB7 PAUSED"},
+                                             {"BREAK", "BREAK", "BREAK \xC2\xB7 PAUSED"}};
+    lv_label_set_text(ui.pomo_phase, phases[p->on_break][p->state]);
+    lv_obj_set_style_text_color(ui.pomo_phase, ui_hex(stopped ? C_DIM : color), 0);
+    lv_obj_set_style_bg_color(lv_obj_get_child(ui.pomo_bar, 0), ui_hex(color), 0);
+    if (p->cycle) lv_label_set_text_fmt(ui.pomo_cycle, "%u done", p->cycle);
+    else lv_label_set_text(ui.pomo_cycle, "");
+    ui_show(ui.pomo_steps, stopped);
+    lv_label_set_text_fmt(ui.pomo_work, "%u", p->work_min);
+    lv_label_set_text_fmt(ui.pomo_break, "%u", p->break_min);
+    lv_label_set_text(ui.pomo_play, p->state == BM_POMO_RUNNING ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
+    lv_obj_set_style_opa(lv_obj_get_parent(ui.pomo_play), ui.m->clock_known ? LV_OPA_COVER : LV_OPA_40, 0);
 }
 
 void ui_views_update(void)
@@ -552,6 +655,7 @@ void ui_views_update(void)
     update_usage(now_ms);
     update_hilo();
     update_music(now_ms);
+    update_pomodoro();
     ui_views_tick(now_ms);
 }
 
@@ -601,6 +705,10 @@ void ui_views_tick(uint32_t now_ms)
         lv_label_set_text(ui.hilo_day, buf);
     }
 
+    int32_t left = bm_pomo_left_s(ui.m, now_ms);
+    lv_label_set_text_fmt(ui.pomo_time, "%02d:%02d", (int)(left / 60), (int)(left % 60));
+    ui_track_set(ui.pomo_bar, (int)(bm_pomo_progress(ui.m, now_ms) * 100));
+
     int mh = bm_media_host(ui.m);
     if (mh >= 0) {
         const bm_media_t *media = &ui.m->hosts[mh].media;
@@ -628,6 +736,7 @@ void ui_views_frame(void)
             lv_obj_set_style_border_opa(ui.rows[i].row, pulse ? (lv_opa_t)(0x33 + k * (255 - 0x33)) : LV_OPA_TRANSP, 0);
         }
         break;
+    case BM_VIEW_POMODORO: ui_pet_draw(ui.pomo_pet, bm_pomo_pet(ui.m), BM_PET_MAIN_HUE, ui.m->acc, 0); break;
     default: break;
     }
 }

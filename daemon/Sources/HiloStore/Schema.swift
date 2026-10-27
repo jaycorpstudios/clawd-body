@@ -40,6 +40,12 @@ enum Schema {
           ts_start INTEGER NOT NULL, ts_end INTEGER NOT NULL);
         CREATE INDEX activity_end ON activity(ts_end);
         """,
+        """
+        CREATE TABLE focus_cycle (
+          id INTEGER PRIMARY KEY, ended_at INTEGER NOT NULL, work_min INTEGER NOT NULL,
+          task_id INTEGER REFERENCES task(id) ON DELETE SET NULL);
+        CREATE INDEX focus_cycle_end ON focus_cycle(ended_at);
+        """,
     ]
 
     static func migrate(_ db: Database) throws {

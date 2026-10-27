@@ -64,6 +64,7 @@ struct RootView: View {
         }
         switch model.section {
         case .today: TodayView()
+        case .focus: FocusView()
         case .sessions: SessionsView()
         case .week: WeekView()
         case .agreements: AgreementsView()
@@ -179,6 +180,7 @@ struct Sidebar: View {
         case .today: model.tasks.filter { $0.status != .done }.count.nonZero
         case .sessions: model.sessions.filter { $0.endedAt == nil }.count.nonZero
         case .agreements: model.pendingAgreements.count.nonZero
+        case .focus: model.focusToday.count.nonZero
         case .week, .resume, .setup: ""
         }
     }
