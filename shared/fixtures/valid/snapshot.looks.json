@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "id": "01K8F400000000000000000068",
+  "ts": 1792900000,
+  "host": "work",
+  "type": "snapshot",
+  "data": {
+    "sessions": [
+      { "session": "7f3a9c1e-2b4d-4e8f-9a01-5c6d7e8f9a0b", "project": "payments-api", "task": "Webhook refactor",
+        "status": "working", "since": 1792899000, "look": { "hue": 198, "acc": "wizard" } },
+      { "session": "8a4b0d2f-3c5e-4f90-ab12-6d7e8f9a0b1c", "project": "payments-api", "task": "Retry tests",
+        "status": "done", "since": 1792899500, "summary": "Retries covered", "look": { "hue": 212, "acc": "crown" } }
+    ],
+    "usage": { "session_pct": 12, "weekly_pct": 8, "reset_in_min": 200 },
+    "hilo": { "current": null, "next": [], "agreements_today": [] }
+  }
+}

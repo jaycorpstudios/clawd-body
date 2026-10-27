@@ -443,6 +443,35 @@ static void scene_panel(void)
     run(600);
 }
 
+static void start_with_look(const char *id, const char *task, int hue, const char *acc)
+{
+    CHECK(send("work", "session.start",
+               "{\"session\":\"%s\",\"project\":\"payments-api\",\"task\":\"%s\",\"look\":{\"hue\":%d,\"acc\":\"%s\"}}", id,
+               task, hue, acc) == BM_OK);
+    run(300);
+}
+
+static void scene_looks(void)
+{
+    linked();
+    start_with_look("s1", "Webhook refactor", 91, "shades");
+    start_with_look("s2", "Retry tests", 105, "headphones");
+    start_with_look("s3", "Docs pass", 77, "crown");
+    CHECK(send("work", "agent.task_done", "{\"session\":\"s3\",\"summary\":\"Docs updated\"}") == BM_OK);
+    run(4000);
+    go_view(BM_VIEW_AGENTS);
+    shot("looks-agents-one-project");
+    for (int i = 0; i < BM_MAX_SESSIONS; i++)
+        if (M.sessions[i].used && strcmp(M.sessions[i].id, "s2") == 0) bm_tap(&M, BM_TAP_AGENT, i, now);
+    run(600);
+    shot("looks-sheet-pet-picker");
+    bm_tap(&M, BM_TAP_SESSION_ACC, 1, now);
+    run(600);
+    shot("looks-sheet-picked-crown");
+    bm_tap(&M, BM_TAP_BACK, 0, now);
+    run(600);
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -468,6 +497,7 @@ int main(int argc, char **argv)
     scene_focus();
     scene_music();
     scene_panel();
+    scene_looks();
 
     return failures ? EXIT_FAILURE : EXIT_SUCCESS;
 }

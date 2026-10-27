@@ -182,6 +182,21 @@ static bool parse_question(const cJSON *o, bm_request_t *r, char *session, char 
     return true;
 }
 
+/* Absent is fine; a present look must be whole. */
+static bool parse_look(const cJSON *o, bm_session_t *s)
+{
+    static const char *const ACCS[] = {"none", "wizard", "shades", "headphones", "crown", "party", "band", "heart"};
+    const cJSON *look = cJSON_GetObjectItemCaseSensitive(o, "look");
+    if (!look) return true;
+    int64_t hue = 0;
+    int acc = enum_index(look, "acc", ACCS, BM_ACC_COUNT);
+    if (!cJSON_IsObject(look) || !req_int(look, "hue", 0, 359, &hue) || acc < 0) return false;
+    s->has_look = true;
+    s->look_hue = (uint16_t)hue;
+    s->look_acc = (bm_acc_t)acc;
+    return true;
+}
+
 static bool parse_session_state(const cJSON *o, bm_session_t *s)
 {
     uint8_t host = s->host;
@@ -204,7 +219,7 @@ static bool parse_session_state(const cJSON *o, bm_session_t *s)
               req_str(o, "project", 1, 64, s->project, sizeof(s->project)) &&
               req_str(o, "task", 0, 120, s->task, sizeof(s->task)) && req_int(o, "since", 0, INT64_MAX, &s->since) &&
               opt_str(o, "summary", 1, 300, s->summary, sizeof(s->summary)) &&
-              opt_str(o, "error", 1, 300, s->error, sizeof(s->error));
+              opt_str(o, "error", 1, 300, s->error, sizeof(s->error)) && parse_look(o, s);
     const cJSON *steps = opt_array(o, "steps", BM_MAX_STEPS, &ok), *st;
     cJSON_ArrayForEach(st, steps)
     {
@@ -439,10 +454,17 @@ static bm_err_t apply(bm_model_t *m, int host, const char *type, const cJSON *d,
 
     if (strcmp(type, "session.start") == 0) {
         char task[121];
+        m->scratch.has_look = false;
         if (!req_str(d, "session", 1, 64, session, 65) || !req_str(d, "project", 1, 64, project, 65) ||
-            !req_str(d, "task", 0, 120, task, sizeof(task)))
+            !req_str(d, "task", 0, 120, task, sizeof(task)) || !parse_look(d, &m->scratch))
             return BM_E_DATA;
         bm__on_session_start(m, host, session, project, task, ts, now_ms);
+        bm_session_t *s = bm__find_session(m, host, session);
+        if (s && m->scratch.has_look) {
+            s->has_look = true;
+            s->look_hue = m->scratch.look_hue;
+            s->look_acc = m->scratch.look_acc;
+        }
     } else if (strcmp(type, "session.end") == 0) {
         if (!req_str(d, "session", 1, 64, session, 65)) return BM_E_DATA;
         bm__on_session_end(m, host, session, now_ms);

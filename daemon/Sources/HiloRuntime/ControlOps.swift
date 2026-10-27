@@ -11,7 +11,7 @@ public protocol BuddyControl: Sendable {
 
 extension BLECentral: BuddyControl {}
 
-/// Socket ops the Hilo app uses: `status`, `pair`, `pair-cancel`, `host`, `settings`, `face`, `pomodoro` and `music`. Each replies with a `DaemonStatus`.
+/// Socket ops the Hilo app uses: `status`, `pair`, `pair-cancel`, `host`, `settings`, `face`, `pomodoro`, `music` and `session-look`. Each replies with a `DaemonStatus`.
 public struct ControlOps: Sendable {
     private let coordinator: Coordinator
     private let buddy: BuddyControl?
@@ -43,6 +43,9 @@ public struct ControlOps: Sendable {
             guard let command = Self.pomodoroCommand(body), await coordinator.changePomodoro(command) else {
                 return Data("rejected: bad pomodoro command\n".utf8)
             }
+        case "session-look":
+            guard let change = try? JSONDecoder().decode(SessionLookChange.self, from: body),
+                  await coordinator.changeLook(change) != nil else { return Data("rejected: unknown session or accessory\n".utf8) }
         case "music":
             let config = HiloConfig.load(path: configPath)
             await coordinator.followMusic(spotify: config.musicSpotify ?? true, app: config.musicApp ?? true)

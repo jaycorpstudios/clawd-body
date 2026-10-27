@@ -1,0 +1,10 @@
+{
+  "reason": "a look change names its session",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000071",
+    "ts": 1792900000,
+    "type": "device.session_look",
+    "data": { "acc": "crown" }
+  }
+}

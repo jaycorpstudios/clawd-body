@@ -183,6 +183,20 @@ void bm_project_look(const char *project, uint16_t *hue, bm_acc_t *acc)
     *acc = (bm_acc_t)((h / 360) % BM_ACC_COUNT);
 }
 
+void bm_session_look(const bm_session_t *s, uint16_t *hue, bm_acc_t *acc)
+{
+    bm_project_look(s->project, hue, acc);
+    if (!s->has_look) return;
+    *hue = s->look_hue;
+    *acc = s->look_acc;
+}
+
+const char *bm_acc_name(bm_acc_t acc)
+{
+    static const char *const names[] = {"none", "wizard", "shades", "headphones", "crown", "party", "band", "heart"};
+    return acc < BM_ACC_COUNT ? names[acc] : "none";
+}
+
 static const char *plural(int n, const char *one, const char *many)
 {
     return n == 1 ? one : many;

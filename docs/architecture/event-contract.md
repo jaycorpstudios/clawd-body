@@ -25,7 +25,7 @@ Senders produce exactly the schema: no extra fields in the envelope or any paylo
 | type | data |
 | :--- | :--- |
 | `snapshot` | `{ sessions:[session], usage, hilo:{ current, next, agreements_today }, media?, face?, pomodoro? }`. Sent on connect and reconnect; replaces all state for that `host`. See below. |
-| `session.start` | `{ session, project, task }` |
+| `session.start` | `{ session, project, task, look? }`. `look` `{ hue, acc }` is the session's pet: `hue` 0–359 in its project's colour family, `acc` one of the eight accessories; absent from an older daemon (the buddy then derives the project's look). Snapshot sessions carry the same optional `look` |
 | `session.end` | `{ session }` |
 | `agent.needs_permission` | `{ request_id, session, project, tool, detail, why?, diff?, cwd, risk:"low"\|"high", remote_allowed, expires_at }`. `risk:"high"` implies `remote_allowed:false`. |
 | `agent.question` | `{ request_id, session, project, detail, options:[2–4 strings], expires_at }` |
@@ -80,6 +80,7 @@ A snapshot must fit the 8 KB message cap ([framing](ble-transport.md#framing)). 
 | `device.pomodoro` | `pomodoro`: the buddy's timer, after a change on the buddy or when its copy is newer than the snapshot's |
 | `media.control` | `{ action:"play_pause"\|"next"\|"previous" }`. Playback only; the daemon maps each action to one player command and nothing else |
 | `device.cover_request` | `{ hash }`: the buddy does not hold the cover a `media` payload named; the Mac answers with its `media.cover` chunks if that track still plays |
+| `device.session_look` | `{ session, acc }`: the user picked another accessory for a session on the buddy; the Mac stores it and the next snapshot carries it |
 
 Naming: commands from the buddy use the imperative (`approve`/`deny`); state reported by the Mac uses the past tense (`approved`/`denied`).
 

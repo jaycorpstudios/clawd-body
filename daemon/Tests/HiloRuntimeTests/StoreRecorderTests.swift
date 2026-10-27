@@ -62,3 +62,39 @@ private func makeStore() throws -> HiloStore {
     _ = await coordinator.handleHook(prompt)
     #expect(try store.sessions(since: 0).first?.project?.name == "api")
 }
+
+@Test func sessionsGetALookThatSurvivesTheirEndAndCanBeChanged() async throws {
+    let store = try makeStore()
+    let link = Sink()
+    let coordinator = Coordinator(host: "work", mapper: HookMapper(repoRoot: { _ in "/home/dev/code/api" }), link: link,
+                                  presence: Away(), recorder: StoreRecorder(store: store))
+    let ops = ControlOps(coordinator: coordinator, buddy: nil, configPath: "/nonexistent/config.json", tokensFromTranscripts: false)
+    for id in ["s1", "s2"] {
+        _ = await coordinator.handleHook(try HookInput.decode(Data(#"{"hook_event_name":"SessionStart","session_id":"\#(id)","cwd":"/home/dev/code/api"}"#.utf8)))
+    }
+    let base = PetLook.of(project: "api")
+    let s1 = try #require(try store.look(session: "s1")), s2 = try #require(try store.look(session: "s2"))
+    #expect(s1 == SessionLook(hue: base.hue, acc: base.accessory))
+    #expect(s2.acc != s1.acc && s2.hue != s1.hue)
+    let started = await link.raw.compactMap { try? Wire.decodeOutbound($0).body }.compactMap { m -> SessionLook? in
+        if case .sessionStart(let s) = m { return s.look } else { return nil }
+    }
+    #expect(started == [s1, s2])
+
+    try await coordinator.handleBuddy(Data(#"{"v":1,"id":"\#(ULID.make())","ts":1000,"type":"device.session_look","data":{"session":"s2","acc":"crown"}}"#.utf8))
+    #expect(try store.look(session: "s2") == SessionLook(hue: s2.hue, acc: .crown))
+    let raw = try #require(await link.lastSnapshot())
+    guard case .snapshot(let snap) = try Wire.decodeOutbound(raw).body else { Issue.record("no snapshot"); return }
+    #expect(snap.sessions.first { $0.session == "s2" }?.look == SessionLook(hue: s2.hue, acc: .crown))
+
+    _ = await coordinator.handleHook(try HookInput.decode(Data(#"{"hook_event_name":"SessionEnd","session_id":"s1","cwd":"/home/dev/code/api"}"#.utf8)))
+    let body = try JSONEncoder().encode(SessionLookChange(session: "s1", acc: .heart))
+    #expect(await ops.handle(op: "session-look", body: body).map { String(decoding: $0, as: UTF8.self).hasPrefix("rejected") } == false)
+    #expect(try store.look(session: "s1") == SessionLook(hue: s1.hue, acc: .heart))
+    #expect(try store.sessions(since: 0).first { $0.id == "s1" }?.look?.acc == .heart)
+    let unknown = try JSONEncoder().encode(SessionLookChange(session: "nope", acc: .heart))
+    #expect(await ops.handle(op: "session-look", body: unknown).map { String(decoding: $0, as: UTF8.self).hasPrefix("rejected") } == true)
+
+    _ = await coordinator.handleHook(try HookInput.decode(Data(#"{"hook_event_name":"SessionStart","session_id":"s1","cwd":"/home/dev/code/api"}"#.utf8)))
+    #expect(try store.look(session: "s1")?.acc == .heart)
+}

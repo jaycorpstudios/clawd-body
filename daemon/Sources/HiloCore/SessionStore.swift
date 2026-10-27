@@ -19,7 +19,8 @@ public struct SessionStore: Sendable {
     public mutating func apply(_ message: Outbound, now: Int) {
         switch message {
         case .sessionStart(let s):
-            sessions[s.session] = SessionState(session: s.session, project: s.project, task: s.task, status: .working, since: now, steps: [])
+            sessions[s.session] = SessionState(session: s.session, project: s.project, task: s.task, status: .working, since: now, steps: [],
+                                               look: s.look ?? sessions[s.session]?.look)
         case .sessionEnd(let s):
             sessions[s.session] = nil
         case .agentStep(let step):
@@ -75,6 +76,21 @@ public struct SessionStore: Sendable {
 
     public mutating func setMedia(_ value: Media?) {
         media = value
+    }
+
+    public func project(of session: String) -> String? { sessions[session]?.project }
+
+    public func looks(project: String, except session: String) -> [SessionLook] {
+        sessions.values.filter { $0.project == project && $0.session != session }.compactMap(\.look)
+    }
+
+    /// nil when this Mac does not know the session; `hue` only fills a session that started without a look.
+    public mutating func setLook(session: String, acc: Accessory, hue: Int) -> SessionLook? {
+        guard var s = sessions[session] else { return nil }
+        let look = SessionLook(hue: s.look?.hue ?? hue, acc: acc)
+        s.look = look
+        sessions[session] = s
+        return look
     }
 
     public mutating func setMediaEnabled(_ on: Bool) {

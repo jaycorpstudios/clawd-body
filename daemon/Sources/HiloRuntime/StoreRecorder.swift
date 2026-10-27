@@ -16,7 +16,7 @@ public struct StoreRecorder: Sendable {
         do {
             switch message {
             case .sessionStart(let s):
-                try store.recordSessionStart(s.session, project: s.project, now: now)
+                try store.recordSessionStart(s.session, project: s.project, look: s.look, now: now)
             case .sessionEnd(let s):
                 try store.endSession(s.session, now: now)
             case .agentStep(let s):
@@ -62,6 +62,14 @@ public struct StoreRecorder: Sendable {
         case .agentError(let e): e.session
         case .snapshot, .usageUpdate, .usageWindowReset, .hiloTaskChanged, .nowPlaying, .settingsSet, .face, .cover, .pomodoro: nil
         }
+    }
+
+    public func look(session: String) -> SessionLook? {
+        (try? store.look(session: session)) ?? nil
+    }
+
+    public func saveLook(session: String, look: SessionLook) {
+        do { try store.setLook(session: session, look: look) } catch { log("store: \(error)") }
     }
 
     public func saveFocus(_ state: PomodoroState, finishedCycles: Int, now: Int) {

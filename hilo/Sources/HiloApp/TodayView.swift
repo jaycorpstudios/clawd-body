@@ -235,7 +235,7 @@ struct SessionCard: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            PetView(look: PetView.look(of: session.project), state: PetState(session.status), size: 40)
+            PetView(look: PetView.look(of: session), state: PetState(session.status), size: 40)
             VStack(alignment: .leading, spacing: 2) {
                 Text(session.project?.name ?? String(session.id.prefix(8))).font(Theme.monospaced(13, .semibold)).lineLimit(1)
                 Text(session.lastAction).font(.system(size: 12.5)).foregroundStyle(Theme.secondary).lineLimit(1)

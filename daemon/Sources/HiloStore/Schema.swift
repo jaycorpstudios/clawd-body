@@ -49,6 +49,10 @@ enum Schema {
         """
         CREATE TABLE focus_state (id INTEGER PRIMARY KEY CHECK (id = 1), json TEXT NOT NULL);
         """,
+        """
+        ALTER TABLE session ADD COLUMN look_hue INTEGER;
+        ALTER TABLE session ADD COLUMN look_acc TEXT;
+        """,
     ]
 
     static func migrate(_ db: Database) throws {

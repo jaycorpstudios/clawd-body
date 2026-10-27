@@ -4,7 +4,7 @@ Runs on each Mac as a login item. Connects Claude Code, Hilo and the buddy.
 
 ## Responsibilities
 
-1. **Claude Code hook ingestion**: session start and end, permission request, question to the user, task done, error and tool use. Normalizes each one to the [event contract](../architecture/event-contract.md). Flow: [hook ingestion](../flows/hook-ingestion-flow.md).
+1. **Claude Code hook ingestion**: session start and end, permission request, question to the user, task done, error and tool use. Normalizes each one to the [event contract](../architecture/event-contract.md). Flow: [hook ingestion](../flows/hook-ingestion-flow.md). Each new session gets a pet look (`look` in `session.start`): its project's hue nudged by how many of that project's sessions are open (0, +14, −14, +28 … degrees) and the first accessory none of them wears, starting from the project's own; stored per session in SQLite, so a session that restarts or ends keeps it; changed from the buddy (`device.session_look`) or Hilo (socket op `session-look`).
 2. **Usage**: 5 h window percentage, weekly percentage and tokens today. Never uses account credentials. Percentages and reset come from the `rate_limits` Claude Code gives its status line (`hilo statusline` forwards them); tokens today, opt-in, from the local transcripts. Details: [daemon README › Usage](../../daemon/README.md#usage).
 3. **Persistence** in local SQLite, shared with Hilo ([hilo.md](hilo.md)).
 4. **BLE bridge** (central on the Mac, the buddy is the peripheral):

@@ -1,0 +1,13 @@
+{
+  "v": 1,
+  "id": "01K8F400000000000000000066",
+  "ts": 1792900000,
+  "host": "work",
+  "type": "session.start",
+  "data": {
+    "session": "8a4b0d2f-3c5e-4f90-ab12-6d7e8f9a0b1c",
+    "project": "payments-api",
+    "task": "",
+    "look": { "hue": 212, "acc": "headphones" }
+  }
+}

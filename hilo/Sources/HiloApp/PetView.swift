@@ -40,6 +40,10 @@ struct PetView: View {
         project.map { .of(project: $0.name) } ?? PetLook(hue: 22, accessory: .none)
     }
 
+    static func look(of session: SessionRecord) -> PetLook {
+        session.look.map { PetLook(hue: $0.hue, accessory: $0.acc) } ?? look(of: session.project)
+    }
+
     private func draw(_ ctx: inout GraphicsContext, unit p: CGFloat, t: Double) {
         let work = Color(hex: "#ff9a52"), wait = Color(hex: "#ffc53d"), done = Color(hex: "#5ee3a8"), err = Color(hex: "#ff5d62")
         let info = Color(hex: "#7cc8ff")

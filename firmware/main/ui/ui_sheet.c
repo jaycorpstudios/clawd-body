@@ -133,6 +133,38 @@ static void chip_label(lv_obj_t *parent, const char *text, uint32_t color, bool 
     ui_label(c, &font_mono_bold_15, live ? color : 0x888888, text);
 }
 
+static void look_arrow(lv_obj_t *parent, const char *symbol, int dir)
+{
+    lv_obj_t *b = ui_box(parent);
+    lv_obj_set_size(b, 40, 40);
+    lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(b, ui_hex(0x1f1c19), 0);
+    lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
+    lv_obj_set_ext_click_area(b, 8);
+    ui_on_tap(b, BM_TAP_SESSION_ACC, dir);
+    lv_obj_center(ui_label(b, &lv_font_montserrat_16, C_FG, symbol));
+}
+
+static void look_row(const bm_session_t *s)
+{
+    static const char *const names[] = {"None", "Wizard hat", "Shades", "Headphones", "Crown", "Party hat", "Headband", "Heart"};
+    uint16_t hue;
+    bm_acc_t acc;
+    bm_session_look(s, &hue, &acc);
+    lv_obj_t *row = ui_box(ui.sh_body);
+    lv_obj_set_size(row, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_set_style_margin_bottom(row, 12, 0);
+    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(row, 10, 0);
+    lv_obj_set_flex_grow(ui_label(row, &font_mono_17, C_DIM, "Pet"), 1);
+    look_arrow(row, LV_SYMBOL_LEFT, -1);
+    lv_obj_t *name = ui_label(row, &font_mono_semi_17, C_FG, names[acc]);
+    lv_obj_set_width(name, 124);
+    lv_obj_set_style_text_align(name, LV_TEXT_ALIGN_CENTER, 0);
+    look_arrow(row, LV_SYMBOL_RIGHT, 1);
+}
+
 static void build_agent(const bm_session_t *s, uint32_t now_ms)
 {
     char buf[64], host[17];
@@ -155,6 +187,7 @@ static void build_agent(const bm_session_t *s, uint32_t now_ms)
     snprintf(buf, sizeof(buf), "%s Mac", host);
     lv_obj_set_style_margin_top(ui_label(col, &font_mono_15, C_DIM, buf), 6, 0);
 
+    look_row(s);
     lv_obj_t *t = kv_table();
     kv(t, "Task", s->task, C_FG);
     bm_fmt_dur(bm_wall_ms(ui.m, now_ms) - s->since * 1000, buf, sizeof(buf));
@@ -254,7 +287,7 @@ static void build_usage(uint32_t now_ms)
         lv_obj_align(ui_label(head, &font_mono_16, C_FG, buf), LV_ALIGN_RIGHT_MID, 0, 0);
         uint16_t hue;
         bm_acc_t acc;
-        bm_project_look(s->project, &hue, &acc);
+        bm_session_look(s, &hue, &acc);
         lv_obj_t *track = ui_track(row, LV_PCT(100), 0);
         lv_obj_set_style_margin_top(track, 2, 0);
         lv_obj_set_style_bg_color(lv_obj_get_child(track, 0), lv_color_hsv_to_rgb(hue, 66, 100), 0);

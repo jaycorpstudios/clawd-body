@@ -75,16 +75,18 @@ public final class HiloStore: @unchecked Sendable {
         try db.rows(Self.taskSelect + " WHERE t.status = 'doing' ORDER BY t.started_at DESC LIMIT 1").first.map(Self.task)
     }
 
-    public func recordSessionStart(_ session: String, project: String, now: Int) throws {
+    /// A session that already has a look keeps it.
+    public func recordSessionStart(_ session: String, project: String, look: SessionLook? = nil, now: Int) throws {
         let p = try self.project(named: project)
         let doing = try db.rows("SELECT id FROM task WHERE project_id = ? AND status = 'doing'", [p.id])
         let taskId = doing.count == 1 ? doing[0].int(0) : nil
         try db.run("""
-            INSERT INTO session (id, project_id, task_id, status, started_at, updated_at, last_action)
-            VALUES (?, ?, ?, 'working', ?, ?, 'Session started')
+            INSERT INTO session (id, project_id, task_id, status, started_at, updated_at, last_action, look_hue, look_acc)
+            VALUES (?, ?, ?, 'working', ?, ?, 'Session started', ?, ?)
             ON CONFLICT(id) DO UPDATE SET project_id = excluded.project_id, status = 'working', ended_at = NULL,
-              updated_at = excluded.updated_at, task_id = coalesce(session.task_id, excluded.task_id)
-            """, [session, p.id, taskId, now, now])
+              updated_at = excluded.updated_at, task_id = coalesce(session.task_id, excluded.task_id),
+              look_hue = coalesce(session.look_hue, excluded.look_hue), look_acc = coalesce(session.look_acc, excluded.look_acc)
+            """, [session, p.id, taskId, now, now, look?.hue, look?.acc.rawValue])
     }
 
     /// Adds a step, creating the session if it began before `hilod` started.
@@ -189,7 +191,7 @@ public final class HiloStore: @unchecked Sendable {
 
     private static let sessionSelect = """
         SELECT s.id, s.task_id, t.title, s.status, s.started_at, s.updated_at, s.ended_at, s.last_action, s.waiting_on, s.summary,
-          p.id, p.name, p.color, p.jira_key, s.tokens
+          p.id, p.name, p.color, p.jira_key, s.tokens, s.look_hue, s.look_acc
         FROM session s LEFT JOIN project p ON p.id = s.project_id LEFT JOIN task t ON t.id = s.task_id
         """
 
@@ -211,6 +213,7 @@ public final class HiloStore: @unchecked Sendable {
         SessionRecord(id: r.text(0) ?? "", project: joinedProject(r, at: 10), taskId: r.int(1), taskTitle: r.text(2),
                       status: SessionStatus(rawValue: r.text(3) ?? "") ?? .idle, startedAt: r.int(4) ?? 0,
                       updatedAt: r.int(5) ?? 0, endedAt: r.int(6), lastAction: r.text(7) ?? "",
-                      waitingOn: r.text(8), summary: r.text(9), tokens: r.int(14))
+                      waitingOn: r.text(8), summary: r.text(9), tokens: r.int(14),
+                      look: r.int(15).flatMap { hue in r.text(16).flatMap(Accessory.init).map { SessionLook(hue: hue, acc: $0) } })
     }
 }

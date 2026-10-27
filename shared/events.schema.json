@@ -18,7 +18,8 @@
       "settings.set", "host.face", "pomodoro.state", "media.cover",
       "permission.decision", "question.answer",
       "device.ack", "device.snooze", "device.battery", "device.sleep", "device.wake", "device.pet_accessory",
-      "device.settings", "device.face_request", "device.pomodoro", "media.control", "device.cover_request"
+      "device.settings", "device.face_request", "device.pomodoro", "media.control", "device.cover_request",
+      "device.session_look"
     ] },
     "data": { "type": "object" }
   },
@@ -62,6 +63,7 @@
     { "if": { "properties": { "type": { "const": "device.face_request" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/faceRef" } } } },
     { "if": { "properties": { "type": { "const": "device.pomodoro" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/pomodoro" } } } },
     { "if": { "properties": { "type": { "const": "media.control" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/mediaControl" } } } },
+    { "if": { "properties": { "type": { "const": "device.session_look" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/sessionLookChange" } } } },
     { "if": { "properties": { "type": { "const": "device.cover_request" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/faceRef" } } } }
   ],
   "$defs": {
@@ -91,7 +93,8 @@
       "properties": {
         "session": { "$ref": "#/$defs/sessionId" },
         "project": { "$ref": "#/$defs/project" },
-        "task": { "$ref": "#/$defs/task" }
+        "task": { "$ref": "#/$defs/task" },
+        "look": { "$ref": "#/$defs/look" }
       }
     },
     "diff": {
@@ -242,6 +245,7 @@
         "status": { "enum": ["working", "waiting", "done", "error", "idle"] },
         "since": { "$ref": "#/$defs/unix" },
         "tokens": { "type": "integer", "minimum": 0 },
+        "look": { "$ref": "#/$defs/look" },
         "summary": { "$ref": "#/$defs/text" },
         "error": { "$ref": "#/$defs/text" },
         "steps": {
@@ -323,10 +327,21 @@
       "required": ["by"],
       "properties": { "by": { "enum": ["touch", "button", "long_press", "idle"] } }
     },
+    "accessory": { "enum": ["none", "wizard", "shades", "headphones", "crown", "party", "band", "heart"] },
     "petAccessory": {
       "type": "object", "additionalProperties": false,
       "required": ["acc"],
-      "properties": { "acc": { "enum": ["none", "wizard", "shades", "headphones", "crown", "party", "band", "heart"] } }
+      "properties": { "acc": { "$ref": "#/$defs/accessory" } }
+    },
+    "look": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hue", "acc"],
+      "properties": { "hue": { "type": "integer", "minimum": 0, "maximum": 359 }, "acc": { "$ref": "#/$defs/accessory" } }
+    },
+    "sessionLookChange": {
+      "type": "object", "additionalProperties": false,
+      "required": ["session", "acc"],
+      "properties": { "session": { "$ref": "#/$defs/sessionId" }, "acc": { "$ref": "#/$defs/accessory" } }
     },
 
     "volume": { "type": "integer", "minimum": 0, "maximum": 100 },

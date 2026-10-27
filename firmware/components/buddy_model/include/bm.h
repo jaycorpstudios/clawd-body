@@ -145,6 +145,9 @@ typedef struct {
     uint8_t n_steps;
     bool has_request;
     bm_request_t req;
+    bool has_look;
+    uint16_t look_hue;
+    bm_acc_t look_acc;
 } bm_session_t;
 
 typedef struct {
@@ -347,6 +350,7 @@ typedef enum {
     BM_TAP_LATER,
     BM_TAP_DENY,
     BM_TAP_ANSWER,
+    BM_TAP_SESSION_ACC,
     BM_TAP_MEDIA,
     BM_TAP_POMO_TOGGLE,
     BM_TAP_POMO_RESET,
@@ -417,6 +421,9 @@ int bm_session_count(const bm_model_t *m);
 bm_pet_state_t bm_main_pet(const bm_model_t *m);
 bm_pet_state_t bm_agent_pet(const bm_model_t *m, const bm_session_t *s);
 void bm_project_look(const char *project, uint16_t *hue, bm_acc_t *acc);
+/* The Mac's pick when it sent one, else the project's own look. */
+void bm_session_look(const bm_session_t *s, uint16_t *hue, bm_acc_t *acc);
+const char *bm_acc_name(bm_acc_t acc);
 
 typedef struct {
     char msg[96];

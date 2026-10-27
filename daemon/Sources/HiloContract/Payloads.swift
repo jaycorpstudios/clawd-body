@@ -37,8 +37,9 @@ public struct SessionStart: Codable, Equatable, Sendable {
     public var session: String
     public var project: String
     public var task: String
-    public init(session: String, project: String, task: String) {
-        self.session = session; self.project = project; self.task = task
+    public var look: SessionLook?
+    public init(session: String, project: String, task: String, look: SessionLook? = nil) {
+        self.session = session; self.project = project; self.task = task; self.look = look
     }
 }
 
@@ -174,13 +175,14 @@ public struct SessionState: Codable, Equatable, Sendable {
     public var steps: [Step]?
     public var pendingPermission: PermissionRequest?
     public var pendingQuestion: QuestionRequest?
+    public var look: SessionLook?
 
     public init(session: String, project: String, task: String, status: SessionStatus, since: Int, tokens: Int? = nil,
                 summary: String? = nil, error: String? = nil, steps: [Step]? = nil,
-                pendingPermission: PermissionRequest? = nil, pendingQuestion: QuestionRequest? = nil) {
+                pendingPermission: PermissionRequest? = nil, pendingQuestion: QuestionRequest? = nil, look: SessionLook? = nil) {
         self.session = session; self.project = project; self.task = task; self.status = status; self.since = since
         self.tokens = tokens; self.summary = summary; self.error = error; self.steps = steps
-        self.pendingPermission = pendingPermission; self.pendingQuestion = pendingQuestion
+        self.pendingPermission = pendingPermission; self.pendingQuestion = pendingQuestion; self.look = look
     }
 }
 
@@ -261,6 +263,19 @@ public struct SleepWake: Codable, Equatable, Sendable {
 public struct PetAccessory: Codable, Equatable, Sendable {
     public var acc: Accessory
     public init(acc: Accessory) { self.acc = acc }
+}
+
+/// A session's pet: its project's colour family and its own accessory.
+public struct SessionLook: Codable, Equatable, Sendable {
+    public var hue: Int
+    public var acc: Accessory
+    public init(hue: Int, acc: Accessory) { self.hue = hue; self.acc = acc }
+}
+
+public struct SessionLookChange: Codable, Equatable, Sendable {
+    public var session: String
+    public var acc: Accessory
+    public init(session: String, acc: Accessory) { self.session = session; self.acc = acc }
 }
 
 public struct DeviceSettings: Codable, Equatable, Sendable {

@@ -1,4 +1,5 @@
 import Foundation
+import HiloContract
 
 /// Automatic capture: git commits in the repos of Claude Code sessions, and active time per project.
 extension HiloStore {
@@ -113,5 +114,17 @@ extension HiloStore {
         let project = r.int(6).map { Project(id: $0, name: r.text(7) ?? "", color: r.text(8) ?? projectPalette[0], jiraKey: r.text(9)) }
         return CommitRecord(repo: r.text(0) ?? "", hash: r.text(1) ?? "", branch: r.text(2) ?? "", message: r.text(3) ?? "",
                             ts: r.int(4) ?? 0, project: project, taskId: r.int(5))
+    }
+}
+
+extension HiloStore {
+    public func setLook(session: String, look: SessionLook) throws {
+        try db.run("UPDATE session SET look_hue = ?, look_acc = ? WHERE id = ?", [look.hue, look.acc.rawValue, session])
+    }
+
+    public func look(session: String) throws -> SessionLook? {
+        try db.rows("SELECT look_hue, look_acc FROM session WHERE id = ?", [session]).first.flatMap { r in
+            r.int(0).flatMap { hue in r.text(1).flatMap(Accessory.init).map { SessionLook(hue: hue, acc: $0) } }
+        }
     }
 }

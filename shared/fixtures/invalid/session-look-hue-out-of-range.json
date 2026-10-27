@@ -1,0 +1,11 @@
+{
+  "reason": "a look's hue is a degree on the colour wheel",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000069",
+    "ts": 1792900000,
+    "host": "work",
+    "type": "session.start",
+    "data": { "session": "s1", "project": "payments-api", "task": "", "look": { "hue": 360, "acc": "wizard" } }
+  }
+}

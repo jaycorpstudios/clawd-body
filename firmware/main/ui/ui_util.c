@@ -184,6 +184,6 @@ void ui_session_pet(ui_pet_t *p, const bm_session_t *s)
 {
     uint16_t hue;
     bm_acc_t acc;
-    bm_project_look(s->project, &hue, &acc);
+    bm_session_look(s, &hue, &acc);
     ui_pet_draw(p, bm_agent_pet(ui.m, s), hue, acc, (float)(s - ui.m->sessions) * 1.7f);
 }

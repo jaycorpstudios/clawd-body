@@ -8,6 +8,11 @@
     "\"sessions\":[],\"usage\":{\"session_pct\":10,\"weekly_pct\":5,\"reset_in_min\":100},"                          \
     "\"hilo\":{\"current\":null,\"next\":[],\"agreements_today\":[]}"
 
+#define EMPTY_SNAPSHOT_WITH_SESSION                                                                                    \
+    "\"sessions\":[{\"session\":\"d\",\"project\":\"p\",\"task\":\"\",\"status\":\"done\",\"since\":1792899000,"        \
+    "\"look\":{\"hue\":212,\"acc\":\"crown\"}}],\"usage\":{\"session_pct\":10,\"weekly_pct\":5,\"reset_in_min\":100},"      \
+    "\"hilo\":{\"current\":null,\"next\":[],\"agreements_today\":[]}"
+
 static bm_err_t snapshot(const char *host, const char *extra)
 {
     return send(host, "snapshot", "{" EMPTY_SNAPSHOT "%s%s}", extra[0] ? "," : "", extra);
@@ -464,6 +469,54 @@ TEST(music_view_hides_only_when_every_mac_follows_no_music)
     CHECK(snapshot("work", "\"media_enabled\":true") == BM_OK);
     CHECK(bm_view_shown(&M, BM_VIEW_MUSIC));
     CHECK(snapshot("work", "\"media_enabled\":0") == BM_E_DATA);
+}
+
+TEST(sessions_wear_the_look_their_mac_picked_and_the_buddy_can_change_it)
+{
+    fresh();
+    start_session("work", "a", "payments-api");
+    int a = session_index("work", "a");
+    uint16_t hue;
+    bm_acc_t acc, base;
+    bm_project_look("payments-api", &hue, &base);
+    bm_session_look(&M.sessions[a], &hue, &acc);
+    CHECK(!M.sessions[a].has_look && acc == base);
+
+    CHECK(send("work", "session.start",
+               "{\"session\":\"b\",\"project\":\"payments-api\",\"task\":\"\",\"look\":{\"hue\":105,\"acc\":\"headphones\"}}") == BM_OK);
+    int b = session_index("work", "b");
+    bm_session_look(&M.sessions[b], &hue, &acc);
+    CHECK(hue == 105 && acc == BM_ACC_HEADPHONES);
+    CHECK(send("work", "session.start",
+               "{\"session\":\"c\",\"project\":\"p\",\"task\":\"\",\"look\":{\"hue\":360,\"acc\":\"crown\"}}") == BM_E_DATA);
+    CHECK(send("work", "session.start", "{\"session\":\"c\",\"project\":\"p\",\"task\":\"\",\"look\":{\"hue\":3}}") ==
+          BM_E_DATA);
+
+    outs_t o;
+    drain(&o);
+    bm_tap(&M, BM_TAP_SESSION_ACC, 1, now);
+    drain(&o);
+    CHECK(count_out(&o, "device.session_look") == 0);
+    bm_tap(&M, BM_TAP_AGENT, b, now);
+    bm_tap(&M, BM_TAP_SESSION_ACC, 1, now);
+    drain(&o);
+    const bm_out_t *out = find_out(&o, "device.session_look");
+    int work = bm__host_slot(&M, "work", false);
+    CHECK(out && out->hosts == 1u << work && strstr(out->json, "\"session\":\"b\",\"acc\":\"crown\""));
+    bm_session_look(&M.sessions[b], &hue, &acc);
+    CHECK(hue == 105 && acc == BM_ACC_CROWN);
+    bm_tap(&M, BM_TAP_SESSION_ACC, -1, now);
+    bm_tap(&M, BM_TAP_SESSION_ACC, -1, now);
+    bm_tap(&M, BM_TAP_SESSION_ACC, -1, now);
+    bm_tap(&M, BM_TAP_SESSION_ACC, -1, now);
+    bm_session_look(&M.sessions[b], &hue, &acc);
+    CHECK(acc == BM_ACC_NONE);
+    bm_tap(&M, BM_TAP_SESSION_ACC, -1, now);
+    CHECK(M.sessions[b].look_acc == BM_ACC_HEART);
+
+    CHECK(send("work", "snapshot", "{" EMPTY_SNAPSHOT_WITH_SESSION "}") == BM_OK);
+    int d = session_index("work", "d");
+    CHECK(M.sessions[d].has_look && M.sessions[d].look_hue == 212 && M.sessions[d].look_acc == BM_ACC_CROWN);
 }
 
 TEST(base64_decoder_rejects_bad_input)

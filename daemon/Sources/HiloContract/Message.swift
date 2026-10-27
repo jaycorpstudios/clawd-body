@@ -78,6 +78,7 @@ public enum Inbound: Equatable, Sendable {
     case pomodoro(PomodoroState)
     case mediaControl(MediaControl)
     case coverRequest(ImageRef)
+    case sessionLook(SessionLookChange)
 }
 
 public struct Envelope<Body: Sendable>: Sendable {
@@ -164,6 +165,10 @@ public enum Wire {
             body = .pomodoro(p)
         case "media.control":
             body = .mediaControl(try payload(data, keys: ["action"]))
+        case "device.session_look":
+            let p: SessionLookChange = try payload(data, keys: ["session", "acc"])
+            guard (1...64).contains(p.session.count) else { throw .badPayload("bad session") }
+            body = .sessionLook(p)
         default:
             throw .unknownType(type)
         }
@@ -234,7 +239,7 @@ extension Inbound {
         case .questionAnswer(let p): p.requestId
         case .ack(let p): p.requestId
         case .snooze(let p): p.requestId
-        case .battery, .sleep, .wake, .petAccessory, .settings, .faceRequest, .pomodoro, .mediaControl, .coverRequest: nil
+        case .battery, .sleep, .wake, .petAccessory, .settings, .faceRequest, .pomodoro, .mediaControl, .coverRequest, .sessionLook: nil
         }
     }
 }
@@ -255,6 +260,7 @@ extension Inbound {
         case .pomodoro: "device.pomodoro"
         case .mediaControl: "media.control"
         case .coverRequest: "device.cover_request"
+        case .sessionLook: "device.session_look"
         }
     }
 
@@ -272,6 +278,7 @@ extension Inbound {
         case .pomodoro(let p): p
         case .mediaControl(let p): p
         case .coverRequest(let p): p
+        case .sessionLook(let p): p
         }
     }
 }

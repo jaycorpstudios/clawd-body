@@ -37,6 +37,7 @@ public struct SessionRecord: Equatable, Sendable, Identifiable {
     public var waitingOn: String?
     public var summary: String?
     public var tokens: Int?
+    public var look: SessionLook? = nil
 }
 
 public struct StepRecord: Equatable, Sendable {

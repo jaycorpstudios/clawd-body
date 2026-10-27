@@ -51,7 +51,7 @@ struct SessionsView: View {
 
     private func banner(_ s: SessionRecord) -> some View {
         HStack(spacing: 14) {
-            PetView(look: PetView.look(of: s.project), state: .alert, size: 46)
+            PetView(look: PetView.look(of: s), state: .alert, size: 46)
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(s.project?.name ?? "A session") needs you").fontWeight(.bold)
                 HStack(spacing: 0) {
@@ -87,7 +87,7 @@ struct SessionsView: View {
                 let selected = s.id == model.selectedSession
                 HStack(spacing: 8) {
                     HStack(spacing: 10) {
-                        PetView(look: PetView.look(of: s.project), state: PetState(s.status), size: 32)
+                        PetView(look: PetView.look(of: s), state: PetState(s.status), size: 32)
                         Text(s.project?.name ?? String(s.id.prefix(8))).font(Theme.monospaced(13, .medium))
                     }
                     .frame(width: 220, alignment: .leading)
@@ -113,11 +113,33 @@ struct SessionDetail: View {
     @Environment(AppModel.self) private var model
     let session: SessionRecord
 
+    static func accessoryName(_ acc: Accessory) -> String {
+        switch acc {
+        case .none: "None"
+        case .wizard: "Wizard hat"
+        case .shades: "Shades"
+        case .headphones: "Headphones"
+        case .crown: "Crown"
+        case .party: "Party hat"
+        case .band: "Headband"
+        case .heart: "Heart"
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center) {
-                PetView(look: PetView.look(of: session.project), state: PetState(session.status), size: 54)
+                PetView(look: PetView.look(of: session), state: PetState(session.status), size: 54)
                 Text(session.project?.name ?? "Session").font(Theme.title(22)).lineLimit(1).fixedSize()
+                Menu {
+                    ForEach(Accessory.allCases, id: \.self) { acc in
+                        Button(Self.accessoryName(acc)) { model.setLook(session, acc: acc) }
+                    }
+                } label: {
+                    Text("Pet: \(Self.accessoryName(PetView.look(of: session).accessory))")
+                }
+                .menuStyle(.borderlessButton).fixedSize().foregroundStyle(Theme.link)
+                .help("Same colour family as the rest of the project; the accessory tells its sessions apart, here and on the buddy.")
                 Spacer(minLength: 12)
                 Menu {
                     Button("No task") { model.link(session: session.id, task: nil) }

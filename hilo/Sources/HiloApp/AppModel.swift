@@ -176,6 +176,18 @@ final class AppModel {
         refresh()
     }
 
+    /// Through `hilod`, so the buddy follows; straight into the store when `hilod` is off or no longer holds the session.
+    func setLook(_ session: SessionRecord, acc: Accessory) {
+        let reply = (try? JSONEncoder().encode(SessionLookChange(session: session.id, acc: acc))).flatMap {
+            LocalSocket.request(path: LocalSocket.defaultPath, op: "session-look", body: $0, timeoutSeconds: 2)
+        }
+        if reply.flatMap({ try? JSONDecoder().decode(DaemonStatus.self, from: $0) }) == nil {
+            let hue = session.look?.hue ?? PetView.look(of: session.project).hue
+            attempt { try store?.setLook(session: session.id, look: SessionLook(hue: hue, acc: acc)) }
+        }
+        refresh()
+    }
+
     func addAgreement(_ text: String, project: String?, task: Int?) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }

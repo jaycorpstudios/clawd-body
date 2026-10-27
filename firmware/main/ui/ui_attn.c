@@ -198,7 +198,7 @@ void ui_attn_frame(uint32_t now_ms)
     if (!s) return;
     uint16_t hue;
     bm_acc_t acc;
-    bm_project_look(s->project, &hue, &acc);
+    bm_session_look(s, &hue, &acc);
     ui_pet_draw(ui.ap_pet, BM_PET_ALERT, hue, acc, 0);
     float k = (cosf(ui.t * 2 * 3.14159f / 1.1f) + 1) / 2;
     for (int i = 0; i < 4; i++) lv_obj_set_style_bg_opa(frame[i], (lv_opa_t)(k * 255), 0);

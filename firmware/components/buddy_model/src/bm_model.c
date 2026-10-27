@@ -454,6 +454,25 @@ static void decide(bm_model_t *m, bool approve, int choice, uint32_t now_ms)
     bm__touch(m);
 }
 
+/* The buddy shows its pick at once; the Mac stores it and echoes it in the next snapshot. */
+static void session_acc(bm_model_t *m, int dir, uint32_t now_ms)
+{
+    if (m->sheet != BM_SHEET_AGENT || m->sheet_session < 0) return;
+    bm_session_t *s = &m->sessions[m->sheet_session];
+    if (!s->used) return;
+    uint16_t hue;
+    bm_acc_t acc;
+    bm_session_look(s, &hue, &acc);
+    s->has_look = true;
+    s->look_hue = hue;
+    s->look_acc = (bm_acc_t)(((int)acc + (dir < 0 ? -1 : 1) + BM_ACC_COUNT) % BM_ACC_COUNT);
+    char id[400], data[460];
+    bm__json_escape(s->id, id, sizeof(id));
+    snprintf(data, sizeof(data), "{\"session\":\"%s\",\"acc\":\"%s\"}", id, bm_acc_name(s->look_acc));
+    bm__out(m, (uint8_t)(1u << s->host), "device.session_look", data, now_ms);
+    bm__touch(m);
+}
+
 static void later(bm_model_t *m, uint32_t now_ms)
 {
     if (m->attn < 0) return;
@@ -498,6 +517,7 @@ void bm_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms)
     case BM_TAP_LATER: later(m, now_ms); break;
     case BM_TAP_DENY: decide(m, false, -1, now_ms); break;
     case BM_TAP_ANSWER: decide(m, true, arg, now_ms); break;
+    case BM_TAP_SESSION_ACC: session_acc(m, arg, now_ms); break;
     case BM_TAP_MEDIA: bm__media_tap(m, arg, now_ms); break;
     case BM_TAP_POMO_TOGGLE:
     case BM_TAP_POMO_RESET:
@@ -646,11 +666,10 @@ void bm_set_battery(bm_model_t *m, uint8_t pct, bool charging, uint32_t now_ms)
 
 void bm_set_accessory(bm_model_t *m, bm_acc_t acc)
 {
-    static const char *const names[] = {"none", "wizard", "shades", "headphones", "crown", "party", "band", "heart"};
     if (acc >= BM_ACC_COUNT || acc == m->acc) return;
     m->acc = acc;
     char data[32];
-    snprintf(data, sizeof(data), "{\"acc\":\"%s\"}", names[acc]);
+    snprintf(data, sizeof(data), "{\"acc\":\"%s\"}", bm_acc_name(acc));
     bm__out(m, BM_ALL_HOSTS, "device.pet_accessory", data, m->last_act_ms);
     bm__touch(m);
 }

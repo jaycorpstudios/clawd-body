@@ -109,6 +109,9 @@ public actor Coordinator {
             guard let image = cover?.image, image.hash == ref.hash else { return log("buddy asked for cover \(ref.hash), which is not playing") }
             for chunk in image.chunks { await send(.cover(chunk)) }
             return
+        case .sessionLook(let change):
+            if await changeLook(change) == nil { log("buddy picked a look for unknown session \(change.session)") }
+            return
         default: return
         }
         switch result {
@@ -321,7 +324,28 @@ public actor Coordinator {
         return true
     }
 
-    private func send(_ message: Outbound) async {
+    /// The buddy and Hilo both pick from here; the Mac's snapshot is what both then show. nil for a session this Mac does not know.
+    public func changeLook(_ change: SessionLookChange) async -> SessionLook? {
+        guard let project = store.project(of: change.session),
+              let look = store.setLook(session: change.session, acc: change.acc, hue: PetLook.of(project: project).hue) else {
+            guard var ended = recorder?.look(session: change.session) else { return nil }
+            ended.acc = change.acc
+            recorder?.saveLook(session: change.session, look: ended)
+            return ended
+        }
+        log("session \(change.session): \(change.acc.rawValue)")
+        recorder?.saveLook(session: change.session, look: look)
+        await sendSnapshot()
+        return look
+    }
+
+    private func send(_ outbound: Outbound) async {
+        var message = outbound
+        if case .sessionStart(var s) = outbound, s.look == nil {
+            s.look = recorder?.look(session: s.session)
+                ?? PetLook.forSession(project: s.project, others: store.looks(project: s.project, except: s.session))
+            message = .sessionStart(s)
+        }
         store.apply(message, now: clock.now())
         recorder?.record(message, now: clock.now())
         guard let data = try? Wire.encode(message, host: host, ts: clock.now()) else { return }
