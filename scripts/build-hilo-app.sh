@@ -9,7 +9,8 @@ swift build -c release --product HiloApp
 app=".build/Hilo.app"
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS"
-cp .build/release/HiloApp "$app/Contents/MacOS/Hilo"
+# Not "Hilo": APFS is case-insensitive and the hilo CLI below would overwrite it.
+cp .build/release/HiloApp "$app/Contents/MacOS/HiloApp"
 # The app starts hilod from its own bundle; build-hilod.sh signs it, and that signature is kept here.
 hilod="../daemon/.build/release/hilod"
 if [ -x "$hilod" ]; then cp "$hilod" "$app/Contents/MacOS/hilod"; else echo "note: no $hilod yet, run scripts/build-hilod.sh first"; fi
@@ -26,7 +27,7 @@ cat > "$app/Contents/Info.plist" <<PLIST
 <dict>
   <key>CFBundleIdentifier</key><string>dev.hilo.app</string>
   <key>CFBundleName</key><string>Hilo</string>
-  <key>CFBundleExecutable</key><string>Hilo</string>
+  <key>CFBundleExecutable</key><string>HiloApp</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>0.1</string>
   <key>CFBundleVersion</key><string>1</string>
