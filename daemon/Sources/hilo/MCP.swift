@@ -80,6 +80,7 @@ struct MCPServer {
             return "#\(t.id) \(t.title)" + (t.project.map { " (project \($0.name))" } ?? "") + (t.notes.isEmpty ? "" : "\nNotes: \(t.notes)")
         case "hilo_resume":
             guard let project = string("project") ?? defaultProject else { throw MCPError.invalid("project is required outside a git repo") }
+            GitCapture(store: store).scan(now: now, only: project)
             return try store.resumeMarkdown(project: project, now: now)
         case "hilo_add_task":
             guard let title = string("title") else { throw MCPError.invalid("title is required") }

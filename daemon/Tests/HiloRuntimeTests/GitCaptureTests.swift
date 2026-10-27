@@ -39,6 +39,17 @@ import HiloStore
         #expect(commits.count == 1 && commits[0].branch == "feature/x" && commits[0].project?.name == "api")
     }
 
+    @Test func aScanForOneProjectOnlyReadsItsRepos() throws {
+        try store.recordSessionStart("s1", project: "api", now: 1_000_000)
+        try store.setRepo(session: "s1", repo: "/r/api")
+        try store.recordSessionStart("s2", project: "web", now: 1_000_000)
+        try store.setRepo(session: "s2", repo: "/r/web")
+        final class Repos: @unchecked Sendable { var seen: Set<String> = [] }
+        let repos = Repos()
+        GitCapture(store: store, git: { repo, _ in repos.seen.insert(repo); return nil }).scan(now: 1_000_100, only: "web")
+        #expect(repos.seen == ["/r/web"])
+    }
+
     @Test func theProjectOfADirectoryIsItsRepoName() throws {
         let root = FileManager.default.temporaryDirectory.appending(path: "hilo-repo-\(UUID().uuidString)/payments-api")
         let nested = root.appending(path: "src/ledger")

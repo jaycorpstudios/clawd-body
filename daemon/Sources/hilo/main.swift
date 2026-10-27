@@ -116,7 +116,9 @@ case "sessions":
     }
 case "resume":
     let project = arguments.count > 1 ? arguments[1] : URL(filePath: GitRepo.root(of: cwd) ?? cwd).lastPathComponent
-    print(try openStore().resumeMarkdown(project: project, now: now))
+    let store = openStore()
+    GitCapture(store: store).scan(now: now, only: project)
+    print(try store.resumeMarkdown(project: project, now: now))
 case "week":
     let markdown = try openStore().weekReport(start: HiloStore.startOfWeek(), now: now).markdown
     print(arguments.contains("--md") ? markdown : markdown.split(separator: "\n", omittingEmptySubsequences: false).map { $0.drop { $0 == "#" }.drop { $0 == " " } }.joined(separator: "\n"))

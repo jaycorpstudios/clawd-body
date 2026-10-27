@@ -16,9 +16,10 @@ public struct GitCapture: Sendable {
         self.store = store; self.git = git; self.log = log
     }
 
-    public func scan(now: Int) {
+    /// `only` limits the scan to one project's repos, for a read that must include the latest commit.
+    public func scan(now: Int, only: String? = nil) {
         do {
-            for (repo, project) in try store.sessionRepos(since: now - Self.lookbackSeconds) {
+            for (repo, project) in try store.sessionRepos(since: now - Self.lookbackSeconds) where only == nil || project == only {
                 let commits = commits(in: repo, since: now - Self.lookbackSeconds)
                 let added = try store.addCommits(commits, project: project)
                 if added > 0 { log("git: \(added) new commit\(added == 1 ? "" : "s") in \(project ?? repo)") }

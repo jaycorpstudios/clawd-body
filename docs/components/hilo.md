@@ -49,7 +49,7 @@ Shared chrome: top bar with ⌘K search, buddy status with its pet, and the Mac'
 
 ## CLI
 
-`hilo today` · `hilo add "…" [-p project] [--start]` · `hilo start|done|todo <id>` · `hilo agree "…" [-p project]` · `hilo sessions` · `hilo link <session> <task>` · `hilo resume [project]` · `hilo week [--md]` · `hilo mcp` · `hilo install` / `uninstall`. Resume and the week summary are the same code as the MCP tools and Hilo › Week (`WeekReport` in `HiloStore`).
+`hilo today` · `hilo add "…" [-p project] [--start]` · `hilo start|done|todo <id>` · `hilo agree "…" [-p project]` · `hilo sessions` · `hilo link <session> <task>` · `hilo resume [project]` · `hilo week [--md]` · `hilo mcp` · `hilo install` / `uninstall`. Resume and the week summary are the same code as the MCP tools and Hilo › Week (`WeekReport` in `HiloStore`). Without `-p`, `add` and `agree` use the repo of the current directory (the name the hooks give its sessions); `-p ""` keeps them out of any project, and outside a repo they have none. Resume reads git for that project first, so a commit made a second ago is listed, and digests the last session: its task, the last turn's summary, the files it edited (most recent first, up to 8) and a count of prompts, commands, reads, edits, questions and errors; commands are counted, never listed. Week's "in sessions" is the time with at least one session open, clipped to the week, so parallel sessions count once (a session left open overnight still counts its whole span, see [open questions](../plans/open-questions.md#hilo)). A step after a turn ended (a new prompt after Stop) marks the session working again, as the buddy does.
 
 ## MCP tools
 
@@ -57,8 +57,8 @@ Shared chrome: top bar with ⌘K search, buddy status with its pet, and the Mac'
 
 | Tool | Notes |
 | :--- | :--- |
-| `hilo_resume(project)` | Same content as the Resume context screen, as Markdown |
-| `hilo_add_task(title, project?, start?)` | |
+| `hilo_resume(project?)` | Same content as the Resume context screen, as Markdown; defaults to the repo Claude Code runs in |
+| `hilo_add_task(title, project?, start?)` | Project defaults to the repo Claude Code runs in (also for agreements) |
 | `hilo_log_agreement(text, project?, context?)` | Always stored as `pending`; Claude only proposes, the user confirms in the app |
 | `hilo_current_task()` | |
 | `hilo_week_summary()` | Sessions, closed tasks and confirmed agreements per project |
