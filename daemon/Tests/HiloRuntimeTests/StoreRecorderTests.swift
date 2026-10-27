@@ -105,3 +105,18 @@ private func makeStore() throws -> HiloStore {
     _ = await coordinator.handleHook(try HookInput.decode(Data(#"{"hook_event_name":"SessionStart","session_id":"s1","cwd":"/home/dev/code/api"}"#.utf8)))
     #expect(try store.look(session: "s1")?.acc == .heart)
 }
+
+@Test func aNewPromptAfterTheTurnEndedMakesTheSessionWorkAgain() async throws {
+    let store = try makeStore()
+    let coordinator = Coordinator(host: "work", mapper: HookMapper(repoRoot: { _ in "/home/dev/code/api" }), link: Sink(),
+                                  presence: Away(), recorder: StoreRecorder(store: store))
+    func hook(_ json: String) async throws { _ = await coordinator.handleHook(try HookInput.decode(Data(json.utf8))) }
+    try await hook(#"{"hook_event_name":"SessionStart","session_id":"s1","cwd":"/home/dev/code/api"}"#)
+    try await hook(#"{"hook_event_name":"Stop","session_id":"s1","cwd":"/home/dev/code/api","last_assistant_message":"Done."}"#)
+    #expect(try store.sessions(since: 0).first?.status == .done)
+    try await hook(#"{"hook_event_name":"UserPromptSubmit","session_id":"s1","cwd":"/home/dev/code/api"}"#)
+    #expect(try store.sessions(since: 0).first?.status == .working)
+    try await hook(#"{"hook_event_name":"SessionEnd","session_id":"s1","cwd":"/home/dev/code/api"}"#)
+    try await hook(#"{"hook_event_name":"UserPromptSubmit","session_id":"s1","cwd":"/home/dev/code/api"}"#)
+    #expect(try store.sessions(since: 0).first?.status == .done)
+}

@@ -119,6 +119,11 @@ public final class HiloStore: @unchecked Sendable {
                    [status.rawValue, summary, now, session])
     }
 
+    /// A step after the turn ended means the session works again, as on the buddy; a pending request or an ended session keeps its status.
+    public func markWorking(_ session: String) throws {
+        try db.run("UPDATE session SET status = 'working' WHERE id = ? AND status <> 'waiting' AND ended_at IS NULL", [session])
+    }
+
     public func endSession(_ session: String, now: Int) throws {
         try db.run("""
             UPDATE session SET ended_at = ?, updated_at = ?, waiting_on = NULL,

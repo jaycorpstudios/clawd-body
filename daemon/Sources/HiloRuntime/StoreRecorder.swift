@@ -21,6 +21,7 @@ public struct StoreRecorder: Sendable {
                 try store.endSession(s.session, now: now)
             case .agentStep(let s):
                 try store.recordStep(s.session, project: nil, kind: s.kind, text: s.text, status: nil, now: now)
+                try store.markWorking(s.session)
             case .needsPermission(let p):
                 let text = "\(p.tool): \(p.detail)"
                 try store.recordStep(p.session, project: p.project, kind: .ask, text: text, status: .waiting, waitingOn: text, now: now)
