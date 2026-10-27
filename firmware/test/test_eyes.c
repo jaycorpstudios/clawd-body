@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "bm_eyes.h"
 #include "support.h"
 
@@ -333,4 +335,77 @@ TEST(an_alert_takes_the_face_and_the_eyes_react_when_it_closes)
     ask_permission("work", "s", RID, "low", true);
     bm_tap(&M, BM_TAP_DENY, 0, now);
     CHECK(M.eyes.react_pending == BM_REACT_BLINK);
+}
+
+TEST(the_alert_card_slides_up_after_the_face_sees_it_and_down_when_it_closes)
+{
+    settled();
+    start_session("work", "s", "alpha");
+    ask_permission("work", "s", RID, "low", true);
+    CHECK(bm_attn_slide(&M, now) == 1 && !bm_attn_leaving(&M, now));
+    advance(400);
+    CHECK(bm_attn_shown(&M) && bm_attn_slide(&M, now) == 1);
+    CHECK(fabsf(bm_attn_slide(&M, now + BM_ATTN_SLIDE_MS / 2) - 0.5f) < 0.01f);
+    advance(BM_ATTN_SLIDE_MS);
+    CHECK(bm_attn_slide(&M, now) == 0);
+
+    CHECK(bm_hold_begin(&M, now));
+    advance(BM_HOLD_MS);
+    CHECK(!bm_attn_shown(&M) && bm_attn_leaving(&M, now) && bm_attn_slide(&M, now) == 0);
+    CHECK(fabsf(bm_attn_slide(&M, now + BM_ATTN_SLIDE_MS / 2) - 0.5f) < 0.01f);
+    advance(BM_ATTN_SLIDE_MS);
+    CHECK(!bm_attn_leaving(&M, now) && bm_attn_slide(&M, now) == 1);
+
+    settled();
+    bm_swipe(&M, 1, now);
+    start_session("work", "s", "alpha");
+    ask_permission("work", "s", RID, "low", true);
+    CHECK(bm_attn_shown(&M) && bm_attn_slide(&M, now) == 1);
+    advance(200);
+    CHECK(bm_attn_slide(&M, now) > 0 && bm_attn_slide(&M, now) < 1);
+}
+
+static void sleep_now(void)
+{
+    while (!M.sleeping) advance(100);
+}
+
+TEST(falling_asleep_on_the_face_cross_fades_to_the_sleep_screen_and_back)
+{
+    settled();
+    sleep_now();
+    CHECK(M.rest == 0);
+    advance(BM_REST_DELAY_MS - 100);
+    CHECK(M.rest == 0);
+    advance(100);
+    CHECK(M.rest > 0 && M.rest < 1);
+    advance(2000);
+    CHECK(M.rest == 1);
+
+    bm_touch_wake(&M, now);
+    CHECK(!M.sleeping && M.view == BM_VIEW_FACE);
+    advance(100);
+    CHECK(M.rest > 0 && M.rest < 1);
+    advance(2000);
+    CHECK(M.rest == 0);
+
+    sleep_now();
+    advance(BM_REST_DELAY_MS + 200);
+    start_session("work", "s", "alpha");
+    ask_permission("work", "s", RID, "low", true);
+    advance(BM_REMIND_MS);
+    CHECK(!M.sleeping && bm_attn_session(&M) && M.rest == 0);
+}
+
+TEST(sleep_from_another_view_or_an_overlay_switches_at_once)
+{
+    settled();
+    bm_swipe(&M, 1, now);
+    bm_button(&M, true, now);
+    advance(BM_LONG_PRESS_MS + 100);
+    bm_button(&M, false, now);
+    CHECK(M.sleeping && M.view == BM_VIEW_HOME && M.rest == 1);
+    bm_touch_wake(&M, now);
+    advance(100);
+    CHECK(M.rest == 0);
 }

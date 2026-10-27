@@ -218,7 +218,6 @@ void ui_misc_update(uint32_t now_ms)
         lv_label_set_text(ui.toast_lbl, text);
         lv_obj_set_style_bg_color(ui.toast, ui_hex(ui.m->toast_color), 0);
     }
-    ui_show(ui.sleep, ui.m->sleeping);
     if (ui.m->sleeping) sleep_card_update(now_ms);
     lv_obj_align(ui.sleep_inner, LV_ALIGN_CENTER, ui.m->sleep_dx, SLEEP_CARDS_DY + ui.m->sleep_dy);
 }
@@ -226,6 +225,7 @@ void ui_misc_update(uint32_t now_ms)
 void ui_misc_frame(uint32_t now_ms)
 {
     (void)now_ms;
+    ui_show(ui.sleep, ui.m->sleeping || ui.m->rest > 0);
     if (ui.m->sleeping && ui.m->sleep_card == BM_CARD_COMPUTERS)
         ui_pet_computers(ui.sleep_pet, known_count(), connected_count());
 }

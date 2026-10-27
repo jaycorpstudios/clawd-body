@@ -247,6 +247,7 @@ static void fall_asleep(void)
 {
     run(BM_IDLE_SLEEP_MS + 1000);
     CHECK(M.sleeping);
+    for (int i = 0; i < 50 && M.rest < 1; i++) run(100);
 }
 
 static void wake(void)
@@ -588,12 +589,16 @@ static void scene_face(void)
     run(250);
     shot("face-sees-the-request");
     CHECK(!bm_attn_shown(&M));
-    run(350);
+    run(300);
+    shot("face-alert-slides-up");
+    run(BM_ATTN_SLIDE_MS);
     shot("face-alert-tile");
     run(1700);
     shot("face-alert-tile-looks-aside");
     bm_tap(&M, BM_TAP_LATER, 0, now);
-    run(BM_EYES_REACT_DELAY_MS + 100);
+    run(BM_ATTN_SLIDE_MS / 2);
+    shot("face-alert-slides-down");
+    run(BM_EYES_REACT_DELAY_MS + 100 - BM_ATTN_SLIDE_MS / 2);
     shot("face-later-glance");
     face_shot("face-waiting-worried", BM_EYE_WORRIED, 5000);
 
@@ -611,6 +616,13 @@ static void scene_face(void)
         if (M.eyes.beat >= 0 && M.eyes.z_ms[0] && (int32_t)(now - M.eyes.z_ms[0]) > 300) break;
     }
     shot("face-sleep-snores");
+
+    bm_touch_wake(&M, now);
+    run(250);
+    shot("face-waking-cross-fade");
+    for (int i = 0; i < 700 && !M.sleeping; i++) run(100);
+    run(BM_REST_DELAY_MS + 250);
+    shot("face-falling-asleep-cross-fade");
 }
 
 static void scene_handback(void)

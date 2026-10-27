@@ -157,7 +157,6 @@ void ui_attn_create(lv_obj_t *scr)
 void ui_attn_update(uint32_t now_ms)
 {
     const bm_session_t *s = bm_attn_shown(ui.m);
-    ui_show(ui.attn, s != NULL);
     if (!s) return;
     const bm_request_t *r = &s->req;
     bool risk = r->high_risk, q = r->is_question;
@@ -195,6 +194,11 @@ void ui_attn_update(uint32_t now_ms)
 void ui_attn_frame(uint32_t now_ms)
 {
     const bm_session_t *s = bm_attn_shown(ui.m);
+    bool leaving = bm_attn_leaving(ui.m, now_ms);
+    ui_show(ui.attn, s || leaving);
+    if (!s && !leaving) return;
+    int32_t y = (int32_t)(bm_attn_slide(ui.m, now_ms) * SCREEN);
+    if (lv_obj_get_y(ui.attn) != y) lv_obj_set_y(ui.attn, y);
     if (!s) return;
     float k = (cosf(ui.t * 2 * 3.14159f / 1.1f) + 1) / 2;
     for (int i = 0; i < 4; i++) lv_obj_set_style_bg_opa(frame[i], (lv_opa_t)(k * 255), 0);

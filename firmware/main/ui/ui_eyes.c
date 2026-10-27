@@ -1,3 +1,4 @@
+#include <math.h>
 #include <string.h>
 
 #include "esp_heap_caps.h"
@@ -8,6 +9,10 @@
 #define TILE_INNER (BM_EYES_TILE_GRID - 2)
 #define MAX_CELLS (TILE_INNER * TILE_INNER)
 #define SLEEP_GAZE 0.55
+#define FACE_CX ((BM_EYES_FACE_X + BM_EYES_FACE_W / 2.0f) * CELL)
+#define FACE_CY ((BM_EYES_FACE_Y + BM_EYES_FACE_H / 2.0f) * CELL)
+#define SLEEP_CX ((BM_EYES_SLEEP_X + BM_EYES_SLEEP_W / 2.0f) * CELL)
+#define SLEEP_CY ((BM_EYES_SLEEP_Y + BM_EYES_SLEEP_H / 2.0f) * CELL)
 
 typedef struct {
     lv_obj_t *img;
@@ -21,6 +26,7 @@ typedef struct {
 
 static cells_t *face[2], *sleep_eye[2], *tile;
 static lv_obj_t *spark_v[BM_EYES_SPARKS], *spark_h[BM_EYES_SPARKS], *zs[BM_EYES_ZS];
+static int32_t sleep_bg = -1;
 
 static uint16_t rgb565(uint32_t rgb)
 {
@@ -48,6 +54,30 @@ static cells_t *cells_create(lv_obj_t *parent, int w, int h, int cell, uint32_t 
     lv_image_set_src(c->img, &c->dsc);
     lv_obj_set_size(c->img, pw, ph);
     return c;
+}
+
+static void cells_resize(cells_t *c, int w, int h)
+{
+    if (w == c->w && h == c->h) return;
+    int pw = w * c->cell, ph = h * c->cell;
+    c->w = w;
+    c->h = h;
+    c->drawn = false;
+    c->dsc.header.w = pw;
+    c->dsc.header.h = ph;
+    c->dsc.header.stride = pw * 2;
+    c->dsc.data_size = (uint32_t)pw * ph * 2;
+    lv_image_set_src(c->img, &c->dsc);
+    lv_obj_set_size(c->img, pw, ph);
+}
+
+static void cells_colors(cells_t *c, uint32_t ink, uint32_t bg)
+{
+    uint16_t i = rgb565(ink), b = rgb565(bg);
+    if (i == c->ink && b == c->bg) return;
+    c->ink = i;
+    c->bg = b;
+    c->drawn = false;
 }
 
 static void cells_commit(cells_t *c)
@@ -107,8 +137,10 @@ lv_obj_t *ui_eyes_tile_create(lv_obj_t *parent)
 
 void ui_eyes_sleep_create(lv_obj_t *sleep)
 {
-    for (int i = 0; i < 2; i++)
-        sleep_eye[i] = cells_create(sleep, BM_EYES_SLEEP_W, BM_EYES_SLEEP_H, CELL, UI_ORANGE, UI_EMBER);
+    for (int i = 0; i < 2; i++) {
+        sleep_eye[i] = cells_create(sleep, BM_EYES_FACE_W, BM_EYES_FACE_H, CELL, UI_ORANGE, UI_EMBER);
+        cells_resize(sleep_eye[i], BM_EYES_SLEEP_W, BM_EYES_SLEEP_H);
+    }
     for (int i = 0; i < BM_EYES_ZS; i++) {
         zs[i] = ui_label(sleep, &font_pixel_26, UI_ORANGE, "z");
         ui_show(zs[i], false);
@@ -159,29 +191,61 @@ static void draw_tile(uint32_t now_ms)
     cells_commit(tile);
 }
 
+static float lerp(float a, float b, float t)
+{
+    return a + (b - a) * t;
+}
+
+static uint32_t mix(uint32_t a, uint32_t b, float t)
+{
+    uint32_t out = 0;
+    for (int s = 0; s < 24; s += 8)
+        out |= (uint32_t)bm_eyes_round(lerp((float)(a >> s & 0xff), (float)(b >> s & 0xff), t)) << s;
+    return out;
+}
+
 static void draw_sleep(uint32_t now_ms)
 {
     const bm_eyes_t *e = &ui.m->eyes;
-    int dx = bm_eyes_round(ui.m->sleep_dx / (double)CELL), dy = bm_eyes_round(ui.m->sleep_dy / (double)CELL);
-    int gx = bm_eyes_round(e->out.gx * SLEEP_GAZE) + dx, gy = bm_eyes_round(e->out.gy * SLEEP_GAZE) + dy;
-    draw_pair(sleep_eye, BM_EYES_SLEEP_X, BM_EYES_SLEEP_Y, gx, gy, &e->out);
-    int right = BM_EYES_GRID - BM_EYES_SLEEP_X;
+    float r = ui.m->rest, ember = bm_ease(r);
+    uint32_t bg = mix(UI_ORANGE, UI_EMBER, ember), ink = mix(UI_INK, UI_ORANGE, ember);
+    // A full-screen redraw costs ~30 ms on the board; RGB565 has only ~25 steps from orange to ember.
+    if (rgb565(bg) != sleep_bg) {
+        lv_obj_set_style_bg_color(ui.sleep, ui_hex(bg), 0);
+        sleep_bg = rgb565(bg);
+    }
+    lv_opa_t cards = (lv_opa_t)(ember * 255);
+    if (lv_obj_get_style_opa(ui.sleep_inner, 0) != cards) lv_obj_set_style_opa(ui.sleep_inner, cards, 0);
+
+    int w = bm_eyes_round(lerp(BM_EYES_FACE_W, BM_EYES_SLEEP_W, r));
+    int h = bm_eyes_round(lerp(BM_EYES_FACE_H, BM_EYES_SLEEP_H, r));
+    int x0 = (int)floorf(lerp(FACE_CX, SLEEP_CX, r) / CELL - w / 2.0f);
+    int y0 = (int)floorf(lerp(FACE_CY, SLEEP_CY, r) / CELL - h / 2.0f);
+    for (int i = 0; i < 2; i++) {
+        cells_resize(sleep_eye[i], w, h);
+        cells_colors(sleep_eye[i], ink, bg);
+    }
+    float gaze = lerp(1, SLEEP_GAZE, r);
+    int32_t ddx = (int32_t)(ui.m->sleep_dx * r), ddy = (int32_t)(ui.m->sleep_dy * r);
+    int gx = bm_eyes_round(e->out.gx * gaze) + bm_eyes_round(ddx / (double)CELL);
+    int gy = bm_eyes_round(e->out.gy * gaze) + bm_eyes_round(ddy / (double)CELL);
+    draw_pair(sleep_eye, x0, y0, gx, gy, &e->out);
+    int right = BM_EYES_GRID - x0;
     for (int i = 0; i < BM_EYES_ZS; i++) {
         int32_t age = (int32_t)(now_ms - e->z_ms[i]);
         bool on = e->z_ms[i] && age >= 0 && age <= BM_EYES_Z_MS;
         ui_show(zs[i], on);
         if (!on) continue;
         float a = (float)age / BM_EYES_Z_MS;
-        move(zs[i], (right + 2) * CELL + (int32_t)(a * 40) + ui.m->sleep_dx,
-             BM_EYES_SLEEP_Y * CELL - (int32_t)(a * 60) - 28 + ui.m->sleep_dy);
-        lv_obj_set_style_opa(zs[i], (lv_opa_t)((1 - a) * 255), 0);
+        move(zs[i], (right + 2) * CELL + (int32_t)(a * 40) + ddx, y0 * CELL - (int32_t)(a * 60) - 28 + ddy);
+        lv_obj_set_style_opa(zs[i], (lv_opa_t)((1 - a) * ember * 255), 0);
     }
 }
 
 void ui_eyes_frame(uint32_t now_ms)
 {
     const bm_eyes_t *e = &ui.m->eyes;
-    if (ui.m->sleeping) {
+    if (ui.m->sleeping || ui.m->rest > 0) {
         draw_sleep(now_ms);
         return;
     }

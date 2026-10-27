@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -304,6 +305,7 @@ void bm__wake(bm_model_t *m, bool silent, bm_by_t by, uint32_t now_ms)
     static const char *const by_names[] = {"touch", "button", "long_press", "idle"};
     if (m->sleeping) {
         m->sleeping = false;
+        m->rest_at_ms = now_ms;
         if (!silent) {
             char data[32];
             snprintf(data, sizeof(data), "{\"by\":\"%s\"}", by_names[by]);
@@ -371,6 +373,8 @@ static void go_sleep(bm_model_t *m, bm_by_t by, uint32_t now_ms)
     m->sheet = BM_SHEET_NONE;
     m->sheet_session = -1;
     m->hold_active = false;
+    m->rest_from_face = m->view == BM_VIEW_FACE && !m->ov.type;
+    m->rest_at_ms = deadline(now_ms, BM_REST_DELAY_MS);
     m->sleeping = true;
     char data[32];
     snprintf(data, sizeof(data), "{\"by\":\"%s\"}", by_names[by]);
@@ -1072,6 +1076,58 @@ static uint32_t next_random(bm_model_t *m)
     return m->cfg.random32 ? m->cfg.random32(m->cfg.random_ctx) : 0;
 }
 
+static void attn_slide_tick(bm_model_t *m, uint32_t now_ms)
+{
+    bool shown = bm_attn_shown(m) != NULL;
+    if (shown == m->attn_was_shown) return;
+    m->attn_was_shown = shown;
+    if (shown) {
+        m->attn_in_until_ms = deadline(now_ms, BM_ATTN_SLIDE_MS);
+        m->attn_out_until_ms = 0;
+    } else {
+        m->attn_out_until_ms = deadline(now_ms, BM_ATTN_SLIDE_MS);
+    }
+}
+
+static float slide_left(uint32_t now_ms, uint32_t until_ms)
+{
+    return until_ms && !due(now_ms, until_ms) ? (float)(until_ms - now_ms) / BM_ATTN_SLIDE_MS : 0;
+}
+
+float bm_ease(float t)
+{
+    return t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
+}
+
+float bm_attn_slide(const bm_model_t *m, uint32_t now_ms)
+{
+    if (bm_attn_shown(m)) return m->attn_was_shown ? 1 - bm_ease(1 - slide_left(now_ms, m->attn_in_until_ms)) : 1;
+    if (m->attn_was_shown) return 0;
+    return bm_attn_leaving(m, now_ms) ? bm_ease(1 - slide_left(now_ms, m->attn_out_until_ms)) : 1;
+}
+
+bool bm_attn_leaving(const bm_model_t *m, uint32_t now_ms)
+{
+    return !bm_attn_shown(m) && (m->attn_was_shown || slide_left(now_ms, m->attn_out_until_ms) > 0);
+}
+
+static void rest_tick(bm_model_t *m, uint32_t now_ms)
+{
+    float dt = m->rest_ticked ? (float)(now_ms - m->rest_ms) / 1000.0f : 0;
+    m->rest_ms = now_ms;
+    m->rest_ticked = true;
+    bool face = m->view == BM_VIEW_FACE && m->attn < 0 && !m->ov.type && !m->sheet && !m->panel && !m->pairing;
+    if (m->sleeping && !m->rest_from_face) {
+        m->rest = 1;
+    } else if (!m->sleeping && !face) {
+        m->rest = 0;
+    } else if (due(now_ms, m->rest_at_ms)) {
+        float target = m->sleeping ? 1 : 0, k = dt * 4 < 1 ? dt * 4 : 1;
+        m->rest += (target - m->rest) * k;
+        if (fabsf(m->rest - target) < 0.004f) m->rest = target;
+    }
+}
+
 void bm_tick(bm_model_t *m, uint32_t now_ms)
 {
     expire_requests(m, now_ms);
@@ -1136,6 +1192,8 @@ void bm_tick(bm_model_t *m, uint32_t now_ms)
     }
     bm_eyes_tick(&m->eyes, bm_face_mood(m), now_ms, m->cfg.random32, m->cfg.random_ctx);
     bm__sleep_card_tick(m, now_ms);
+    attn_slide_tick(m, now_ms);
+    rest_tick(m, now_ms);
 }
 
 void bm_pairing_start(bm_model_t *m, uint32_t now_ms)

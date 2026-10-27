@@ -23,6 +23,8 @@
 
 #define BM_IDLE_SLEEP_MS 60000
 #define BM_FACE_RETURN_MS 20000
+#define BM_ATTN_SLIDE_MS 340
+#define BM_REST_DELAY_MS 700
 #define BM_REMIND_MS 25000
 #define BM_HOLD_MS 900
 #define BM_LONG_PRESS_MS 650
@@ -300,11 +302,16 @@ typedef struct {
     uint32_t toast_until_ms;
     int8_t attn;
     uint32_t attn_reveal_ms;
+    uint32_t attn_in_until_ms, attn_out_until_ms;
+    bool attn_was_shown;
     bm_sheet_t sheet;
     int8_t sheet_session;
     bool sleeping;
     int16_t sleep_dx, sleep_dy;
     int64_t sleep_shift_s;
+    float rest;
+    bool rest_from_face, rest_ticked;
+    uint32_t rest_at_ms, rest_ms;
     uint32_t last_act_ms;
     uint32_t last_touch_ms;
     uint32_t last_remind_ms;
@@ -431,6 +438,9 @@ bool bm_live(const bm_model_t *m, const bm_session_t *s);
 bool bm_waiting(const bm_model_t *m, const bm_session_t *s);
 const bm_session_t *bm_attn_session(const bm_model_t *m);
 const bm_session_t *bm_attn_shown(const bm_model_t *m);
+float bm_attn_slide(const bm_model_t *m, uint32_t now_ms);
+bool bm_attn_leaving(const bm_model_t *m, uint32_t now_ms);
+float bm_ease(float t);
 bool bm_request_approvable(const bm_request_t *r);
 int bm_hosts_connected(const bm_model_t *m);
 int bm_live_waiting_count(const bm_model_t *m);
