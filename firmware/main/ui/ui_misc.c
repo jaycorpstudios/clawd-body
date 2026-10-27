@@ -197,7 +197,7 @@ void ui_misc_create(lv_obj_t *scr)
     lv_obj_set_style_radius(ui.sleep_face, 28, 0);
     lv_obj_set_style_clip_corner(ui.sleep_face, true, 0);
     lv_obj_set_style_opa(ui.sleep_face, 200, 0);
-    ui.sleep_clock = ui_label(ui.sleep_inner, &font_pixel_92, UI_ORANGE, "--:--");
+    ui.sleep_clock = ui_label(ui.sleep_inner, &font_pixel_90, UI_ORANGE, "--:--");
     ui.sleep_ago = ui_label(ui.sleep_inner, &font_mono_17, UI_ORANGE, "");
     lv_obj_set_style_text_opa(ui.sleep_ago, 179, 0);
     lv_obj_set_style_margin_top(ui.sleep_ago, 14, 0);

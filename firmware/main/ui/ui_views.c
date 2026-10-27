@@ -165,7 +165,7 @@ static void create_usage(lv_obj_t *v)
         lv_obj_center(ctr);
         lv_obj_set_flex_flow(ctr, LV_FLEX_FLOW_COLUMN);
         lv_obj_set_flex_align(ctr, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-        ui.rings[i].pct = ui_label(ctr, &font_pixel_58, C_FG, "0%");
+        ui.rings[i].pct = ui_label(ctr, &font_pixel_56, C_FG, "0%");
         ui.rings[i].lbl = ui_label(ctr, &font_mono_15, C_DIM, "5 H WINDOW");
         lv_obj_set_style_text_letter_space(ui.rings[i].lbl, 1, 0);
         lv_obj_set_style_margin_top(ui.rings[i].lbl, 6, 0);
@@ -375,7 +375,7 @@ static void create_pomodoro(lv_obj_t *v)
     lv_obj_set_flex_flow(texts, LV_FLEX_FLOW_COLUMN);
     ui.pomo_phase = ui_label(texts, &font_mono_bold_18, BM_C_WORK, "");
     lv_obj_set_style_text_letter_space(ui.pomo_phase, 2, 0);
-    ui.pomo_time = ui_label(texts, &font_pixel_58, C_FG, "25:00");
+    ui.pomo_time = ui_label(texts, &font_pixel_56, C_FG, "25:00");
 
     ui.pomo_bar = ui_track(v, CONTENT_W, BM_C_WORK);
     lv_obj_set_style_margin_top(ui.pomo_bar, 10, 0);

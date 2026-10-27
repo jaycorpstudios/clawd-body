@@ -16,5 +16,5 @@ LV_FONT_DECLARE(font_pixel_26);
 LV_FONT_DECLARE(font_pixel_28);
 LV_FONT_DECLARE(font_pixel_32);
 LV_FONT_DECLARE(font_pixel_35);
-LV_FONT_DECLARE(font_pixel_58);
-LV_FONT_DECLARE(font_pixel_92);
+LV_FONT_DECLARE(font_pixel_56);
+LV_FONT_DECLARE(font_pixel_90);

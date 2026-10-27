@@ -27,15 +27,15 @@ const FONTS = [
   ['pixel_28', 'PixelifySans-Bold', 28, TEXT],
   ['pixel_32', 'PixelifySans-Bold', 32, TEXT],
   ['pixel_35', 'PixelifySans-Bold', 35, TEXT],
-  ['pixel_58', 'PixelifySans-Bold', 58, DIGITS],
-  ['pixel_92', 'PixelifySans-Medium', 92, DIGITS],
+  ['pixel_56', 'PixelifySans-Bold', 56, DIGITS, 1],
+  ['pixel_90', 'PixelifySans-Medium', 90, DIGITS, 1],
 ];
 
 mkdirSync(out, { recursive: true });
-for (const [name, file, size, range] of FONTS) {
+for (const [name, file, size, range, bpp = 4] of FONTS) {
   const fallback = name === 'mono_semi_17' ? ['--lv-fallback', 'lv_font_montserrat_16'] : [];
   const args = [conv, ...fallback, '--font', `ttf/${file}.ttf`, '--range', range, '--size', String(size),
-    '--bpp', '4', '--format', 'lvgl', '--no-compress', '--lv-include', 'lvgl.h', '--lv-font-name', `font_${name}`,
+    '--bpp', String(bpp), '--format', 'lvgl', '--no-compress', '--lv-include', 'lvgl.h', '--lv-font-name', `font_${name}`,
     '-o', `../../main/fonts/font_${name}.c`];
   execFileSync(process.execPath, args, { cwd: here, stdio: 'inherit' });
 }

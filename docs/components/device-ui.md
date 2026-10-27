@@ -9,6 +9,7 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 - View indicator (dots) at the bottom.
 - Status palette: working `#ff9a52` · needs you `#ffc53d` · done `#5ee3a8` · failed `#ff5d62` · idle `#8b8f99` · info `#7cc8ff` · BLE `#5b8cff`.
 - Prototype fonts: Pixelify Sans (titles) and JetBrains Mono (data). In firmware, convert them to LVGL fonts at fixed sizes of 15 px or more.
+- **Pixel digits** (#39, 2026-10-27): the Focus timer, the usage ring and the pairing code use Pixelify Sans Bold at 56 px and the sleep clock Pixelify Sans Medium at 90 px, both at 1 bpp. The shipped Bold is an instance of the variable font, so its outlines are off any integer grid: cells alternate 49 / 39 units across and 51 / 35 down (1000 units per em). At the old 58 px, 4 bpp, every edge fell on a fraction of a pixel, so the stems came out 7 px plus a grey column and the bars 8 px, and the grey columns on the AMOLED blurred the counters (the 0 could read as an 8). A scan of every size from 40 to 100 px at 1 bpp (stroke run lengths of 0–9) gave Bold 56 px as the only nearby size where stems and bars are both 7 px in every digit, and Medium 90 px as an exact grid (4 px cells, every run a multiple of 8). The 5 reading as an S is the typeface: Pixelify draws 5 and S with the same top-right hook and diagonal step, at any size and in both weights (see [open questions](../plans/open-questions.md#firmware)). The 26–35 px text fonts stay at 4 bpp: their cells are 1.1–1.5 px, and 1 bpp would make the strokes uneven.
 
 ## Views
 
@@ -47,7 +48,7 @@ Reference: [`prototypes/claudio-eyes/`](../../prototypes/claudio-eyes/index.html
 ## Focus view (proposal, not in the prototype)
 
 - Title "Focus" with "N done" (finished work phases) at the right, like the other titles.
-- The main pet (hue 22, its accessory) at 96 px, beside the phase ("WORK" in working orange, "BREAK" in done green, "· PAUSED" appended, dim gray while stopped) and the time left in Pixelify 58 px.
+- The main pet (hue 22, its accessory) at 96 px, beside the phase ("WORK" in working orange, "BREAK" in done green, "· PAUSED" appended, dim gray while stopped) and the time left in Pixelify 56 px.
 - A full-width progress track in the phase color.
 - While stopped: WORK and BREAK steppers (− value +, 5 min steps up to 90 for work, 1 min up to 60 for break). Hidden while running or paused.
 - Round buttons: reset and a larger play/pause. Play dims until the buddy knows the time.

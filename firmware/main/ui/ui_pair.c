@@ -28,7 +28,7 @@ void ui_pair_create(lv_obj_t *scr)
     lv_obj_set_size(ui.pair_code, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(ui.pair_code, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_column(ui.pair_code, 22, 0);
-    for (int i = 0; i < 2; i++) ui.pair_digits[i] = ui_label(ui.pair_code, &font_pixel_58, BM_C_BLE, "");
+    for (int i = 0; i < 2; i++) ui.pair_digits[i] = ui_label(ui.pair_code, &font_pixel_56, BM_C_BLE, "");
 
     ui.pair_left = ui_label(ui.pair, F_SMALL, 0x5c564f, "");
 
