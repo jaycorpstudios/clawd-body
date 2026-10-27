@@ -299,6 +299,7 @@ typedef struct {
     uint32_t toast_color;
     uint32_t toast_until_ms;
     int8_t attn;
+    uint32_t attn_reveal_ms;
     bm_sheet_t sheet;
     int8_t sheet_session;
     bool sleeping;
@@ -429,6 +430,7 @@ int64_t bm_unix_from_utc(const bm_utc_t *t);
 bool bm_live(const bm_model_t *m, const bm_session_t *s);
 bool bm_waiting(const bm_model_t *m, const bm_session_t *s);
 const bm_session_t *bm_attn_session(const bm_model_t *m);
+const bm_session_t *bm_attn_shown(const bm_model_t *m);
 bool bm_request_approvable(const bm_request_t *r);
 int bm_hosts_connected(const bm_model_t *m);
 int bm_live_waiting_count(const bm_model_t *m);

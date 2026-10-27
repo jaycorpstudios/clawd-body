@@ -156,7 +156,7 @@ void ui_attn_create(lv_obj_t *scr)
 
 void ui_attn_update(uint32_t now_ms)
 {
-    const bm_session_t *s = bm_attn_session(ui.m);
+    const bm_session_t *s = bm_attn_shown(ui.m);
     ui_show(ui.attn, s != NULL);
     if (!s) return;
     const bm_request_t *r = &s->req;
@@ -194,7 +194,7 @@ void ui_attn_update(uint32_t now_ms)
 
 void ui_attn_frame(uint32_t now_ms)
 {
-    const bm_session_t *s = bm_attn_session(ui.m);
+    const bm_session_t *s = bm_attn_shown(ui.m);
     if (!s) return;
     float k = (cosf(ui.t * 2 * 3.14159f / 1.1f) + 1) / 2;
     for (int i = 0; i < 4; i++) lv_obj_set_style_bg_opa(frame[i], (lv_opa_t)(k * 255), 0);

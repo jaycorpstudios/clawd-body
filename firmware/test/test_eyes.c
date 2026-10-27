@@ -285,6 +285,26 @@ TEST(the_face_follows_the_agents)
 #define RID "01K8F5REQ0000000000000000A"
 
 
+TEST(the_face_sees_the_request_before_the_alert_shows)
+{
+    settled();
+    start_session("work", "s", "alpha");
+    ask_permission("work", "s", RID, "low", true);
+    CHECK(bm_attn_session(&M) && !bm_attn_shown(&M));
+    advance(BM_EYES_SEES_MS - 80);
+    CHECK(!bm_attn_shown(&M) && M.eyes.react == BM_REACT_SEES);
+    CHECK(M.eyes.out.shape[0] == BM_EYE_OPEN && M.eyes.out.shape[1] == BM_EYE_OPEN && M.eyes.out.gy == 3);
+    advance(100);
+    CHECK(bm_attn_shown(&M) != NULL);
+
+    settled();
+    bm_swipe(&M, 1, now);
+    CHECK(M.view == BM_VIEW_HOME);
+    start_session("work", "s", "alpha");
+    ask_permission("work", "s", RID, "low", true);
+    CHECK(bm_attn_shown(&M) != NULL && M.eyes.react_pending != BM_REACT_SEES);
+}
+
 TEST(an_alert_takes_the_face_and_the_eyes_react_when_it_closes)
 {
     settled();

@@ -45,7 +45,7 @@ static void frame_cb(lv_timer_t *t)
         ui_views_tick(now_ms);
         ui_bar_update(now_ms);
         if (ui.m->ov.type == BM_OV_WARN || ui.m->ov.type == BM_OV_LIMIT) ui_overlay_update(now_ms);
-        if (bm_attn_session(ui.m)) ui_attn_update(now_ms);
+        if (bm_attn_shown(ui.m)) ui_attn_update(now_ms);
         if (ui.m->pairing) ui_pair_update(now_ms);
     }
 

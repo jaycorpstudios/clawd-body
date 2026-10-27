@@ -423,6 +423,9 @@ static void overlay_init(bm_overlay_state_t *ov, bm_overlay_t type)
 void bm__open_attn(bm_model_t *m, int idx, uint32_t now_ms)
 {
     bm_session_t *s = &m->sessions[idx];
+    bool face_shown = m->view == BM_VIEW_FACE && m->attn < 0 && !m->sleeping && !m->sheet && !m->panel && !m->ov.type;
+    m->attn_reveal_ms = face_shown ? deadline(now_ms, BM_EYES_SEES_MS) : 0;
+    if (face_shown) bm_eyes_react(&m->eyes, BM_REACT_SEES, now_ms);
     m->sheet = BM_SHEET_NONE;
     m->sheet_session = -1;
     memset(&m->ov, 0, sizeof(m->ov));
@@ -1075,6 +1078,10 @@ void bm_tick(bm_model_t *m, uint32_t now_ms)
     bm__settings_tick(m, now_ms);
     bm__pomo_tick(m, now_ms);
     alarm_tick(m, now_ms);
+    if (m->attn_reveal_ms && due(now_ms, m->attn_reveal_ms)) {
+        m->attn_reveal_ms = 0;
+        bm__touch(m);
+    }
 
     if (m->hold_active && now_ms - m->hold_start_ms >= BM_HOLD_MS) decide(m, true, -1, now_ms);
 

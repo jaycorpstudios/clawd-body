@@ -18,6 +18,7 @@
 #define BM_EYES_TILE_H 6
 #define BM_EYES_DONE_MS 4000
 #define BM_EYES_REACT_DELAY_MS 340
+#define BM_EYES_SEES_MS 380
 #define BM_EYES_SPARKS 6
 #define BM_EYES_SPARK_MS 900
 #define BM_EYES_ZS 3
@@ -30,7 +31,7 @@ typedef enum {
     BM_EYE_DASH, BM_EYE_SHAPES
 } bm_eye_shape_t;
 
-typedef enum { BM_REACT_NONE, BM_REACT_HAPPY, BM_REACT_BLINK, BM_REACT_GLANCE } bm_react_t;
+typedef enum { BM_REACT_NONE, BM_REACT_HAPPY, BM_REACT_BLINK, BM_REACT_GLANCE, BM_REACT_SEES } bm_react_t;
 
 typedef struct {
     int8_t gx, gy;

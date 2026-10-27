@@ -585,7 +585,10 @@ static void scene_face(void)
                "\"detail\":\"npm test -- --watch=false\",\"why\":\"Run the unit tests\",\"cwd\":\"~/code/payments-api\",\"risk\":\"low\","
                "\"remote_allowed\":true,\"expires_at\":%lld}",
                BASE_TS + now / 1000 + 600) == BM_OK);
-    run(600);
+    run(250);
+    shot("face-sees-the-request");
+    CHECK(!bm_attn_shown(&M));
+    run(350);
     shot("face-alert-tile");
     run(1700);
     shot("face-alert-tile-looks-aside");

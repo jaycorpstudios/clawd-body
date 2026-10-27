@@ -21,6 +21,11 @@ const bm_session_t *bm_attn_session(const bm_model_t *m)
     return s->used && s->has_request ? s : NULL;
 }
 
+const bm_session_t *bm_attn_shown(const bm_model_t *m)
+{
+    return m->attn_reveal_ms ? NULL : bm_attn_session(m);
+}
+
 bool bm_request_approvable(const bm_request_t *r)
 {
     return !r->is_question && !r->high_risk && r->remote_allowed;

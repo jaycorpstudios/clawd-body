@@ -87,7 +87,8 @@ static const struct {
     [BM_MOOD_SLEEP] = {SLEEP, COUNT(SLEEP), {1500, 4000}, {0, 0}},
 };
 
-static const uint16_t REACT_MS[] = {[BM_REACT_HAPPY] = 1100, [BM_REACT_BLINK] = 700, [BM_REACT_GLANCE] = 900};
+static const uint16_t REACT_MS[] = {[BM_REACT_HAPPY] = 1100, [BM_REACT_BLINK] = 700, [BM_REACT_GLANCE] = 900,
+                                      [BM_REACT_SEES] = BM_EYES_SEES_MS};
 
 int bm_eyes_pool_size(bm_mood_t mood)
 {
@@ -133,6 +134,13 @@ static void react_pose(bm_react_t kind, bm_eye_pose_t *p)
     if (kind == BM_REACT_GLANCE) {
         base_pose(BM_MOOD_WAITING, p);
         p->gx = -3;
+        return;
+    }
+    if (kind == BM_REACT_SEES) {
+        base_pose(BM_MOOD_WAITING, p);
+        p->shape[0] = p->shape[1] = BM_EYE_OPEN;
+        p->open[0] = p->open[1] = 100;
+        p->gy = 3;
         return;
     }
     base_pose(BM_MOOD_IDLE, p);

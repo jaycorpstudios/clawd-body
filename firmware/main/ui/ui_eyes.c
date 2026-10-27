@@ -185,7 +185,7 @@ void ui_eyes_frame(uint32_t now_ms)
         draw_sleep(now_ms);
         return;
     }
-    if (bm_attn_session(ui.m)) {
+    if (bm_attn_shown(ui.m)) {
         draw_tile(now_ms);
         return;
     }
