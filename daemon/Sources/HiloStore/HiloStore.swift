@@ -75,11 +75,15 @@ public final class HiloStore: @unchecked Sendable {
         try db.rows(Self.taskSelect + " WHERE t.status = 'doing' ORDER BY t.started_at DESC LIMIT 1").first.map(Self.task)
     }
 
-    /// A session that already has a look keeps it.
+    /// A session that already has a look keeps it. Only the first session started after the project's one task in progress links to it.
     public func recordSessionStart(_ session: String, project: String, look: SessionLook? = nil, now: Int) throws {
         let p = try self.project(named: project)
-        let doing = try db.rows("SELECT id FROM task WHERE project_id = ? AND status = 'doing'", [p.id])
-        let taskId = doing.count == 1 ? doing[0].int(0) : nil
+        let doing = try db.rows("""
+            SELECT t.id, coalesce(t.started_at, 0) <= ? AND NOT EXISTS (
+              SELECT 1 FROM session s WHERE s.task_id = t.id AND s.started_at >= coalesce(t.started_at, 0) AND s.id <> ?)
+            FROM task t WHERE t.project_id = ? AND t.status = 'doing'
+            """, [now, session, p.id])
+        let taskId = doing.count == 1 && doing[0].int(1) == 1 ? doing[0].int(0) : nil
         try db.run("""
             INSERT INTO session (id, project_id, task_id, status, started_at, updated_at, last_action, look_hue, look_acc)
             VALUES (?, ?, ?, 'working', ?, ?, 'Session started', ?, ?)

@@ -18,6 +18,11 @@ struct MCPServer {
         tool("hilo_log_agreement", "Propose an agreement or decision for the user to confirm in Hilo. It stays pending until they confirm it.",
              ["text": ["type": "string"], "project": ["type": "string"], "context": ["type": "string", "description": "Where it came from"]],
              required: ["text"]),
+        tool("hilo_link", "Link this Claude Code session to the Hilo task it is working on (shown under that task in Today and Resume). Without `session`, links the session in the project with the latest step, normally the caller.",
+             ["task": ["type": "integer", "description": "Task id, as in hilo_current_task"],
+              "session": ["type": "string", "description": "Session id or its prefix; optional"],
+              "project": ["type": "string", "description": "Defaults to the repo Claude Code runs in"]],
+             required: ["task"]),
         tool("hilo_week_summary", "This week's sessions, closed tasks and confirmed agreements per project, as Markdown.", [:]),
     ] }
 
@@ -91,6 +96,20 @@ struct MCPServer {
             guard let text = string("text") else { throw MCPError.invalid("text is required") }
             try store.addAgreement(text, project: string("project") ?? defaultProject, context: string("context") ?? "", origin: .session, status: .pending, now: now)
             return "Proposed. The user confirms or discards it in Hilo › Agreements."
+        case "hilo_link":
+            guard let id = args["task"] as? Int, let task = try store.task(id) else { throw MCPError.invalid("task must be an existing task id") }
+            let open = try store.sessions(since: now - 86_400).filter { $0.endedAt == nil }
+            let session: SessionRecord?
+            if let prefix = string("session") {
+                session = open.first { $0.id.hasPrefix(prefix) }
+            } else {
+                guard let project = string("project") ?? defaultProject else { throw MCPError.invalid("project is required outside a git repo") }
+                session = open.first { $0.project?.name == project }
+            }
+            guard let session else { throw MCPError.invalid("no open session found; pass session") }
+            try store.link(session: session.id, task: task.id)
+            onChange()
+            return "Linked session \(session.id.prefix(8)) (last: \(session.lastAction)) to #\(task.id) \(task.title)"
         case "hilo_week_summary":
             return try store.weekReport(start: HiloStore.startOfWeek(), now: now).markdown
         default:

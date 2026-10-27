@@ -41,6 +41,17 @@ private func makeStore() throws -> HiloStore {
     #expect(s.taskId == t.id && s.taskTitle == "Refactor" && s.status == .working)
 }
 
+@Test func onlyTheFirstSessionStartedAfterTheTaskLinksToIt() throws {
+    let store = try makeStore()
+    let t = try store.addTask("Refactor", project: "api", status: .doing, now: 100)
+    try store.recordSessionStart("before", project: "api", now: 50)
+    try store.recordSessionStart("first", project: "api", now: 110)
+    try store.recordSessionStart("side", project: "api", now: 120)
+    try store.recordSessionStart("first", project: "api", now: 130)
+    let linked = Dictionary(uniqueKeysWithValues: try store.sessions(since: 0).map { ($0.id, $0.taskId) })
+    #expect(linked == ["before": nil, "first": t.id, "side": nil])
+}
+
 @Test func sessionIsNotLinkedWhenTheTaskIsAmbiguous() throws {
     let store = try makeStore()
     try store.addTask("A", project: "api", status: .doing, now: 1)
