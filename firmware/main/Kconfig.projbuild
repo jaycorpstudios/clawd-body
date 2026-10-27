@@ -23,4 +23,16 @@ config BUDDY_SOUND_VOLUME
     range 0 100
     default 60
 
+config BUDDY_BRIGHTNESS
+    int "Panel brightness while awake (percent)"
+    range 10 100
+    default 100
+
+config BUDDY_SLEEP_BRIGHTNESS
+    int "Panel brightness on the sleep clock (percent)"
+    range 0 100
+    default 20
+    help
+        The sleep clock is already drawn in dim colors; this lowers the panel itself too.
+
 endmenu

@@ -52,6 +52,8 @@ Sound variant (the cues on, codec volume 60 out of 100), also built apart:
 scripts/idf.sh -B build-sound -D SDKCONFIG=build-sound/sdkconfig -D 'SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.sound' build
 ```
 
+Panel brightness: `CONFIG_BUDDY_BRIGHTNESS` (awake, default 100 %) and `CONFIG_BUDDY_SLEEP_BRIGHTNESS` (sleep clock, default 20 %) in `menuconfig` › Hilo Buddy.
+
 Flashing (`scripts/idf.sh -p <port> flash monitor`) needs maintainer approval ([approval policy](../docs/approval-policy.md)).
 
 ## Toolchain setup (once)

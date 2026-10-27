@@ -21,6 +21,7 @@
 #define IO_PERIOD_MS 20
 #define HEAP_LOG_MS 60000
 #define POWER_POLL_MS 5000
+#define BATTERY_LOG_MS 60000
 
 static const char *TAG = "buddy";
 static bm_model_t *model;
@@ -120,11 +121,25 @@ static void power_cb(lv_timer_t *t)
     power_state_t p;
     if (!power_read(&p)) return;
     static power_state_t last;
-    if (p.battery != last.battery || p.usb != last.usb || p.charging != last.charging || p.pct != last.pct)
-        ESP_LOGI(TAG, "battery %s %u%% %u mV, usb %d, charging %d", p.battery ? "present" : "absent", p.pct, p.mv,
-                 p.usb, p.charging);
+    static uint32_t logged_at;
+    uint32_t now = lv_tick_get();
+    bool changed = p.battery != last.battery || p.usb != last.usb || p.charging != last.charging || p.pct != last.pct;
+    if (changed || now - logged_at >= BATTERY_LOG_MS) {
+        ESP_LOGI(TAG, "battery %s %u%% %u mV, usb %d, charging %d, up %u min, sleeping %d", p.battery ? "present" : "absent",
+                 p.pct, p.mv, p.usb, p.charging, (unsigned)(now / 60000), model->sleeping);
+        logged_at = now;
+    }
     last = p;
-    if (p.battery) bm_set_battery(model, p.pct, p.charging, lv_tick_get());
+    if (p.battery) bm_set_battery(model, p.pct, p.charging, now);
+}
+
+static void follow_sleep_brightness(void)
+{
+    static bool dimmed;
+    if (model->sleeping == dimmed) return;
+    dimmed = model->sleeping;
+    int pct = dimmed ? CONFIG_BUDDY_SLEEP_BRIGHTNESS : CONFIG_BUDDY_BRIGHTNESS;
+    if (bsp_display_brightness_set(pct) == ESP_OK) ESP_LOGI(TAG, "brightness %d%%", pct);
 }
 
 static void io_cb(lv_timer_t *t)
@@ -136,6 +151,7 @@ static void io_cb(lv_timer_t *t)
     bm_sound_t snd;
     while (bm_sound_pop(model, &snd)) audio_play(snd);
     sync_rtc();
+    follow_sleep_brightness();
 }
 
 static void heap_log_cb(lv_timer_t *t)
@@ -158,6 +174,7 @@ void app_main(void)
     uint32_t now = lv_tick_get();
     bm_init(model, &cfg, now);
     ui_init(model);
+    bsp_display_brightness_set(CONFIG_BUDDY_BRIGHTNESS);
     int64_t rtc_s;
     if (ext_rtc_init() && ext_rtc_read(&rtc_s)) {
         bm_clock_from_rtc(model, rtc_s, now);

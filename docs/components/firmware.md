@@ -29,7 +29,7 @@ Spare parts available: PAM8403 amplifiers and 8 Ω 0.5 W speakers, in case the o
    - **View details**: opens a sheet with full information (diff, directory, risk).
 5. **Detail sheets** opened by tapping: agent (recent activity, tokens, diff, error or summary), usage (per-session breakdown) and Hilo task (notes, agreements, linked sessions).
 6. **Side button**: a click goes back, closes an alert or moves to the next view; with a permission open it means "Later". Holding it puts the screen to sleep.
-7. **Idle**: after 60 s without activity (unless decisions are pending) shows a dimmed clock that moves every few seconds to avoid AMOLED burn-in.
+7. **Idle**: after 60 s without activity (unless decisions are pending) shows a dimmed clock that moves every few seconds to avoid AMOLED burn-in. The panel drops to `CONFIG_BUDDY_SLEEP_BRIGHTNESS` (20 %) on the sleep clock and returns to `CONFIG_BUDDY_BRIGHTNESS` (100 %) on wake; both are build options until there is a device setting.
 8. **Reminder** for pending decisions every 25 s (Attention sound family).
 9. **Multi-Mac**: bonded with one or two Macs. The top bar shows each link's state; sessions of a disconnected Mac are dimmed.
 10. **Battery**: indicator in the top bar and an alert at 15 %.
