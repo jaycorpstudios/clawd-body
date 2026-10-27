@@ -64,9 +64,17 @@ private func seeded() throws -> HiloStore {
         #expect(try empty.weekReport(start: 0, now: 1).markdown.hasSuffix("Nothing recorded this week yet."))
     }
 
+    @Test func resumeDigestsStepsInsteadOfListingCommands() {
+        let steps: [(StepKind, String)] = [(.plan, "New prompt"), (.read, "Read a.ts"), (.edit, "Edited a.ts"), (.run, "Ran perl -pi -e x"),
+                                           (.edit, "Edited b.ts"), (.edit, "Edited a.ts"), (.run, "Ran git commit"), (.plan, "New prompt"), (.err, "Bash failed")]
+        let digest = HiloStore.stepDigest(steps.enumerated().map { StepRecord(ts: $0.offset, kind: $0.element.0, text: $0.element.1) })
+        #expect(digest == ["Edited: a.ts, b.ts", "Activity: 2 prompts · 2 commands · 1 read · 3 edits · 1 error"])
+        #expect(HiloStore.stepDigest([]).isEmpty)
+    }
+
     @Test func resumeShowsTheLastSessionOpenTasksCommitsAndAgreements() throws {
         let text = try seeded().resumeMarkdown(project: "api", now: 2_000)
-        #expect(text.hasPrefix("# api\n## Last session (done)\nRetries back off exponentially.\n- edit: Edited src/retry.ts\nResume with: claude --resume s1"))
+        #expect(text.hasPrefix("# api\n## Last session (done)\nTask: Webhook retries\nRetries back off exponentially.\nEdited: src/retry.ts\nActivity: 1 edit\nResume with: claude --resume s1"))
         #expect(text.contains("## Open tasks\n- [ ] #2 Docs pass"))
         #expect(text.contains("## Recent commits\n- 3f2b681 retry with backoff (main)"))
         #expect(text.hasSuffix("## Recent agreements\n- Ship on Friday"))

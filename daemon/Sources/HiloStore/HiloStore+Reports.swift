@@ -1,4 +1,5 @@
 import Foundation
+import HiloContract
 
 /// The week per project, as Hilo › Week, `hilo week` and the MCP tool show it.
 public struct WeekReport: Sendable {
@@ -117,8 +118,9 @@ extension HiloStore {
         var out = ["# \(project)"]
         if let last = sessions.first {
             out.append("## Last session (\(last.status.rawValue))")
+            if let task = last.taskTitle { out.append("Task: \(task)") }
             if let summary = last.summary { out.append(summary) }
-            out.append(contentsOf: try steps(session: last.id, limit: 10).map { "- \($0.kind.rawValue): \($0.text)" })
+            out.append(contentsOf: Self.stepDigest(try steps(session: last.id, limit: 5_000)))
             out.append("Resume with: claude --resume \(last.id)")
         } else {
             out.append("No sessions in the last 7 days.")
@@ -130,5 +132,25 @@ extension HiloStore {
         out.append("## Recent agreements")
         out.append(contentsOf: agreements.isEmpty ? ["None."] : agreements.map { "- \($0.text)" })
         return out.joined(separator: "\n")
+    }
+
+    /// Files edited, most recent first, and how much happened; commands are counted, not listed.
+    static func stepDigest(_ steps: [StepRecord]) -> [String] {
+        var edited: [String] = []
+        for s in steps.reversed() where s.kind == .edit {
+            let file = s.text.hasPrefix("Edited ") ? String(s.text.dropFirst(7)) : s.text
+            if !edited.contains(file) { edited.append(file) }
+        }
+        var out: [String] = []
+        if !edited.isEmpty {
+            out.append("Edited: " + edited.prefix(8).joined(separator: ", ") + (edited.count > 8 ? " and \(edited.count - 8) more" : ""))
+        }
+        func count(_ kind: StepKind) -> Int { steps.filter { $0.kind == kind }.count }
+        let prompts = steps.filter { $0.kind == .plan && $0.text == "New prompt" }.count
+        let counts: [(Int, String)] = [(prompts, "prompt"), (count(.run), "command"), (count(.read), "read"), (count(.edit), "edit"),
+                                       (count(.ask), "question"), (count(.err), "error")]
+        let activity = counts.filter { $0.0 > 0 }.map { WeekReport.plural($0.0, $0.1) }
+        if !activity.isEmpty { out.append("Activity: " + activity.joined(separator: " · ")) }
+        return out
     }
 }
