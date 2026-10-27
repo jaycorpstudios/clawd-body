@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "bm_internal.h"
+#include "bm_pet.h"
 #include "support.h"
 
 #define SIDE 32
@@ -158,4 +159,59 @@ TEST(a_snapshot_names_the_cover_and_a_new_mac_in_the_slot_drops_a_half_received_
     CHECK(!M.cover_rx.count);
     CHECK(cover_chunk("lab", &c, 1, 3) == BM_OK);
     CHECK(!M.has_cover);
+}
+
+TEST(the_pixel_cover_animates_until_the_real_one_arrives_or_8_s_pass)
+{
+    fresh();
+    cover_t c;
+    make_cover(&c, 4);
+    CHECK(playing("work", "Night Build", NULL) == BM_OK);
+    CHECK(!bm_cover_waiting(&M, now));
+
+    CHECK(playing("work", "Night Build", c.hash) == BM_OK);
+    CHECK(bm_cover_waiting(&M, now));
+    advance(5000);
+    CHECK(playing("work", "Night Build", c.hash) == BM_OK);
+    advance(2999);
+    CHECK(bm_cover_waiting(&M, now));
+    advance(1);
+    CHECK(!bm_cover_waiting(&M, now));
+
+    cover_t next;
+    make_cover(&next, 9);
+    CHECK(playing("work", "Deploy Friday", next.hash) == BM_OK);
+    CHECK(bm_cover_waiting(&M, now));
+    advance(1000);
+    send_cover("work", &next);
+    CHECK(bm_media_cover(&M) != NULL);
+    CHECK(!bm_cover_waiting(&M, now));
+}
+
+TEST(the_waiting_cover_only_brightens_and_shuffles_its_own_cells)
+{
+    uint32_t base[BM_COVER_GRID * BM_COVER_GRID], a[BM_COVER_GRID * BM_COVER_GRID], b[BM_COVER_GRID * BM_COVER_GRID];
+    bm_cover_render(base, "Night Build");
+    bm_cover_shimmer(a, "Night Build", 7);
+    bm_cover_shimmer(b, "Night Build", 7);
+    CHECK(memcmp(a, b, sizeof(a)) == 0);
+    bm_cover_shimmer(b, "Night Build", 8);
+    CHECK(memcmp(a, b, sizeof(a)) != 0);
+
+    for (int y = 0; y < BM_COVER_GRID; y++)
+        for (int x = 0; x < BM_COVER_GRID; x++) {
+            bool from_neighbour = false;
+            for (int dy = -1; dy <= 1 && !from_neighbour; dy++)
+                for (int dx = -1; dx <= 1; dx++) {
+                    int sx = x + dx, sy = y + dy;
+                    if (sx < 0 || sy < 0 || sx >= BM_COVER_GRID || sy >= BM_COVER_GRID) continue;
+                    uint32_t src = base[sy * BM_COVER_GRID + sx], got = a[y * BM_COVER_GRID + x];
+                    if ((got & 255) >= (src & 255) && (got >> 8 & 255) >= (src >> 8 & 255) &&
+                        (got >> 16 & 255) >= (src >> 16 & 255)) {
+                        from_neighbour = true;
+                        break;
+                    }
+                }
+            CHECK(from_neighbour);
+        }
 }

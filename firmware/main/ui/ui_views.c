@@ -627,14 +627,42 @@ static void art_scale(const bm_cover_t *c)
     }
 }
 
-static void pixel_cover(const char *title)
+static void grid_cover(void)
 {
-    bm_cover_render(ui.cover_grid, title);
     for (int y = 0; y < COVER_SIDE; y++)
         for (int x = 0; x < COVER_SIDE; x++) {
             uint32_t c = ui.cover_grid[y * BM_COVER_GRID / COVER_SIDE * BM_COVER_GRID + x * BM_COVER_GRID / COVER_SIDE];
             ui.cover_px[y * COVER_SIDE + x] = (uint16_t)((c >> 19 & 31) << 11 | (c >> 10 & 63) << 5 | (c >> 3 & 31));
         }
+}
+
+static void pixel_cover(const char *title)
+{
+    bm_cover_render(ui.cover_grid, title);
+    grid_cover();
+}
+
+/* Runs only while the Music view is on screen; 10 steps a second keep the redraw to the cover. */
+static void cover_frame(uint32_t now_ms)
+{
+    int mh = bm_media_host(ui.m);
+    if (!ui.cover_px || mh < 0) return;
+    const char *title = ui.m->hosts[mh].media.title;
+    if (bm_cover_waiting(ui.m, now_ms)) {
+        uint32_t step = now_ms / 100;
+        if (ui.cover_anim && step == ui.cover_step) return;
+        ui.cover_anim = true;
+        ui.cover_step = step;
+        bm_cover_shimmer(ui.cover_grid, title, step);
+        grid_cover();
+        lv_obj_invalidate(ui.cover);
+    } else if (ui.cover_anim) {
+        ui.cover_anim = false;
+        if (!bm_media_cover(ui.m)) {
+            pixel_cover(title);
+            lv_obj_invalidate(ui.cover);
+        }
+    }
 }
 
 static void update_music(uint32_t now_ms)
@@ -770,6 +798,7 @@ void ui_views_frame(void)
         }
         break;
     case BM_VIEW_POMODORO: ui_pet_draw(ui.pomo_pet, bm_pomo_pet(ui.m), BM_PET_MAIN_HUE, ui.m->acc, 0); break;
+    case BM_VIEW_MUSIC: cover_frame(lv_tick_get()); break;
     default: break;
     }
 }

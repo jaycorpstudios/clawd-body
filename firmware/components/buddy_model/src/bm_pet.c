@@ -322,6 +322,37 @@ void bm_cover_render(uint32_t argb[BM_COVER_GRID * BM_COVER_GRID], const char *t
         }
 }
 
+static uint32_t lighten(uint32_t c, uint32_t k)
+{
+    uint32_t out = c & 0xff000000u;
+    for (int s = 0; s < 24; s += 8) {
+        uint32_t ch = c >> s & 255;
+        out |= (ch + (255 - ch) * k / 255) << s;
+    }
+    return out;
+}
+
+/* A light band sweeps the diagonal while a few cells borrow a neighbour's colour. */
+void bm_cover_shimmer(uint32_t argb[BM_COVER_GRID * BM_COVER_GRID], const char *title, uint32_t step)
+{
+    enum { CG = BM_COVER_GRID, BAND = 24 };
+    uint32_t base[CG * CG];
+    bm_cover_render(base, title);
+    uint32_t seed = step * 2654435761u + 0x9e3779b9u;
+    for (int y = 0; y < CG; y++)
+        for (int x = 0; x < CG; x++) {
+            seed = seed * 1664525u + 1013904223u;
+            uint32_t r = seed >> 24;
+            int sx = x, sy = y;
+            if (r < 40) sx += r & 1 ? 1 : -1;
+            else if (r < 80) sy += r & 1 ? 1 : -1;
+            sx = sx < 0 ? 0 : sx >= CG ? CG - 1 : sx;
+            sy = sy < 0 ? 0 : sy >= CG ? CG - 1 : sy;
+            uint32_t band = ((uint32_t)(x + y) + BAND - step % BAND) % BAND;
+            argb[y * CG + x] = lighten(base[sy * CG + sx], band < 4 ? (4 - band) * 36 : 0);
+        }
+}
+
 static void fill(uint32_t *argb, int x, int y, int w, int h, uint32_t c)
 {
     for (int j = y; j < y + h; j++)

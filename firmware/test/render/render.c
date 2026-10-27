@@ -385,10 +385,20 @@ static void scene_music(void)
     make_cover(hash);
     now_playing(true, hash);
     shot("music-cover-requested");
+    CHECK(bm_cover_waiting(&M, now));
+    run(700);
+    shot("music-cover-regenerating");
     send_chunks(bm__on_cover_chunk, "work", cover_px, BM_COVER_MAX, 8);
     run(300);
     CHECK(bm_media_cover(&M) != NULL);
     shot("music-cover");
+
+    now_playing(true, "0123456789abcdef");
+    run(3000);
+    shot("music-cover-still-waiting");
+    run(5000);
+    CHECK(!bm_cover_waiting(&M, now));
+    shot("music-cover-gave-up");
 
     bm_link(&M, "work", false, now);
     run(600);

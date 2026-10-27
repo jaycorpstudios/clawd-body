@@ -36,6 +36,7 @@
 #define BM_FACE_CHUNKS 16
 #define BM_COVER_MAX 96
 #define BM_COVER_CHUNKS 8
+#define BM_COVER_WAIT_MS 8000
 #define BM_POMO_WORK_MIN 25
 #define BM_POMO_BREAK_MIN 5
 
@@ -310,6 +311,8 @@ typedef struct {
     uint32_t covers_rev;
     bm_rx_t cover_rx;
     uint8_t cover_rx_px[BM_COVER_MAX * BM_COVER_MAX * 2];
+    char cover_wait[17];
+    uint32_t cover_wait_ms;
     int8_t sleep_card;
     int64_t sleep_card_s;
 
@@ -417,6 +420,7 @@ int32_t bm_usage_reset_s(const bm_usage_t *u, uint32_t now_ms);
 int bm_hilo_host(const bm_model_t *m);
 int bm_media_host(const bm_model_t *m);
 const bm_cover_t *bm_media_cover(const bm_model_t *m);
+bool bm_cover_waiting(const bm_model_t *m, uint32_t now_ms);
 int32_t bm_media_position_s(const bm_media_t *media, uint32_t now_ms);
 
 const char *bm_status_label(bm_status_t s);

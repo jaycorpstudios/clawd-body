@@ -70,6 +70,8 @@ typedef struct {
     uint16_t *cover_px;
     uint32_t cover_grid[BM_COVER_GRID * BM_COVER_GRID];
     char cover_key[82];
+    uint32_t cover_step;
+    bool cover_anim;
 
     lv_obj_t *ov, *ov_big, *ov_det, *ov_hint;
     ui_pet_t *ov_pet;

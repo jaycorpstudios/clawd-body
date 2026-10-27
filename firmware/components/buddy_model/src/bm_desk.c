@@ -222,6 +222,10 @@ void bm__want_cover(bm_model_t *m, int host, uint32_t now_ms)
 {
     const char *hash = m->hosts[host].media.cover;
     if (!hash[0] || (m->has_cover && strcmp(m->cover.hash, hash) == 0) || receiving(&m->cover_rx, host, hash)) return;
+    if (strcmp(m->cover_wait, hash) != 0) {
+        bm__copy(m->cover_wait, sizeof(m->cover_wait), hash);
+        m->cover_wait_ms = now_ms;
+    }
     request_image(m, host, "device.cover_request", hash, now_ms);
 }
 
@@ -247,6 +251,15 @@ const bm_cover_t *bm_media_cover(const bm_model_t *m)
     int mh = bm_media_host(m);
     if (mh < 0 || !m->has_cover) return NULL;
     return strcmp(m->hosts[mh].media.cover, m->cover.hash) == 0 ? &m->cover : NULL;
+}
+
+bool bm_cover_waiting(const bm_model_t *m, uint32_t now_ms)
+{
+    int mh = bm_media_host(m);
+    if (mh < 0) return false;
+    const char *hash = m->hosts[mh].media.cover;
+    return hash[0] && !bm_media_cover(m) && strcmp(m->cover_wait, hash) == 0 &&
+           now_ms - m->cover_wait_ms < BM_COVER_WAIT_MS;
 }
 
 int bm_faces_count(const bm_model_t *m)
