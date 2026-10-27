@@ -1,0 +1,13 @@
+#pragma once
+
+#include <stdlib.h>
+
+#define MALLOC_CAP_SPIRAM 0
+#define MALLOC_CAP_INTERNAL 0
+#define MALLOC_CAP_DEFAULT 0
+
+static inline void *heap_caps_calloc_prefer(size_t n, size_t size, int count, ...)
+{
+    (void)count;
+    return calloc(n, size);
+}
