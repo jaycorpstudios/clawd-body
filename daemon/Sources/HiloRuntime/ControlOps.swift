@@ -34,7 +34,7 @@ public struct ControlOps: Sendable {
         case "pair-cancel":
             buddy?.cancelPairing()
         case "face":
-            await coordinator.setFace(FaceImage.load(URL(filePath: HiloConfig.facePath(configPath: configPath))))
+            await coordinator.setFace(RGB565Image.load(URL(filePath: HiloConfig.facePath(configPath: configPath))))
         case "settings":
             guard let change = try? JSONDecoder().decode(SettingsChange.self, from: body),
                   await coordinator.changeSettings(change) else { return Data("rejected: bad settings\n".utf8) }

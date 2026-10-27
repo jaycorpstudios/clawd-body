@@ -67,8 +67,8 @@ private func solidImage(width: Int, height: Int, rgb: (UInt8, UInt8, UInt8)) -> 
 
 @Suite struct FaceTests {
     @Test func rendersAFixedRGB565SquareInChunksUnderTheCap() throws {
-        let face = try #require(FaceImage.render(solidImage(width: 300, height: 200, rgb: (255, 0, 0))))
-        #expect(face.pixels.count == FaceImage.side * FaceImage.side * 2)
+        let face = try #require(RGB565Image.render(solidImage(width: 300, height: 200, rgb: (255, 0, 0))))
+        #expect(face.pixels.count == RGB565Image.faceSide * RGB565Image.faceSide * 2)
         #expect(face.pixels.prefix(2) == Data([0x00, 0xF8]))
         let chunks = face.chunks
         #expect(chunks.count == 7)
@@ -84,13 +84,13 @@ private func solidImage(width: Int, height: Int, rgb: (UInt8, UInt8, UInt8)) -> 
     @Test func hashMatchesTheSharedFixture() throws {
         let url = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "../../../shared/fixtures/valid/host.face.json").standardized
         guard case .face(let chunk) = try Wire.decodeOutbound(Data(contentsOf: url)).body else { Issue.record("not a face"); return }
-        #expect(FaceImage(pixels: try #require(Data(base64Encoded: chunk.data))).hash == chunk.hash)
+        #expect(RGB565Image(pixels: try #require(Data(base64Encoded: chunk.data)), side: RGB565Image.faceSide).hash == chunk.hash)
     }
 
     @Test func aRebootedBuddyGetsTheSameFaceBackOnRequest() async throws {
         let link = DeskLink()
         let coordinator = Coordinator(host: "work", mapper: HookMapper(repoRoot: { _ in nil }), link: link, presence: DeskAway())
-        let face = try #require(FaceImage.render(solidImage(width: 64, height: 64, rgb: (0, 200, 0))))
+        let face = try #require(RGB565Image.render(solidImage(width: 64, height: 64, rgb: (0, 200, 0))))
         await coordinator.setFace(face)
         let first = await link.raw.count
         await coordinator.buddyLink(up: false)
@@ -110,7 +110,7 @@ private func solidImage(width: Int, height: Int, rgb: (UInt8, UInt8, UInt8)) -> 
     @Test func coordinatorSendsTheFaceAnswersRequestsAndClearsIt() async throws {
         let link = DeskLink()
         let coordinator = Coordinator(host: "work", mapper: HookMapper(repoRoot: { _ in nil }), link: link, presence: DeskAway())
-        let face = try #require(FaceImage.render(solidImage(width: 64, height: 64, rgb: (0, 0, 255))))
+        let face = try #require(RGB565Image.render(solidImage(width: 64, height: 64, rgb: (0, 0, 255))))
         await coordinator.setFace(face)
         #expect(await link.types() == Array(repeating: "host.face", count: 7) + ["snapshot"])
         guard case .snapshot(let snap) = await link.decoded().last else { Issue.record("no snapshot"); return }
@@ -245,7 +245,9 @@ final class FakePlayer: MediaPlayer, @unchecked Sendable {
     private let lock = NSLock()
     private var actions: [MediaAction] = []
     var now: Media?
+    var cover: Data?
     func current() -> Media? { lock.withLock { now } }
+    func artwork() -> Data? { lock.withLock { cover } }
     func control(_ action: MediaAction) { lock.withLock { actions.append(action) } }
     var received: [MediaAction] { lock.withLock { actions } }
 }
@@ -317,7 +319,8 @@ final class ScriptedApps: @unchecked Sendable {
     var ran: [String] { lock.withLock { scripts } }
     var logged: [String] { lock.withLock { logs } }
 
-    func player() -> AppleScriptPlayer {
+    func player(dataScript: @escaping AppleScriptPlayer.DataScript = { _ in (nil, -1728) },
+                download: @escaping AppleScriptPlayer.Download = { _ in nil }) -> AppleScriptPlayer {
         AppleScriptPlayer(
             log: { line in self.lock.withLock { self.logs.append(line) } },
             isRunning: { id in self.lock.withLock { self.runningIds.contains(id) } },
@@ -328,6 +331,7 @@ final class ScriptedApps: @unchecked Sendable {
                     return self.runningIds.contains(id) ? self.replies[id]! : (nil, -600)
                 }
             },
+            dataScript: dataScript, download: download,
             now: { self.lock.withLock { self.t } })
     }
 }

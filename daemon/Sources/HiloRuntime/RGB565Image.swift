@@ -3,29 +3,46 @@ import Foundation
 import HiloContract
 import ImageIO
 
-/// This Mac's profile picture as the buddy draws it: a fixed square of RGB565 pixels, sent in chunks (see the contract's faces section).
-public struct FaceImage: Equatable, Sendable {
-    public static let side = 120
+/// A square picture as the buddy draws it: RGB565 pixels sent in chunks (see the contract's faces and covers sections).
+public struct RGB565Image: Equatable, Sendable {
+    public static let faceSide = 120
+    public static let coverSide = 96
     static let maxChunkChars = 6000
 
+    public let side: Int
     public let pixels: Data
     public let hash: String
 
-    public init(pixels: Data) {
+    public init(pixels: Data, side: Int) {
+        self.side = side
         self.pixels = pixels
         self.hash = String(format: "%016llx", Self.fnv1a64(pixels))
     }
 
     /// Scales any image ImageIO reads to `side`×`side` (the app already cropped it square; anything else is center-cropped).
-    public static func load(_ url: URL) -> FaceImage? {
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-              let image = CGImageSourceCreateImageAtIndex(source, 0, [kCGImageSourceShouldCache: false] as CFDictionary)
-        else { return nil }
-        return render(image)
+    public static func load(_ url: URL, side: Int = faceSide) -> RGB565Image? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        return render(source, side: side)
     }
 
-    public static func render(_ image: CGImage) -> FaceImage? {
-        let side = Self.side
+    public static func decode(_ data: Data, side: Int) -> RGB565Image? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        return render(source, side: side)
+    }
+
+    /// Decodes at most a few times `side` so a huge picture never lands in memory at full size.
+    static func render(_ source: CGImageSource, side: Int) -> RGB565Image? {
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: side * 4,
+            kCGImageSourceShouldCache: false,
+        ]
+        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        return render(image, side: side)
+    }
+
+    public static func render(_ image: CGImage, side: Int = faceSide) -> RGB565Image? {
         guard let ctx = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side * 4,
                                   space: CGColorSpace(name: CGColorSpace.sRGB)!,
                                   bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)
@@ -49,14 +66,14 @@ public struct FaceImage: Equatable, Sendable {
                 dst[i * 2 + 1] = UInt8(v >> 8)
             }
         }
-        return FaceImage(pixels: out)
+        return RGB565Image(pixels: out, side: side)
     }
 
     public var chunks: [ImageChunk] {
         let bytesPerChunk = Self.maxChunkChars / 4 * 3
         let parts = stride(from: 0, to: pixels.count, by: bytesPerChunk).map { pixels[$0..<min($0 + bytesPerChunk, pixels.count)] }
         return parts.enumerated().map { i, part in
-            ImageChunk(hash: hash, w: Self.side, h: Self.side, index: i, count: parts.count, data: Data(part).base64EncodedString())
+            ImageChunk(hash: hash, w: side, h: side, index: i, count: parts.count, data: Data(part).base64EncodedString())
         }
     }
 

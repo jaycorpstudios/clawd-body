@@ -35,11 +35,13 @@ public actor Coordinator {
     private var usage = UsageTracker()
     private var waiting: [String: CheckedContinuation<Resolution?, Never>] = [:]
     private var buddySettings: DeviceSettings?
-    private var face: FaceImage?
+    private var face: RGB565Image?
     private var pomodoro: PomodoroState?
     private var media: (value: Media, at: Int)?
     private var player: MediaPlayer?
     private let mediaCommands = DispatchQueue(label: "hilod.media")
+    private var cover: (track: String, image: RGB565Image?)?
+    private let coverFetches = DispatchQueue(label: "hilod.cover")
 
     public init(host: String, mapper: HookMapper, link: BuddyLink, presence: PresenceProbe,
                 clock: Clock = SystemClock(), pollSeconds: Double = 2, recorder: StoreRecorder? = nil,
@@ -102,6 +104,10 @@ public actor Coordinator {
             guard let face, face.hash == ref.hash else { return log("buddy asked for face \(ref.hash), which this Mac no longer has") }
             log("buddy asked for this Mac's face")
             for chunk in face.chunks { await send(.face(chunk)) }
+            return
+        case .coverRequest(let ref):
+            guard let image = cover?.image, image.hash == ref.hash else { return log("buddy asked for cover \(ref.hash), which is not playing") }
+            for chunk in image.chunks { await send(.cover(chunk)) }
             return
         default: return
         }
@@ -191,7 +197,7 @@ public actor Coordinator {
     public var faceHash: String? { face?.hash }
 
     /// A new picture goes out at once; the next snapshot names it (or, with nil, tells the buddy to drop it).
-    public func setFace(_ image: FaceImage?) async {
+    public func setFace(_ image: RGB565Image?) async {
         guard image != face else { return }
         face = image
         store.setFace(image.map { ImageRef(hash: $0.hash) })
@@ -212,19 +218,50 @@ public actor Coordinator {
 
     /// Sends `media.now_playing` when the track, play state or a seek changes what the buddy extrapolates; a snapshot
     /// without `media` when playback stops.
-    public func updateMedia(_ next: Media?) async {
+    public func updateMedia(_ playing: Media?) async {
         let now = clock.now()
-        guard let next else {
+        guard var next = playing else {
+            cover = nil
             guard media != nil else { return }
             media = nil
             store.setMedia(nil)
             return await sendSnapshot()
         }
-        if let (last, at) = media, last.title == next.title, last.artist == next.artist, last.lengthS == next.lengthS,
-           last.playing == next.playing {
+        let track = Self.track(next)
+        if cover?.track != track {
+            cover = (track, nil)
+            fetchCover(for: track)
+        }
+        next.cover = cover?.image.map { ImageRef(hash: $0.hash) }
+        if let (last, at) = media, Self.track(last) == track, last.playing == next.playing, last.cover == next.cover {
             let expected = last.positionS + (last.playing == false ? 0 : now - at)
             if abs(expected - next.positionS) <= 3 { return }
         }
+        media = (next, now)
+        await send(.nowPlaying(next))
+    }
+
+    public var coverHash: String? { cover?.image?.hash }
+
+    private static func track(_ m: Media) -> String { "\(m.title)\t\(m.artist)\t\(m.lengthS)" }
+
+    /// Reading the cover can mean a download, so it runs off the actor; a cover that arrives after the track changed is dropped.
+    private func fetchCover(for track: String) {
+        guard let player else { return }
+        coverFetches.async { [self] in
+            let image = player.artwork().flatMap { RGB565Image.decode($0, side: RGB565Image.coverSide) }
+            Task { await coverFetched(image, for: track) }
+        }
+    }
+
+    private func coverFetched(_ image: RGB565Image?, for track: String) async {
+        guard let image, cover?.track == track, let (last, at) = media, Self.track(last) == track else { return }
+        cover = (track, image)
+        log("cover \(image.hash)")
+        let now = clock.now()
+        var next = last
+        if last.playing != false { next.positionS = min(last.lengthS, last.positionS + now - at) }
+        next.cover = ImageRef(hash: image.hash)
         media = (next, now)
         await send(.nowPlaying(next))
     }

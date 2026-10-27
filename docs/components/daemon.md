@@ -17,6 +17,7 @@ Runs on each Mac as a login item. Connects Claude Code, Hilo and the buddy.
    - If the request was already resolved on the Mac, drops the decision and tells the buddy with `agent.request_resolved`.
    - Logs every decision in the session timeline with `via: "buddy"` or `via: "mac"`.
 6. **MCP and CLI**: backend for Hilo ([hilo.md](hilo.md)).
+7. **Music**: what Spotify or Music.app is playing (AppleScript, only if already running), playback commands from the buddy, and the track's cover (Music.app's artwork data, or Spotify's cover URL fetched only from `i.scdn.co` over https), scaled to 96×96 and sent on request ([covers](../architecture/event-contract.md#covers)). The cover download is `hilod`'s only outbound network request; details in the [daemon README](../../daemon/README.md).
 
 ## Security
 
