@@ -39,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 struct RootView: View {
     @Environment(AppModel.self) private var model
+    @State private var scrolled = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,10 +49,20 @@ struct RootView: View {
                 Rectangle().fill(Theme.line).frame(width: 1)
                 ScrollView {
                     content.padding(28).frame(maxWidth: .infinity, alignment: .topLeading)
+                        .id(model.section)
+                        .transition(.opacity.combined(with: .offset(y: 6)))
+                }
+                .animation(.easeOut(duration: 0.18), value: model.section)
+                .onScrolled { scrolled = $0 }
+                .overlay(alignment: .top) {
+                    if !Snapshots.requested {
+                        ProgressiveBlur().opacity(scrolled ? 1 : 0).animation(.easeOut(duration: 0.2), value: scrolled)
+                    }
                 }
                 .background(Theme.window)
             }
         }
+        .background(WindowSetup())
         .background(Theme.window)
         .ignoresSafeArea(.container, edges: .top)
         .foregroundStyle(Theme.text)
@@ -74,7 +85,19 @@ struct RootView: View {
     }
 }
 
+extension View {
+    /// Reports whether the content moved up from the top (macOS 15+; earlier the bar's blur stays off).
+    @ViewBuilder func onScrolled(_ action: @escaping (Bool) -> Void) -> some View {
+        if #available(macOS 15, *) {
+            onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 4 } action: { _, now in action(now) }
+        } else {
+            self
+        }
+    }
+}
+
 struct TopBar: View {
+    static let height: CGFloat = 46
     @Environment(AppModel.self) private var model
 
     var body: some View {
@@ -89,7 +112,9 @@ struct TopBar: View {
             Text((model.daemonStatus?.host ?? model.config.host ?? "This Mac").capitalized).font(.system(size: 12.5)).padding(.horizontal, 10).padding(.vertical, 4)
                 .background(Theme.card, in: Capsule()).overlay(Capsule().stroke(Theme.line)).foregroundStyle(Theme.secondary)
         }
-        .padding(.horizontal, 16).frame(height: 46).background(Theme.topBar)
+        .padding(.horizontal, 16).frame(height: Self.height)
+        .background(TitleBarArea())
+        .barGlass()
         .overlay(alignment: .bottom) { Rectangle().fill(Theme.line).frame(height: 1) }
     }
 
@@ -127,21 +152,8 @@ struct Sidebar: View {
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
 
             VStack(spacing: 2) {
-                ForEach(AppSection.allCases) { section in
-                    Button { model.section = section } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: section.icon).frame(width: 18)
-                            Text(section.rawValue)
-                            Spacer()
-                            Text(badge(section)).font(.system(size: 12)).foregroundStyle(Theme.secondary).monospacedDigit()
-                        }
-                        .font(.system(size: 14, weight: model.section == section ? .semibold : .regular))
-                        .foregroundStyle(model.section == section ? Theme.selectedText : Color(hex: "#d8d1c6"))
-                        .padding(.horizontal, 10).padding(.vertical, 8)
-                        .background(model.section == section ? Theme.selected : .clear, in: RoundedRectangle(cornerRadius: 8))
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+                ForEach(Array(AppSection.allCases.enumerated()), id: \.element) { i, section in
+                    SidebarRow(section: section, index: i + 1, badge: badge(section))
                 }
             }
 
@@ -183,6 +195,35 @@ struct Sidebar: View {
         case .focus: model.focusToday.count.nonZero
         case .week, .resume, .setup: ""
         }
+    }
+}
+
+struct SidebarRow: View {
+    @Environment(AppModel.self) private var model
+    let section: AppSection
+    let index: Int
+    let badge: String
+    @State private var hovering = false
+
+    var body: some View {
+        let selected = model.section == section
+        Button { model.section = section } label: {
+            HStack(spacing: 10) {
+                Image(systemName: section.icon).frame(width: 18)
+                Text(section.rawValue)
+                Spacer()
+                Text(badge).font(.system(size: 12)).foregroundStyle(Theme.secondary).monospacedDigit()
+            }
+            .font(.system(size: 14, weight: selected ? .semibold : .regular))
+            .foregroundStyle(selected ? Theme.selectedText : Color(hex: "#d8d1c6"))
+            .padding(.horizontal, 10).padding(.vertical, 8)
+            .background(selected ? Theme.selected : hovering ? Theme.card : .clear, in: RoundedRectangle(cornerRadius: 8))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .animation(.easeOut(duration: 0.12), value: hovering)
+        .help("\(section.rawValue) (⌘\(index))")
     }
 }
 
