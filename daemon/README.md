@@ -76,6 +76,7 @@ The Pomodoro state is saved in the store (`focus_state`) in the same transaction
 | :--- | :--- | :--- |
 | `--host` | `work` | `host` sent on every message |
 | `--away-after` | `120` | Seconds without keyboard/mouse input before the user counts as away |
+| `--presence-grace` | `10` | When the user is present as a request arrives, seconds to wait for the Mac to go quiet (no input that long, or the screen locked) before the prompt goes to the terminal; 0 turns it off |
 | `--always-away` | off | Hold every permission for the buddy (development) |
 | `--pair` | off | Scan for a buddy in pairing mode and trust it once paired |
 | `--stdout` | off | No BLE; print outgoing messages (development) |

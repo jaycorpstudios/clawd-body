@@ -13,6 +13,7 @@ func option(_ name: String) -> String? {
 let config = HiloConfig.load()
 let host = option("--host") ?? config.host ?? HiloConfig.defaultHost
 let idle = Double(option("--away-after") ?? "120") ?? 120
+let grace = Int(option("--presence-grace") ?? "10") ?? 10
 let socketPath = option("--socket") ?? LocalSocket.defaultPath
 let forceAway = arguments.contains("--always-away")
 let useStdout = arguments.contains("--stdout")
@@ -42,6 +43,7 @@ let coordinator = Coordinator(
     mapper: HookMapper(repoRoot: GitRepo.root(of:)),
     link: session ?? StdoutLink() as BuddyLink,
     presence: forceAway ? AlwaysAway() : SystemPresence(idleThresholdSeconds: idle) as PresenceProbe,
+    presenceGrace: grace,
     recorder: recorder,
     log: log
 )

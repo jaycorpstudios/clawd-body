@@ -34,6 +34,7 @@ public actor Coordinator {
     private let presence: PresenceProbe
     private let clock: Clock
     private let pollSeconds: Double
+    private let presenceGrace: Int
     private let log: @Sendable (String) -> Void
     private let recorder: StoreRecorder?
     private var registry = RequestRegistry()
@@ -54,10 +55,10 @@ public actor Coordinator {
     private let coverFetches = DispatchQueue(label: "hilod.cover")
 
     public init(host: String, mapper: HookMapper, link: BuddyLink, presence: PresenceProbe,
-                clock: Clock = SystemClock(), pollSeconds: Double = 2, recorder: StoreRecorder? = nil,
+                clock: Clock = SystemClock(), pollSeconds: Double = 2, presenceGrace: Int = 10, recorder: StoreRecorder? = nil,
                 log: @escaping @Sendable (String) -> Void = { _ in }) {
         self.host = host; self.mapper = mapper; self.link = link
-        self.presence = presence; self.clock = clock; self.pollSeconds = pollSeconds
+        self.presence = presence; self.clock = clock; self.pollSeconds = pollSeconds; self.presenceGrace = presenceGrace
         self.recorder = recorder; self.log = log
         pomodoro = recorder?.savedFocus()
         store.setPomodoro(pomodoro)
@@ -143,7 +144,7 @@ public actor Coordinator {
 
     private func hold(id: String, session: String, expiresAt: Int, body: PendingRequest.Body,
                       message: Outbound, onMac: String) async -> Resolution? {
-        guard !presence.userIsPresent() else {
+        guard await awayWithinGrace() else {
             log("request \(id): user at the Mac, prompt stays in the terminal")
             await send(.agentStep(AgentStep(session: session, kind: .ask, text: String(onMac.prefix(120)))))
             return nil
@@ -159,8 +160,19 @@ public actor Coordinator {
         }
     }
 
-    /// A request on the buddy's screen goes back to the Mac only after `handBackAfter` seconds of continuous input
-    /// there, so a nudged mouse does not take it away while the user reaches for the buddy.
+    /// Right after typing the user always counts as present, so a request waits up to `presenceGrace` seconds for the
+    /// Mac to go quiet (no input for that long, or the screen locked) before it goes to the terminal instead.
+    private func awayWithinGrace() async -> Bool {
+        guard presence.userIsPresent() else { return true }
+        for _ in 0..<presenceGrace {
+            if presence.quiet(for: Double(presenceGrace)) { return true }
+            await clock.sleep(seconds: 1)
+        }
+        return presence.quiet(for: Double(presenceGrace))
+    }
+
+    /// Any input on the Mac takes a held request back to the terminal; while the buddy shows it, only
+    /// `handBackAfter` seconds of continuous input do, so a nudged mouse does not take it away mid-reach.
     private func watch(id: String, expiresAt: Int) async {
         defer { shownOnBuddy[id] = nil }
         var activeSince: Int?
@@ -168,13 +180,8 @@ public actor Coordinator {
             await clock.sleep(seconds: pollSeconds)
             let now = clock.now(), expired = now >= expiresAt
             let shown = shownOnBuddy[id].map { now - $0 < Self.shownWithin } ?? false
-            let back: Bool
-            if shown {
-                activeSince = presence.quiet(for: Self.activeWithin) ? nil : activeSince ?? now
-                back = activeSince.map { now - $0 >= Self.handBackAfter } ?? false
-            } else {
-                back = presence.userIsPresent()
-            }
+            activeSince = presence.quiet(for: Self.activeWithin) ? nil : activeSince ?? now
+            let back = activeSince.map { !shown || now - $0 >= Self.handBackAfter } ?? false
             if back || expired, let released = registry.release(id) {
                 log("request \(id): released to the Mac (\(expired ? "expired" : "user back"))")
                 waiting.removeValue(forKey: id)?.resume(returning: nil)

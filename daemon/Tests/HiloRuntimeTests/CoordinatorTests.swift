@@ -91,6 +91,16 @@ private func behavior(_ reply: Data) -> String? {
     #expect(await h.link.types() == ["agent.step"])
 }
 
+@Test func aUserWhoGoesQuietWithinTheGraceGetsTheRequestOnTheBuddy() async throws {
+    let h = Harness()
+    h.presence.present.set(true)
+    let hook = Task { await h.coordinator.handleHook(try h.permission("npm test")) }
+    await Task.yield()
+    h.presence.present.set(false)
+    try await h.buddy(try await h.pendingRequestId(), "approve")
+    #expect(behavior(try await hook.value) == "allow")
+}
+
 @Test func awayUserApprovesFromBuddy() async throws {
     let h = Harness()
     let hook = Task { await h.coordinator.handleHook(try h.permission("npm test")) }

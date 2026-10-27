@@ -27,20 +27,22 @@ sequenceDiagram
 
 ## Remote-decision mode
 
-The permission hook holds only while the user is away from the Mac. While it holds, Claude Code shows no terminal prompt.
+The permission hook holds only while the user is away from the Mac. While it holds, Claude Code shows no terminal prompt. Decided 2026-10-27: presence is re-checked over a short grace instead of once at arrival, and a locked screen always counts as away.
 
 ```mermaid
 flowchart TD
-    R([PermissionRequest arrives]) --> P{User present at this Mac?<br/>input in the last N min, screen unlocked}
-    P -->|yes| Show[send agent.step kind ask<br/>no actionable request] --> Now([hook returns no decision at once<br/>terminal prompt appears])
+    R([PermissionRequest arrives]) --> P{User present at this Mac?<br/>input in the last 120 s, screen unlocked}
+    P -->|yes| G{Quiet within the grace?<br/>no input for 10 s or screen locked,<br/>checked every second for up to 10 s}
+    G -->|yes| Hold
+    G -->|no| Show[send agent.step kind ask<br/>no actionable request] --> Now([hook returns no decision at once<br/>terminal prompt appears])
     P -->|no| Hold[send agent.needs_permission<br/>hook holds up to expires_at] --> W{first of}
     W -->|buddy decision, validated| Out([hook returns allow / deny])
     W -->|user returns to the Mac| Now
     W -->|expires| Now
 ```
 
-- Present: nothing on the buddy can be decided, because the hook has already handed the prompt to the terminal. The buddy only logs the step.
-- Away: the daemon polls presence while holding. Coming back to the Mac, or reaching `expires_at`, releases the hook to the terminal prompt and closes the request on the buddy with `agent.request_resolved { outcome: "expired", via: "timeout" }`. The session stays `waiting` with nothing to answer: the buddy says "Answer it on the Mac" until the next step from that session (#19). While the buddy shows the request (its `device.ack` came in the last 30 s), coming back means 10 s of continuous input on the Mac (input within every 3 s), so a mouse nudge while reaching for the buddy does not take the request away (#21, decided 2026-10-27).
+- Present: right after typing the user always counts as present, so the hook waits up to the grace (10 s, `hilod --presence-grace`) for the Mac to go quiet: no input for 10 s, or the screen locked. If it does, the request goes to the buddy; if not, the hook hands the prompt to the terminal (up to 10 s later than before) and the buddy only logs the step. A request that arrives after 10 s without input goes to the buddy at once.
+- Away: the daemon polls presence while holding. Coming back to the Mac (any input in the last 3 s), or reaching `expires_at`, releases the hook to the terminal prompt and closes the request on the buddy with `agent.request_resolved { outcome: "expired", via: "timeout" }`. The session stays `waiting` with nothing to answer: the buddy says "Answer it on the Mac" until the next step from that session (#19). While the buddy shows the request (its `device.ack` came in the last 30 s), coming back means 10 s of continuous input on the Mac (input within every 3 s), so a mouse nudge while reaching for the buddy does not take the request away (#21, decided 2026-10-27).
 - The same mode applies to questions (`PreToolUse` on `AskUserQuestion`).
 
 ## Daemon validation
