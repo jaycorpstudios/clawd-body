@@ -108,6 +108,13 @@ case "sessions":
         let task = s.taskTitle.map { " → \($0)" } ?? ""
         print("\(s.id.prefix(8))  \(s.status.rawValue.padding(toLength: 7, withPad: " ", startingAt: 0))  \(s.project?.name ?? "-")\(task)  \(s.lastAction)")
     }
+case "resume":
+    let cwd = FileManager.default.currentDirectoryPath
+    let project = arguments.count > 1 ? arguments[1] : URL(filePath: GitRepo.root(of: cwd) ?? cwd).lastPathComponent
+    print(try openStore().resumeMarkdown(project: project, now: now))
+case "week":
+    let markdown = try openStore().weekReport(start: HiloStore.startOfWeek(), now: now).markdown
+    print(arguments.contains("--md") ? markdown : markdown.split(separator: "\n", omittingEmptySubsequences: false).map { $0.drop { $0 == "#" }.drop { $0 == " " } }.joined(separator: "\n"))
 case "install":
     let (explicit, _) = option("--hilod", in: Array(arguments.dropFirst()))
     guard let hilod = explicit ?? LaunchAgent.bundledHilod() else {
@@ -139,6 +146,8 @@ default:
       hilo agree "text" [-p project]   log an agreement
       hilo sessions                    today's Claude Code sessions
       hilo link <session> <task id>    attach a session to a task
+      hilo resume [project]            where you left off (default: this directory's repo)
+      hilo week [--md]                 this week per project; --md keeps the Markdown headings
       hilo mcp                         MCP server on stdio, for Claude Code
       hilo install [--hilod path]      run hilod at login as a LaunchAgent (default: the hilod in Hilo.app)
       hilo uninstall                   stop hilod and remove the LaunchAgent

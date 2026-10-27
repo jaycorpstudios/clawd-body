@@ -1,0 +1,118 @@
+import Foundation
+
+/// The week per project, as Hilo › Week, `hilo week` and the MCP tool show it.
+public struct WeekReport: Sendable {
+    public struct ProjectWeek: Identifiable, Sendable {
+        public var id: String { name }
+        public var name: String
+        public var project: Project?
+        public var sessionSeconds = 0
+        public var sessions = 0
+        public var active = 0
+        public var commits = 0
+        public var closed: [HiloTaskRecord] = []
+    }
+
+    public static let noProject = "No project"
+
+    public let start: Int
+    public let projects: [ProjectWeek]
+    public let closed: [HiloTaskRecord]
+    public let agreements: [Agreement]
+    public let sessionCount: Int
+    public let commitCount: Int
+
+    public var activeSeconds: Int { projects.reduce(0) { $0 + $1.active } }
+    public var sessionSeconds: Int { projects.reduce(0) { $0 + $1.sessionSeconds } }
+
+    public init(start: Int, now: Int, sessions: [SessionRecord], active: [String: Int], commits: [CommitRecord],
+                tasks: [HiloTaskRecord], agreements: [Agreement], projects known: [Project]) {
+        let closed = tasks.filter { $0.status == .done && ($0.doneAt ?? 0) >= start }
+        var rows: [String: ProjectWeek] = [:]
+        func row(_ project: Project?, named given: String? = nil) -> String {
+            let name = given ?? project?.name ?? Self.noProject
+            if rows[name] == nil { rows[name] = ProjectWeek(name: name, project: project) }
+            return name
+        }
+        for s in sessions {
+            let name = row(s.project)
+            rows[name]!.sessionSeconds += Self.sessionSeconds(s, now: now)
+            rows[name]!.sessions += 1
+        }
+        for (name, seconds) in active { rows[row(known.first { $0.name == name }, named: name)]!.active = seconds }
+        for c in commits { rows[row(c.project)]!.commits += 1 }
+        for t in closed { rows[row(t.project)]!.closed.append(t) }
+        self.start = start
+        self.projects = rows.values.sorted { ($0.active, $0.sessionSeconds, $1.name) > ($1.active, $1.sessionSeconds, $0.name) }
+        self.closed = closed
+        self.agreements = agreements.filter { $0.status == .confirmed && $0.ts >= start }
+        self.sessionCount = sessions.count
+        self.commitCount = commits.count
+    }
+
+    /// A session still working or waiting counts up to `now`.
+    public static func sessionSeconds(_ s: SessionRecord, now: Int) -> Int {
+        (s.endedAt ?? (s.status == .working || s.status == .waiting ? now : s.updatedAt)) - s.startedAt
+    }
+
+    public static func duration(_ seconds: Int) -> String {
+        let m = max(0, seconds) / 60
+        return m < 60 ? "\(m) min" : String(format: "%d h %02d min", m / 60, m % 60)
+    }
+
+    public static func plural(_ n: Int, _ word: String) -> String { "\(n) \(word)\(n == 1 ? "" : "s")" }
+
+    public var markdown: String {
+        let day = Date(timeIntervalSince1970: TimeInterval(start)).formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
+        var out = ["# Week of \(day)", ""]
+        if projects.isEmpty { out.append("Nothing recorded this week yet.") }
+        for p in projects {
+            out.append("## \(p.name)")
+            out.append("\(Self.duration(p.active)) active · \(Self.duration(p.sessionSeconds)) in \(Self.plural(p.sessions, "Claude Code session")) · \(Self.plural(p.commits, "commit"))")
+            out.append(contentsOf: p.closed.map { "- [x] \($0.title)" })
+            out.append("")
+        }
+        if !agreements.isEmpty {
+            out.append("## Agreements")
+            out.append(contentsOf: agreements.map { "- \($0.text)" + ($0.project.map { " (\($0.name))" } ?? "") })
+        }
+        while out.last == "" { out.removeLast() }
+        return out.joined(separator: "\n")
+    }
+}
+
+extension HiloStore {
+    public static func startOfWeek(_ date: Date = Date(), calendar: Calendar = .current) -> Int {
+        Int((calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? calendar.startOfDay(for: date)).timeIntervalSince1970)
+    }
+
+    public func weekReport(start: Int, now: Int) throws -> WeekReport {
+        WeekReport(start: start, now: now, sessions: try sessions(since: start), active: try activeSeconds(since: start),
+                   commits: try commits(since: start), tasks: try tasks(doneSince: start), agreements: try agreements(),
+                   projects: try projects())
+    }
+
+    /// Where the user left off in a project: last session and its steps, open tasks, recent commits and agreements.
+    public func resumeMarkdown(project: String, now: Int) throws -> String {
+        let sessions = try sessions(since: now - 7 * 86_400).filter { $0.project?.name == project }
+        let open = try tasks(doneSince: Int.max).filter { $0.project?.name == project }
+        let commits = try commits(project: project, limit: 5)
+        let agreements = try agreements().filter { $0.project?.name == project && $0.status == .confirmed }.prefix(5)
+        var out = ["# \(project)"]
+        if let last = sessions.first {
+            out.append("## Last session (\(last.status.rawValue))")
+            if let summary = last.summary { out.append(summary) }
+            out.append(contentsOf: try steps(session: last.id, limit: 10).map { "- \($0.kind.rawValue): \($0.text)" })
+            out.append("Resume with: claude --resume \(last.id)")
+        } else {
+            out.append("No sessions in the last 7 days.")
+        }
+        out.append("## Open tasks")
+        out.append(contentsOf: open.isEmpty ? ["None."] : open.map { "- [\($0.status == .doing ? ">" : " ")] #\($0.id) \($0.title)" })
+        out.append("## Recent commits")
+        out.append(contentsOf: commits.isEmpty ? ["None."] : commits.map { "- \($0.hash.prefix(7)) \($0.message) (\($0.branch))" })
+        out.append("## Recent agreements")
+        out.append(contentsOf: agreements.isEmpty ? ["None."] : agreements.map { "- \($0.text)" })
+        return out.joined(separator: "\n")
+    }
+}

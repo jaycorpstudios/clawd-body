@@ -45,7 +45,7 @@ Shared chrome: top bar with ⌘K search, buddy status with its pet, and the Mac'
 
 ## CLI
 
-`hilo today` · `hilo add "…" [-p project] [--start]` · `hilo start|done|todo <id>` · `hilo agree "…" [-p project]` · `hilo sessions` · `hilo link <session> <task>` · `hilo mcp`. Not yet: `hilo resume`, `hilo week --md` (both available over MCP and in the app).
+`hilo today` · `hilo add "…" [-p project] [--start]` · `hilo start|done|todo <id>` · `hilo agree "…" [-p project]` · `hilo sessions` · `hilo link <session> <task>` · `hilo resume [project]` · `hilo week [--md]` · `hilo mcp` · `hilo install` / `uninstall`. Resume and the week summary are the same code as the MCP tools and Hilo › Week (`WeekReport` in `HiloStore`).
 
 ## MCP tools
 

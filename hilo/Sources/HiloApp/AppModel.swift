@@ -60,11 +60,7 @@ final class AppModel {
 
     nonisolated static var now: Int { Int(Date().timeIntervalSince1970) }
     nonisolated static var startOfToday: Int { Int(Calendar.current.startOfDay(for: Date()).timeIntervalSince1970) }
-    nonisolated static var startOfWeek: Int {
-        let cal = Calendar.current
-        let start = cal.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
-        return Int(start.timeIntervalSince1970)
-    }
+    nonisolated static var startOfWeek: Int { HiloStore.startOfWeek() }
 
     func refresh() {
         guard let store else { return }
@@ -269,10 +265,7 @@ final class AppModel {
 }
 
 enum Format {
-    static func duration(_ seconds: Int) -> String {
-        let m = max(0, seconds) / 60
-        return m < 60 ? "\(m) min" : String(format: "%d h %02d min", m / 60, m % 60)
-    }
+    static func duration(_ seconds: Int) -> String { WeekReport.duration(seconds) }
 
     /// As the prototype writes them: "41 k", "1.2 M".
     static func tokens(_ n: Int) -> String {
@@ -287,7 +280,5 @@ enum Format {
         Date(timeIntervalSince1970: TimeInterval(ts)).formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
     }
 
-    static func sessionTime(_ s: SessionRecord) -> Int {
-        (s.endedAt ?? (s.status == .working || s.status == .waiting ? AppModel.now : s.updatedAt)) - s.startedAt
-    }
+    static func sessionTime(_ s: SessionRecord) -> Int { WeekReport.sessionSeconds(s, now: AppModel.now) }
 }

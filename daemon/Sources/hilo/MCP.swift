@@ -78,7 +78,7 @@ struct MCPServer {
             return "#\(t.id) \(t.title)" + (t.project.map { " (project \($0.name))" } ?? "") + (t.notes.isEmpty ? "" : "\nNotes: \(t.notes)")
         case "hilo_resume":
             guard let project = string("project") else { throw MCPError.invalid("project is required") }
-            return try resume(project)
+            return try store.resumeMarkdown(project: project, now: now)
         case "hilo_add_task":
             guard let title = string("title") else { throw MCPError.invalid("title is required") }
             let t = try store.addTask(title, project: string("project"), status: args["start"] as? Bool == true ? .doing : .todo, now: now)
@@ -89,52 +89,10 @@ struct MCPServer {
             try store.addAgreement(text, project: string("project"), context: string("context") ?? "", origin: .session, status: .pending, now: now)
             return "Proposed. The user confirms or discards it in Hilo › Agreements."
         case "hilo_week_summary":
-            return try week(now: now)
+            return try store.weekReport(start: HiloStore.startOfWeek(), now: now).markdown
         default:
             throw MCPError.invalid("unknown tool \(name)")
         }
-    }
-
-    private func resume(_ project: String) throws -> String {
-        let weekAgo = Int(Date().timeIntervalSince1970) - 7 * 86_400
-        let sessions = try store.sessions(since: weekAgo).filter { $0.project?.name == project }
-        let open = try store.tasks(doneSince: Int.max).filter { $0.project?.name == project }
-        let agreements = try store.agreements().filter { $0.project?.name == project && $0.status == .confirmed }.prefix(5)
-        var out = ["# \(project)"]
-        if let last = sessions.first {
-            out.append("## Last session (\(last.status.rawValue))")
-            if let summary = last.summary { out.append(summary) }
-            out.append(contentsOf: try store.steps(session: last.id, limit: 10).map { "- \($0.kind.rawValue): \($0.text)" })
-            out.append("Resume with: claude --resume \(last.id)")
-        } else {
-            out.append("No sessions in the last 7 days.")
-        }
-        out.append("## Open tasks")
-        out.append(contentsOf: open.isEmpty ? ["None."] : open.map { "- [\($0.status == .doing ? ">" : " ")] #\($0.id) \($0.title)" })
-        out.append("## Recent agreements")
-        out.append(contentsOf: agreements.isEmpty ? ["None."] : agreements.map { "- \($0.text)" })
-        return out.joined(separator: "\n")
-    }
-
-    private func week(now: Int) throws -> String {
-        let start = Int(Calendar.current.dateInterval(of: .weekOfYear, for: Date())?.start.timeIntervalSince1970 ?? 0)
-        let sessions = try store.sessions(since: start)
-        let closed = try store.tasks(doneSince: start).filter { $0.status == .done }
-        let agreements = try store.agreements().filter { $0.status == .confirmed && $0.ts >= start }
-        let names = Set(sessions.map { $0.project?.name ?? "No project" } + closed.map { $0.project?.name ?? "No project" }).sorted()
-        var out = ["# This week"]
-        for name in names {
-            let s = sessions.filter { ($0.project?.name ?? "No project") == name }
-            let minutes = s.reduce(0) { $0 + (($1.endedAt ?? $1.updatedAt) - $1.startedAt) } / 60
-            out.append("## \(name)")
-            out.append("\(s.count) session\(s.count == 1 ? "" : "s"), about \(minutes) min")
-            out.append(contentsOf: closed.filter { ($0.project?.name ?? "No project") == name }.map { "- [x] \($0.title)" })
-        }
-        if !agreements.isEmpty {
-            out.append("## Agreements")
-            out.append(contentsOf: agreements.map { "- \($0.text)" })
-        }
-        return out.joined(separator: "\n")
     }
 }
 
