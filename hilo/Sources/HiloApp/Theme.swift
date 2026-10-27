@@ -22,6 +22,10 @@ enum Theme {
     static let doneCheck = Color(hex: "#3fbf86")
     static let needsYou = Color(hex: "#ffd27a")
     static let progress = Color(hex: "#ffb07a")
+    static let focusWork = Color(hex: "#3a0c16")
+    static let focusWorkEdge = Color(hex: "#7a2a3c")
+    static let focusBreak = Color(hex: "#052622")
+    static let focusBreakEdge = Color(hex: "#17695f")
 
     static func chip(_ status: SessionStatus) -> (bg: Color, fg: Color, label: String) {
         switch status {

@@ -14,6 +14,13 @@
 #define UI_ORANGE 0xd97757
 #define UI_INK 0x1d0f08
 #define UI_EMBER 0x1e0d06
+#define C_WORK_BG 0x3a0c16
+#define C_WORK_WELL 0x220710
+#define C_WORK_EDGE 0x7a2a3c
+#define C_BREAK_BG 0x052622
+#define C_BREAK_WELL 0x021513
+#define C_BREAK_EDGE 0x17695f
+#define C_DIM_ON_TINT 0xa89f94
 
 #define F_TITLE (&font_pixel_28)
 #define F_SMALL (&font_mono_16)
@@ -70,7 +77,8 @@ typedef struct {
 
     ui_pet_t *pomo_pet;
     lv_obj_t *pomo_cycle, *pomo_time, *pomo_phase, *pomo_bar, *pomo_steps, *pomo_work, *pomo_break, *pomo_play;
-    lv_obj_t *pomo_ring, *alarm_catch;
+    lv_obj_t *pomo_ring, *pomo_reset, *alarm_catch;
+    int pomo_tint;
     lv_image_dsc_t cover_dsc;
     uint16_t *cover_px;
     uint32_t cover_grid[BM_COVER_GRID * BM_COVER_GRID];

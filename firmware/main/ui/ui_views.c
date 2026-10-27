@@ -394,7 +394,7 @@ static void create_pomodoro(lv_obj_t *v)
     lv_obj_set_flex_flow(ctl, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(ctl, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(ctl, 28, 0);
-    round_button(ctl, 52, &lv_font_montserrat_24, LV_SYMBOL_REFRESH, BM_TAP_POMO_RESET, 0);
+    ui.pomo_reset = lv_obj_get_parent(round_button(ctl, 52, &lv_font_montserrat_24, LV_SYMBOL_REFRESH, BM_TAP_POMO_RESET, 0));
     ui.pomo_play = round_button(ctl, 68, &lv_font_montserrat_32, LV_SYMBOL_PLAY, BM_TAP_POMO_TOGGLE, 0);
 }
 
@@ -730,11 +730,38 @@ static void update_music(uint32_t now_ms)
     (void)now_ms;
 }
 
+typedef struct {
+    uint32_t bg, well, edge, dim;
+} pomo_tint_t;
+
+static void paint_pomodoro(int tint)
+{
+    static const pomo_tint_t tints[] = {
+        {C_BG, C_TRACK, 0x2f2c28, C_DIM},
+        {C_WORK_BG, C_WORK_WELL, C_WORK_EDGE, C_DIM_ON_TINT},
+        {C_BREAK_BG, C_BREAK_WELL, C_BREAK_EDGE, C_DIM_ON_TINT},
+    };
+    if (tint == ui.pomo_tint) return;
+    ui.pomo_tint = tint;
+    const pomo_tint_t *t = &tints[tint];
+    lv_obj_t *v = ui.views[BM_VIEW_POMODORO];
+    lv_obj_set_style_bg_color(v, ui_hex(t->bg), 0);
+    lv_obj_set_style_bg_opa(v, tint ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
+    lv_obj_set_style_text_color(ui.pomo_cycle, ui_hex(t->dim), 0);
+    lv_obj_set_style_bg_color(ui.pomo_bar, ui_hex(tint ? t->well : C_TRACK), 0);
+    lv_obj_t *buttons[] = {ui.pomo_reset, lv_obj_get_parent(ui.pomo_play)};
+    for (int i = 0; i < 2; i++) {
+        lv_obj_set_style_bg_color(buttons[i], ui_hex(tint ? t->well : 0x161412), 0);
+        lv_obj_set_style_border_color(buttons[i], ui_hex(t->edge), 0);
+    }
+}
+
 static void update_pomodoro(void)
 {
     const bm_pomo_t *p = &ui.m->pomo;
     bool stopped = p->state == BM_POMO_STOPPED;
     uint32_t color = p->on_break ? BM_C_DONE : BM_C_WORK;
+    paint_pomodoro(p->state != BM_POMO_RUNNING ? 0 : p->on_break ? 2 : 1);
     static const char *const phases[2][3] = {{"WORK", "WORK", "WORK \xC2\xB7 PAUSED"},
                                              {"BREAK", "BREAK", "BREAK \xC2\xB7 PAUSED"}};
     lv_label_set_text(ui.pomo_phase, phases[p->on_break][p->state]);

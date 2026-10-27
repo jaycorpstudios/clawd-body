@@ -44,8 +44,13 @@ struct FocusView: View {
                 .disabled(!enabled)
             }
             .padding(28).frame(maxWidth: .infinity)
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: 14)).overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.line))
+            .background(tint(p).fill, in: RoundedRectangle(cornerRadius: 14)).overlay(RoundedRectangle(cornerRadius: 14).stroke(tint(p).edge))
         }
+    }
+
+    private func tint(_ p: PomodoroState) -> (fill: Color, edge: Color) {
+        guard p.state == .running else { return (Theme.card, Theme.line) }
+        return p.phase == .work ? (Theme.focusWork, Theme.focusWorkEdge) : (Theme.focusBreak, Theme.focusBreakEdge)
     }
 
     private var side: some View {

@@ -346,6 +346,12 @@ static void scene_focus(void)
     pomo_snapshot(state);
     focus_shot("focus-break-cycle-3");
 
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    run(500);
+    focus_shot("focus-break-paused");
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    run(500);
+
     bm_link(&M, "work", false, now);
     bm_link(&M, "home", false, now);
     run(3000);
