@@ -7,7 +7,6 @@ public struct WeekReport: Sendable {
         public var id: String { name }
         public var name: String
         public var project: Project?
-        public var sessionSeconds = 0
         public var sessions = 0
         public var active = 0
         public var commits = 0
@@ -24,8 +23,6 @@ public struct WeekReport: Sendable {
     public let commitCount: Int
 
     public var activeSeconds: Int { projects.reduce(0) { $0 + $1.active } }
-    public let sessionSeconds: Int
-
     /// `end` bounds a past week; records from later weeks are left out.
     public init(start: Int, end: Int = Int.max, now: Int, sessions all: [SessionRecord], active: [String: Int],
                 commits allCommits: [CommitRecord], tasks: [HiloTaskRecord], agreements: [Agreement], projects known: [Project]) {
@@ -39,31 +36,15 @@ public struct WeekReport: Sendable {
             return name
         }
         for s in sessions { rows[row(s.project)]!.sessions += 1 }
-        for name in rows.keys {
-            rows[name]!.sessionSeconds = Self.coveredSeconds(sessions.filter { ($0.project?.name ?? Self.noProject) == name }, from: start, now: now)
-        }
         for (name, seconds) in active { rows[row(known.first { $0.name == name }, named: name)]!.active = seconds }
         for c in commits { rows[row(c.project)]!.commits += 1 }
         for t in closed { rows[row(t.project)]!.closed.append(t) }
         self.start = start
-        self.projects = rows.values.sorted { ($0.active, $0.sessionSeconds, $1.name) > ($1.active, $1.sessionSeconds, $0.name) }
+        self.projects = rows.values.sorted { ($0.active, $0.sessions, $1.name) > ($1.active, $1.sessions, $0.name) }
         self.closed = closed
         self.agreements = agreements.filter { $0.status == .confirmed && $0.ts >= start && $0.ts < end }
         self.sessionCount = sessions.count
-        self.sessionSeconds = Self.coveredSeconds(sessions, from: start, now: now)
         self.commitCount = commits.count
-    }
-
-    /// Time with at least one session open, clipped to `start`...`now`: parallel sessions count once.
-    static func coveredSeconds(_ sessions: [SessionRecord], from start: Int, now: Int) -> Int {
-        let spans = sessions.map { (max($0.startedAt, start), min($0.startedAt + sessionSeconds($0, now: now), now)) }
-            .filter { $0.0 < $0.1 }.sorted { $0.0 < $1.0 }
-        var total = 0, reach = Int.min
-        for (from, to) in spans {
-            total += max(0, to - max(from, reach))
-            reach = max(reach, to)
-        }
-        return total
     }
 
     /// A session still working or waiting counts up to `now`.
@@ -84,7 +65,7 @@ public struct WeekReport: Sendable {
         if projects.isEmpty { out.append("Nothing recorded this week yet.") }
         for p in projects {
             out.append("## \(p.name)")
-            out.append("\(Self.duration(p.active)) active · \(Self.duration(p.sessionSeconds)) in \(Self.plural(p.sessions, "Claude Code session")) · \(Self.plural(p.commits, "commit"))")
+            out.append("\(Self.duration(p.active)) active · \(Self.plural(p.sessions, "Claude Code session")) · \(Self.plural(p.commits, "commit"))")
             out.append(contentsOf: p.closed.map { "- [x] \($0.title)" })
             out.append("")
         }

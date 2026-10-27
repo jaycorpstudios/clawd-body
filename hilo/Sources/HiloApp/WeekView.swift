@@ -44,7 +44,6 @@ struct WeekView: View {
             }
             HStack(spacing: 14) {
                 total(Format.duration(report.activeSeconds), "active")
-                total(Format.duration(report.sessionSeconds), "in sessions")
                 total("\(report.closed.count)", "tasks closed")
                 total("\(report.sessionCount)", "sessions")
                 total("\(report.commitCount)", "commits")
@@ -64,7 +63,7 @@ struct WeekView: View {
                             ProjectDot(project: p.project)
                             Text(p.name).fontWeight(.semibold)
                             Spacer()
-                            Text("\(Format.duration(p.active)) active · \(Format.duration(p.sessionSeconds)) in \(WeekReport.plural(p.sessions, "session")) · \(WeekReport.plural(p.commits, "commit")) · \(p.closed.count) closed")
+                            Text("\(Format.duration(p.active)) active · \(WeekReport.plural(p.sessions, "session")) · \(WeekReport.plural(p.commits, "commit")) · \(p.closed.count) closed")
                                 .font(.system(size: 12.5)).foregroundStyle(Theme.secondary)
                         }
                         GeometryReader { g in

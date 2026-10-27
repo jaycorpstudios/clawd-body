@@ -26,10 +26,10 @@ private func seeded() throws -> HiloStore {
         let report = try seeded().weekReport(start: 0, now: 1_900)
         #expect(report.projects.map(\.name) == ["api", "web"])
         let api = try #require(report.projects.first)
-        #expect([api.active, api.sessions, api.sessionSeconds, api.commits] as [Int] == [500, 1, 600, 1])
+        #expect([api.active, api.sessions, api.commits] as [Int] == [500, 1, 1])
         #expect(api.closed.map(\.title) == ["Webhook retries"])
         #expect(report.commitCount == 1 && report.sessionCount == 2)
-        #expect(report.markdown.contains("## api\n8 min active · 10 min in 1 Claude Code session · 1 commit\n- [x] Webhook retries"))
+        #expect(report.markdown.contains("## api\n8 min active · 1 Claude Code session · 1 commit\n- [x] Webhook retries"))
         #expect(report.markdown.hasSuffix("## Agreements\n- Ship on Friday (api)"))
     }
 
@@ -39,23 +39,6 @@ private func seeded() throws -> HiloStore {
         #expect(api.commits == 0 && api.closed.isEmpty && api.active == 400)
         #expect(report.agreements.map(\.text) == ["Ship on Friday"])
         #expect(try seeded().weekReport(start: 0, end: 1_250, now: 1_900).agreements.isEmpty)
-    }
-
-    @Test func parallelSessionsCountOnceAndTimeStaysInsideTheWeek() throws {
-        let dir = FileManager.default.temporaryDirectory.appending(path: "hilo-reports-\(UUID().uuidString)")
-        let store = try HiloStore(path: dir.appending(path: "hilo.sqlite").path(percentEncoded: false))
-        try store.recordSessionStart("old", project: "api", now: 500)
-        try store.endSession("old", now: 1_300)
-        try store.recordSessionStart("a", project: "api", now: 1_100)
-        try store.endSession("a", now: 1_500)
-        try store.recordSessionStart("b", project: "api", now: 1_200)
-        try store.endSession("b", now: 1_400)
-        try store.recordSessionStart("w", project: "web", now: 1_450)
-        try store.endSession("w", now: 1_700)
-        let report = try store.weekReport(start: 1_000, now: 2_000)
-        let api = try #require(report.projects.first { $0.name == "api" })
-        #expect(api.sessions == 3 && api.sessionSeconds == 500)
-        #expect(report.sessionSeconds == 700)
     }
 
     @Test func emptyWeekSaysSo() throws {
