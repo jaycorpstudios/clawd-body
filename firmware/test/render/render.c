@@ -325,6 +325,35 @@ static void scene_focus(void)
     shot("focus-stopped-90-4");
 }
 
+static void now_playing(bool playing)
+{
+    CHECK(send("work", "media.now_playing",
+               "{\"title\":\"Night Build\",\"artist\":\"Tabstop\",\"length_s\":247,\"position_s\":72,\"playing\":%s}",
+               playing ? "true" : "false") == BM_OK);
+    run(300);
+}
+
+static void scene_music(void)
+{
+    linked();
+    go_view(BM_VIEW_MUSIC);
+    shot("music-nothing-playing");
+
+    now_playing(true);
+    run(5000);
+    shot("music-playing");
+
+    now_playing(false);
+    shot("music-paused");
+
+    now_playing(true);
+    bm_link(&M, "work", false, now);
+    run(600);
+    bm_tap_overlay(&M, now);
+    run(4000);
+    shot("music-mac-disconnected");
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -348,6 +377,7 @@ int main(int argc, char **argv)
 
     scene_sleep();
     scene_focus();
+    scene_music();
 
     return failures ? EXIT_FAILURE : EXIT_SUCCESS;
 }

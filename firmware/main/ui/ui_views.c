@@ -10,6 +10,7 @@
 #define CONTENT_W (SCREEN - 2 * PAD_SIDE)
 #define UBAR_W ((CONTENT_W - 18) / 2)
 #define SPARK_H 44
+#define COVER_SIDE 150
 
 static const int32_t RING_SINGLE = 216, RING_DUAL = 168;
 
@@ -265,6 +266,23 @@ static void create_hilo(lv_obj_t *v)
     lv_obj_set_style_margin_top(ui.hilo_agree, 14, 0);
 }
 
+static lv_obj_t *round_button(lv_obj_t *parent, int32_t size, const lv_font_t *font, const char *symbol, bm_tap_t tap,
+                              int arg)
+{
+    lv_obj_t *b = ui_box(parent);
+    lv_obj_set_size(b, size, size);
+    lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_border_width(b, 2, 0);
+    lv_obj_set_style_border_color(b, ui_hex(0x2f2c28), 0);
+    lv_obj_set_style_bg_color(b, ui_hex(0x161412), 0);
+    lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
+    lv_obj_set_ext_click_area(b, 8);
+    lv_obj_t *l = ui_label(b, font, C_FG, symbol);
+    lv_obj_center(l);
+    ui_on_tap(b, tap, arg);
+    return l;
+}
+
 static void create_music(lv_obj_t *v)
 {
     lv_obj_set_flex_align(v, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -276,14 +294,14 @@ static void create_music(lv_obj_t *v)
     ui.cover_dsc.data_size = sizeof(ui.cover_px);
     ui.cover_dsc.data = (const uint8_t *)ui.cover_px;
     lv_obj_t *frame = ui_box(v);
-    lv_obj_set_size(frame, 190, 190);
+    lv_obj_set_size(frame, COVER_SIDE, COVER_SIDE);
     lv_obj_set_style_radius(frame, 16, 0);
     lv_obj_set_style_clip_corner(frame, true, 0);
     ui.cover = lv_image_create(frame);
     lv_image_set_src(ui.cover, &ui.cover_dsc);
     lv_image_set_inner_align(ui.cover, LV_IMAGE_ALIGN_STRETCH);
     lv_image_set_antialias(ui.cover, false);
-    lv_obj_set_size(ui.cover, 190, 190);
+    lv_obj_set_size(ui.cover, COVER_SIDE, COVER_SIDE);
 
     ui.song = ui_label(v, F_TITLE, C_FG, "");
     lv_obj_set_width(ui.song, LV_PCT(100));
@@ -304,37 +322,16 @@ static void create_music(lv_obj_t *v)
     ui.song_len = ui_label(times, &font_mono_15, C_DIM, "");
     lv_obj_align(ui.song_len, LV_ALIGN_RIGHT_MID, 0, 0);
 
-    lv_obj_t *ctl = ui_box(v);
-    lv_obj_set_size(ctl, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    lv_obj_set_flex_flow(ctl, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(ctl, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(ctl, 44, 0);
-    lv_obj_set_style_margin_top(ctl, 6, 0);
-    lv_obj_t *prev = ui_label(ctl, &lv_font_montserrat_24, C_FG, LV_SYMBOL_PREV);
-    ui.song_play = ui_label(ctl, &lv_font_montserrat_32, C_FG, LV_SYMBOL_PAUSE);
-    lv_obj_t *next = ui_label(ctl, &lv_font_montserrat_24, C_FG, LV_SYMBOL_NEXT);
-    lv_obj_t *buttons[] = {ui.song_play, next, prev};
-    for (int i = 0; i < 3; i++) {
-        lv_obj_set_ext_click_area(buttons[i], 18);
-        ui_on_tap(buttons[i], BM_TAP_MEDIA, i);
-    }
-}
-
-static lv_obj_t *round_button(lv_obj_t *parent, int32_t size, const lv_font_t *font, const char *symbol, bm_tap_t tap,
-                              int arg)
-{
-    lv_obj_t *b = ui_box(parent);
-    lv_obj_set_size(b, size, size);
-    lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_border_width(b, 2, 0);
-    lv_obj_set_style_border_color(b, ui_hex(0x2f2c28), 0);
-    lv_obj_set_style_bg_color(b, ui_hex(0x161412), 0);
-    lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
-    lv_obj_set_ext_click_area(b, 8);
-    lv_obj_t *l = ui_label(b, font, C_FG, symbol);
-    lv_obj_center(l);
-    ui_on_tap(b, tap, arg);
-    return l;
+    ui.song_ctl = ui_box(v);
+    lv_obj_set_size(ui.song_ctl, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(ui.song_ctl, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(ui.song_ctl, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(ui.song_ctl, 28, 0);
+    lv_obj_set_style_margin_top(ui.song_ctl, 10, 0);
+    round_button(ui.song_ctl, 72, &lv_font_montserrat_24, LV_SYMBOL_PREV, BM_TAP_MEDIA, BM_MEDIA_PREVIOUS);
+    ui.song_play =
+        round_button(ui.song_ctl, 96, &lv_font_montserrat_32, LV_SYMBOL_PAUSE, BM_TAP_MEDIA, BM_MEDIA_PLAY_PAUSE);
+    round_button(ui.song_ctl, 72, &lv_font_montserrat_24, LV_SYMBOL_NEXT, BM_TAP_MEDIA, BM_MEDIA_NEXT);
 }
 
 static lv_obj_t *stepper(lv_obj_t *parent, const char *name, bm_tap_t tap)
@@ -621,7 +618,7 @@ static void update_music(uint32_t now_ms)
         lv_obj_invalidate(ui.cover);
     }
     lv_label_set_text(ui.song_play, media && media->paused ? LV_SYMBOL_PLAY : LV_SYMBOL_PAUSE);
-    lv_obj_set_style_opa(lv_obj_get_parent(ui.song_play), media && ui.m->hosts[mh].connected ? LV_OPA_COVER : LV_OPA_40, 0);
+    lv_obj_set_style_opa(ui.song_ctl, media && ui.m->hosts[mh].connected ? LV_OPA_COVER : LV_OPA_40, 0);
     int32_t len = media ? media->length_s : 0;
     lv_label_set_text_fmt(ui.song_len, "%d:%02d", (int)(len / 60), (int)(len % 60));
     (void)now_ms;
