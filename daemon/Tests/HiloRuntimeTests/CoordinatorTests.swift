@@ -161,3 +161,98 @@ private func behavior(_ reply: Data) -> String? {
         #expect(usage["tokens_today"] as? Int == 5_000)
     }
 }
+
+@Suite struct CoordinatorPhase4Tests {
+    private func question() throws -> HookInput {
+        try HookInput.decode(Data(#"""
+        {"hook_event_name":"PreToolUse","session_id":"s1","cwd":"\#(repo)","tool_name":"AskUserQuestion",
+         "tool_input":{"questions":[{"question":"Where should I store history?","header":"Storage","multiSelect":false,
+           "options":[{"label":"Local SQLite","description":"One file"},{"label":"Markdown files","description":"Plain text"}]}]}}
+        """#.utf8))
+    }
+
+    private func questionId(_ h: Harness) async throws -> String {
+        for _ in 0..<10_000 {
+            if let id = await h.link.field("agent.question", "request_id") { return id }
+            await Task.yield()
+        }
+        throw CancellationError()
+    }
+
+    private func answer(_ h: Harness, _ id: String, index: Int, choice: String) async throws {
+        let msg = #"{"v":1,"id":"\#(ULID.make())","ts":1000,"type":"question.answer","data":{"request_id":"\#(id)","choice_index":\#(index),"choice":"\#(choice)"}}"#
+        try await h.coordinator.handleBuddy(Data(msg.utf8))
+    }
+
+    private func resolvedCount(_ h: Harness) async -> Int {
+        await h.link.types().filter { $0 == "agent.request_resolved" }.count
+    }
+
+    @Test func lowRiskDenyFromTheBuddyDeniesTheHook() async throws {
+        let h = Harness()
+        let hook = Task { await h.coordinator.handleHook(try h.permission("npm test")) }
+        try await h.buddy(try await h.pendingRequestId(), "deny")
+        #expect(behavior(try await hook.value) == "deny")
+        #expect(await h.link.field("agent.request_resolved", "outcome") == "denied")
+        #expect(await h.link.field("agent.request_resolved", "via") == "buddy")
+    }
+
+    @Test func aDecisionIsSingleUse() async throws {
+        let h = Harness()
+        let hook = Task { await h.coordinator.handleHook(try h.permission("npm test")) }
+        let id = try await h.pendingRequestId()
+        try await h.buddy(id, "deny")
+        try await h.buddy(id, "approve")
+        #expect(behavior(try await hook.value) == "deny")
+        #expect(await resolvedCount(h) == 2)
+        #expect(await h.link.field("agent.request_resolved", "outcome") == "denied")
+    }
+
+    @Test func answeredQuestionEchoesTheInputWithTheAnswer() async throws {
+        let h = Harness()
+        let hook = Task { await h.coordinator.handleHook(try question()) }
+        try await answer(h, try await questionId(h), index: 1, choice: "Markdown files")
+        let out = try #require(try JSONSerialization.jsonObject(with: try await hook.value) as? [String: Any])
+        let specific = try #require(out["hookSpecificOutput"] as? [String: Any])
+        #expect(specific["hookEventName"] as? String == "PreToolUse")
+        #expect(specific["permissionDecision"] as? String == "allow")
+        let updated = try #require(specific["updatedInput"] as? [String: Any])
+        #expect(updated["answers"] as? [String: String] == ["Where should I store history?": "Markdown files"])
+        let questions = try #require(updated["questions"] as? [[String: Any]])
+        #expect(questions.first?["header"] as? String == "Storage")
+        #expect(await h.link.field("agent.request_resolved", "outcome") == "answered")
+    }
+
+    @Test func answerThatDoesNotMatchTheOptionsKeepsWaiting() async throws {
+        let h = Harness()
+        let hook = Task { await h.coordinator.handleHook(try question()) }
+        let id = try await questionId(h)
+        try await answer(h, id, index: 1, choice: "Local SQLite")
+        await #expect(throws: ContractError.self) { try await answer(h, id, index: 5, choice: "Markdown files") }
+        #expect(await resolvedCount(h) == 0)
+        try await answer(h, id, index: 0, choice: "Local SQLite")
+        #expect(try await hook.value.isEmpty == false)
+    }
+
+    @Test func expiredQuestionFallsBackToTheTerminal() async throws {
+        let h = Harness()
+        let hook = Task { await h.coordinator.handleHook(try question()) }
+        let id = try await questionId(h)
+        h.clock.time.set(1_000 + HookMapper.expirySeconds)
+        #expect(try await hook.value.isEmpty)
+        #expect(await h.link.field("agent.request_resolved", "outcome") == "expired")
+        try await answer(h, id, index: 0, choice: "Local SQLite")
+        #expect(await resolvedCount(h) == 2)
+    }
+
+    @Test func requestIsStillHeldOneSecondBeforeExpiry() async throws {
+        let h = Harness()
+        let hook = Task { await h.coordinator.handleHook(try h.permission("npm test")) }
+        let id = try await h.pendingRequestId()
+        h.clock.time.set(1_000 + HookMapper.expirySeconds - 1)
+        for _ in 0..<200 { await Task.yield() }
+        #expect(await resolvedCount(h) == 0)
+        try await h.buddy(id, "approve")
+        #expect(behavior(try await hook.value) == "allow")
+    }
+}
