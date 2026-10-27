@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Claudio Eyes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600;700&family=Pixelify+Sans:wght@500;700&display=swap">
+<style>
+/* Layout: the printed Claudio at true proportions on a desk at night (left), controls, numbers and decisions (right). Single dark look by choice, like buddy-sim. */
+:root{
+  --bg:#15120f; --panel:#1f1a15; --panel-2:#28221b; --line:#3a3229; --fg:#efe7dc; --muted:#a19585;
+  --accent:#e9834b; --accent-ink:#1a0f08;
+  --pla:#d97757; --glass:#050505;
+  --f-display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  --mm:7px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+body{font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:28px;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:start}
+@media (max-width:980px){.wrap{grid-template-columns:minmax(0,1fr)}}
+header.top{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(26px,3.6vw,36px);letter-spacing:-.01em;margin:0;text-wrap:balance}
+header.top p{margin:0;color:var(--muted);max-width:64ch}
+.tag{font-family:var(--f-mono);font-size:12px;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
+h2{font-family:var(--f-display);font-weight:700;font-size:20px;margin:0 0 10px;text-wrap:balance}
+
+.stage{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;align-items:center;gap:14px;
+  background:radial-gradient(ellipse at 50% 30%, #2a221b 0%, var(--bg) 70%);border:1px solid var(--line);border-radius:18px;padding:28px 12px 18px;min-width:0}
+@media (max-width:980px){.stage{position:static}}
+.case{position:relative;width:calc(var(--mm)*88);height:calc(var(--mm)*72);flex:none}
+.case .p{position:absolute;background:var(--pla)}
+.case .body{left:calc(var(--mm)*8);top:calc(var(--mm)*1);width:calc(var(--mm)*72);height:calc(var(--mm)*52);
+  background:linear-gradient(180deg, color-mix(in srgb, var(--pla) 100%, #fff 6%) 0%, var(--pla) 40%, color-mix(in srgb, var(--pla) 82%, #000) 100%)}
+.case .shade{filter:brightness(.78)}
+.case .win{position:absolute;left:calc(var(--mm)*22.1);top:calc(var(--mm)*5.3);width:calc(var(--mm)*43.8);height:calc(var(--mm)*43.8);
+  border-radius:calc(var(--mm)*4.5);background:var(--glass);box-shadow:inset 0 0 0 calc(var(--mm)*.25) #000, 0 0 0 1px rgba(0,0,0,.35)}
+.case canvas{position:absolute;left:calc(var(--mm)*2.5);top:calc(var(--mm)*2.5);width:calc(var(--mm)*38.8);height:calc(var(--mm)*38.8);
+  image-rendering:pixelated;touch-action:none;transition:filter .6s}
+.case.bare{width:calc(var(--mm)*44);height:calc(var(--mm)*44)}
+.case.bare .p{display:none}
+.case.bare .win{left:0;top:0}
+.caption{font-family:var(--f-mono);font-size:13px;color:var(--muted);text-align:center;min-height:2.6em;max-width:58ch}
+.caption b{color:var(--fg);font-weight:600}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;min-width:0}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lbl{font-family:var(--f-mono);font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;width:100%;margin-top:4px}
+.chip{font:500 14px var(--f-body);color:var(--fg);background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer}
+.chip:hover{border-color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.chip:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{font:600 14px var(--f-body);border-radius:10px;padding:8px 14px;cursor:pointer;border:1px solid var(--line);background:var(--panel-2);color:var(--fg)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.slider{display:grid;grid-template-columns:6.5em minmax(0,1fr) 12em;gap:10px;align-items:center;width:100%;font-size:14px}
+.slider input{width:100%;accent-color:var(--accent);min-width:0}
+.slider output{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.color{display:flex;gap:10px;align-items:center;font-size:14px}
+.color input{width:40px;height:28px;border:1px solid var(--line);border-radius:6px;background:none;padding:0}
+
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 10px 7px 0;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 12px var(--f-mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+td.n{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.note{color:var(--muted);font-size:14px;margin:8px 0 0;max-width:68ch}
+ol.dec{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:10px}
+ol.dec li{max-width:68ch}
+ol.dec b{color:var(--fg)}
+ol.dec em{font-style:normal;color:var(--accent)}
+.legend{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;font-size:14px}
+.legend dt{font-family:var(--f-mono);font-size:13px;color:var(--accent)}
+.legend dd{margin:0;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.case canvas{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="tag">Hilo Buddy · prototype for approval · task #15</div>
+      <h1>Claudio's eyes</h1>
+    </div>
+    <p>The buddy sits inside the printed Claudio case. Its screen turns orange and becomes Claudio's face: pixel eyes that react to what the agents are doing, step aside for permission and question screens, and share the sleep rotation with the clock and Mac cards.</p>
+  </header>
+
+  <section class="stage" id="stage" aria-label="Claudio case, front view">
+    <div class="case" id="case">
+      <div class="p" style="left:calc(var(--mm)*41.5);top:0;width:calc(var(--mm)*5);height:calc(var(--mm)*1.2)"></div>
+      <div class="p" style="left:calc(var(--mm)*51.5);top:0;width:calc(var(--mm)*5);height:calc(var(--mm)*1.2)"></div>
+      <div class="p shade" style="left:0;top:calc(var(--mm)*18);width:calc(var(--mm)*9);height:calc(var(--mm)*18)"></div>
+      <div class="p shade" style="left:calc(var(--mm)*79);top:calc(var(--mm)*18);width:calc(var(--mm)*9);height:calc(var(--mm)*18)"></div>
+      <div class="p shade" style="left:calc(var(--mm)*8);top:calc(var(--mm)*53);width:calc(var(--mm)*8);height:calc(var(--mm)*18)"></div>
+      <div class="p shade" style="left:calc(var(--mm)*24.1);top:calc(var(--mm)*53);width:calc(var(--mm)*8.1);height:calc(var(--mm)*18)"></div>
+      <div class="p shade" style="left:calc(var(--mm)*55.8);top:calc(var(--mm)*53);width:calc(var(--mm)*8.1);height:calc(var(--mm)*18)"></div>
+      <div class="p shade" style="left:calc(var(--mm)*72);top:calc(var(--mm)*53);width:calc(var(--mm)*8);height:calc(var(--mm)*18)"></div>
+      <div class="p body"></div>
+      <div class="win"><canvas id="panel" width="480" height="480" aria-label="Buddy panel, 480 by 480"></canvas></div>
+    </div>
+    <div class="caption" id="caption" aria-live="polite"></div>
+    <div class="row" style="justify-content:center">
+      <button class="chip" id="viewCase" aria-pressed="true">Case at scale</button>
+      <button class="chip" id="viewPanel" aria-pressed="false">Panel only</button>
+      <button class="chip" id="guides" aria-pressed="false">Guides</button>
+    </div>
+  </section>
+
+  <div class="col">
+    <section class="card" aria-label="Controls">
+      <h2>Drive it</h2>
+      <div class="row" id="states">
+        <div class="lbl">What the agents are doing</div>
+        <button class="chip" data-state="auto" aria-pressed="true">Auto (scripted day)</button>
+        <button class="chip" data-state="idle" aria-pressed="false">Idle</button>
+        <button class="chip" data-state="working" aria-pressed="false">Working</button>
+        <button class="chip" data-state="waiting" aria-pressed="false">Waiting on you</button>
+        <button class="chip" data-state="done" aria-pressed="false">Task done</button>
+        <button class="chip" data-state="sleep" aria-pressed="false">Asleep</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="lbl">Interruptions (answer them on the panel: hold to approve, tap Deny, an option or Later)</div>
+        <button class="btn primary" id="evPerm">Permission</button>
+        <button class="btn" id="evRisk">High-risk permission</button>
+        <button class="btn" id="evQ">Question</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="lbl">Sleep screen</div>
+        <button class="chip" id="rotOn" aria-pressed="true">Eyes on top, clock and cards below</button>
+        <button class="chip" id="rotOff" aria-pressed="false">Eyes only</button>
+        <button class="chip" id="bgEmber" aria-pressed="true">Ember background</button>
+        <button class="chip" id="bgOrange" aria-pressed="false">Orange background</button>
+        <button class="chip" id="picOn" aria-pressed="true">This Mac has a picture</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="lbl">Tune the face (numbers are what would go to the firmware)</div>
+        <label class="slider"><span>Eye spread</span><input type="range" id="spread" min="76" max="164" step="8" value="140"><output id="spreadOut"></output></label>
+        <label class="slider"><span>Eye height</span><input type="range" id="eyeY" min="104" max="240" step="8" value="160"><output id="eyeYOut"></output></label>
+        <label class="slider"><span>Eye size</span><input type="range" id="eyeH" min="9" max="17" step="1" value="13"><output id="eyeHOut"></output></label>
+        <label class="color"><input type="color" id="orange" value="#d97757"> Case and screen orange (match the filament)</label>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Expressions">
+      <h2>What each state does</h2>
+      <dl class="legend">
+        <dt>Idle</dt><dd>Blinks every 2–6 s, sometimes twice; looks left, right, up, or sweeps the room; one eye narrows when curious.</dd>
+        <dt>Working</dt><dd>Lids lowered and tilted in (concentrating); reads lines left to right, glances up to think, twitches while "typing". Blinks less.</dd>
+        <dt>Waiting</dt><dd>Inner lids raised (worried), eyes a cell lower; glances at you and to the sides, nervous double blinks, small sighs.</dd>
+        <dt>Task done</dt><dd>^ ^ eyes with a bounce and sparkles, sometimes a wink; back to idle after 4 s.</dd>
+        <dt>Asleep</dt><dd>Closed ‿ ‿ eyes breathing one cell up and down, a pixel "z", now and then one eye peeks.</dd>
+        <dt>Interrupted</dt><dd>Eyes widen and look down at the request, then the permission or question card slides up; the eyes ride along in the card's corner tile, worried, and come back with a reaction: happy after an approval or answer, a blink after Deny, a glance after Later.</dd>
+      </dl>
+      <p class="note">Each beat is chosen at random from the state's pool, so two minutes of "working" never loop the same way. Gaze moves in whole 8 px cells, like the case's pixel grid.</p>
+    </section>
+
+    <section class="card" aria-label="Derived numbers">
+      <h2>Where the eyes fall</h2>
+      <div class="tablewrap">
+      <table>
+        <thead><tr><th>Measure</th><th>Value</th><th>From</th></tr></thead>
+        <tbody>
+          <tr><td>Panel active area</td><td class="n">38.8 × 38.8 mm</td><td>2.16″ diagonal, square, 480 × 480</td></tr>
+          <tr><td>Pixel pitch</td><td class="n">12.37 px/mm · 0.081 mm</td><td>480 / 38.8</td></tr>
+          <tr><td>Case window</td><td class="n">43.8 × 43.8 mm, R4.5</td><td>glass 43.3 + 0.5 mm</td></tr>
+          <tr><td>Black border around the panel</td><td class="n">2.5 mm each side</td><td>(43.8 − 38.8) / 2, assumes the panel is centred under the glass</td></tr>
+          <tr><td>Body front</td><td class="n">72 × 52 mm</td><td>window centre 0.2 mm below the body's centre</td></tr>
+          <tr><td>Clawd's eyes on the body</td><td class="n">±21.0 mm, 6.7 mm up</td><td>pixel Clawd: eyes at columns 2 and 9 of 12, row 1 of 4</td></tr>
+          <tr><td>…on the panel</td><td class="n">x 100 / 380 px, y 156 px</td><td>±21 mm falls 1.6 mm outside the panel, so the spread is scaled to the panel (±11.3 mm = ±140 px, the same 3.5 of 12 columns); the height is kept (6.7 mm, the nearest cell row puts the centre 84 px above the panel centre)</td></tr>
+          <tr><td>Eye</td><td class="n">7 × 13 cells = 56 × 104 px = 4.5 × 8.4 mm</td><td>8 px cells (0.65 mm)</td></tr>
+          <tr><td>Sleep screen eyes</td><td class="n">4 × 7 cells at x 160 / 320, y 100 px</td><td>cards below, y 200–460</td></tr>
+          <tr><td>Alert corner tile</td><td class="n">128 × 128 px at (28, 26)</td><td>the pet slot of the approved permission screen</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="note" id="liveGeo"></p>
+    </section>
+
+    <section class="card" aria-label="Decisions">
+      <h2>To decide before the firmware</h2>
+      <ol class="dec">
+        <li><b>Where the face lives.</b> (a) A new first view "Face" before Home; the buddy goes back to it after 20 s without a touch, a tap opens Home. (b) The face replaces Home and Home's text moves to the Agents view. (c) The face only on the sleep screen. <em>Recommended: (a)</em>, nothing on Home is lost.</li>
+        <li><b>Sleep background.</b> Orange keeps Claudio looking awake at 20 % brightness, but a full orange screen draws far more power than black on an AMOLED and wears the panel evenly lit for hours. Ember (dark background, orange eyes and text) reads as "Claudio dozing". <em>Recommended: ember.</em></li>
+        <li><b>The alert's corner.</b> The approved permission screen shows the pet in its corner; here it shows Claudio's eyes in an orange tile. <em>Recommended: eyes</em>, the pet stays on Agents and Home.</li>
+        <li><b>Eye spacing.</b> Clawd's eyes sit wider than the panel; the default scales them in to x 100 / 380 px. The spread slider shows closer-set options.</li>
+        <li><b>Per-session pets.</b> With the face on top, the main pet appears less; session pets (task #14) stay as they are on Agents and in the sheets.</li>
+      </ol>
+      <p class="note">Nothing here changes the contract: the face reads the same pet state the firmware already derives (idle, working, waiting, happy, sleep).</p>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const W = 480, CELL = 8, G = W / CELL, PX_MM = W / 38.8;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = s => document.querySelector(s);
+const panel = $('#panel'), ctx = panel.getContext('2d');
+const low = document.createElement('canvas'); low.width = low.height = G;
+const lx = low.getContext('2d');
+const tile = document.createElement('canvas'); tile.width = tile.height = 16;
+const tx = tile.getContext('2d');
+
+const S = {
+  mode: 'auto', state: 'idle', rotation: true, ember: true, picture: true, guides: false,
+  geo: {spread: 140, y: 160, h: 13},
+  orange: '#d97757',
+  rest: 0, restTarget: 0, restAt: 0,
+  alert: null, react: null,
+  card: 0, cardAt: 0, drift: [0, 0], driftAt: 0,
+  doneAt: 0, auto: {i: 0, until: 0, waitAlert: false},
+};
+const E = {gx: 0, gy: 0, open: [1, 1], tilt: 0, shape: ['open', 'open']};
+let T = base('idle');
+let beat = null, beatI = 0, stepUntil = 0, nextBeat = 0, blinkAt = 0, blinkStart = -1e9, blinks = 0;
+const zs = [], sparks = [];
+let hits = [];
+
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t);
+function hex(c) { const n = parseInt(c.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function mix(a, b, t) { const A = hex(a), B = hex(b); return '#' + A.map((v, i) => Math.round(lerp(v, B[i], t)).toString(16).padStart(2, '0')).join(''); }
+function rgba(c, a) { const [r, g, b] = hex(c); return `rgba(${r},${g},${b},${a})`; }
+
+function base(state) {
+  switch (state) {
+    case 'working': return {gx: 0, gy: 1, open: [.62, .62], tilt: .55, shape: ['open', 'open']};
+    case 'waiting': return {gx: 0, gy: 1, open: [.92, .92], tilt: -.6, shape: ['open', 'open']};
+    case 'done': return {gx: 0, gy: 0, open: [1, 1], tilt: 0, shape: ['happy', 'happy']};
+    case 'sleep': return {gx: 0, gy: 0, open: [0, 0], tilt: 0, shape: ['sleep', 'sleep']};
+    default: return {gx: 0, gy: 0, open: [1, 1], tilt: 0, shape: ['open', 'open']};
+  }
+}
+const rep = (steps, n) => Array.from({length: n}, () => steps).flat();
+const BEATS = {
+  idle: [
+    {n: 'looks left', s: [{gx: -3, d: 1500}]},
+    {n: 'looks right', s: [{gx: 3, d: 1500}]},
+    {n: 'looks up', s: [{gx: 1, gy: -2, d: 1300}]},
+    {n: 'sweeps the room', s: [{gx: -3, d: 650}, {gx: 0, d: 350}, {gx: 3, d: 750}, {gx: 0, d: 300}]},
+    {n: 'double blink', s: [{blink: 2, d: 900}]},
+    {n: 'curious', s: [{gx: 2, open: [1, .55], tilt: .15, d: 1500}]},
+    {n: 'rests', s: [{d: 1800}]},
+  ],
+  working: [
+    {n: 'reads', s: [{gx: -2, gy: 1, d: 380}, {gx: 0, gy: 1, d: 380}, {gx: 2, gy: 1, d: 380}, {gx: -2, gy: 2, d: 380}, {gx: 0, gy: 2, d: 380}, {gx: 2, gy: 2, d: 500}]},
+    {n: 'thinks', s: [{gx: 2, gy: -2, open: [.85, .85], tilt: .15, d: 1600}]},
+    {n: 'types', s: rep([{gy: 1, d: 140}, {gy: 2, d: 140}], 5)},
+    {n: 'scans', s: [{gx: -3, gy: 1, d: 700}, {gx: 3, gy: 1, d: 700}]},
+    {n: 'squints harder', s: [{open: [.45, .45], tilt: .8, d: 1200}]},
+  ],
+  waiting: [
+    {n: 'glances left', s: [{gx: -3, d: 650}, {gx: 0, d: 700}]},
+    {n: 'glances right', s: [{gx: 3, d: 650}, {gx: 0, d: 700}]},
+    {n: 'looks at you', s: [{gy: 0, open: [1.08, 1.08], tilt: -.75, d: 1600}]},
+    {n: 'nervous blinks', s: [{blink: 2, d: 800}]},
+    {n: 'sighs', s: [{open: [.55, .55], gy: 2, d: 1000}]},
+  ],
+  done: [
+    {n: 'bounces', s: rep([{gy: -1, d: 150}, {gy: 0, d: 150}], 3)},
+    {n: 'winks', s: [{shape: ['happy', 'open'], d: 700}]},
+    {n: 'sparkles', s: [{spark: 6, d: 1200}]},
+  ],
+  sleep: [
+    {n: 'peeks', s: [{open: [0, .35], shape: ['sleep', 'open'], gx: 1, d: 1100}]},
+    {n: 'snores', s: [{z: 3, d: 2200}]},
+    {n: 'dreams', s: [{d: 2600}]},
+  ],
+};
+const GAPS = {idle: [600, 2200], working: [200, 1200], waiting: [500, 1600], done: [200, 700], sleep: [1500, 4000]};
+const BLINK = {idle: [2000, 6000], working: [4000, 8000], waiting: [1500, 3500], done: [3000, 5000], sleep: [1e9, 1e9]};
+
+function setState(st, now) {
+  if (st === S.state && !S.react) return;
+  S.state = st; beat = null; T = base(st); nextBeat = now + rnd(300, 900);
+  blinkAt = now + rnd(...BLINK[st]);
+  if (st === 'done') { S.doneAt = now; sparks.length = 0; addSparks(6); }
+  S.restTarget = st === 'sleep' && S.rotation ? 1 : 0; S.restAt = now + (st === 'sleep' ? 700 : 0);
+}
+function stepBeat(now) {
+  if (S.react) return;
+  if (!beat && now >= nextBeat) { beat = pick(BEATS[S.state]); beatI = -1; stepUntil = now; S.beatName = beat.n; }
+  if (beat && now >= stepUntil) {
+    beatI++;
+    if (beatI >= beat.s.length) { beat = null; T = base(S.state); S.beatName = ''; nextBeat = now + rnd(...GAPS[S.state]); return; }
+    const st = beat.s[beatI], b = base(S.state);
+    T = {gx: st.gx ?? b.gx, gy: st.gy ?? b.gy, open: st.open ?? b.open, tilt: st.tilt ?? b.tilt, shape: st.shape ?? b.shape};
+    if (reduce) { T.gy = b.gy; }
+    if (st.blink) { blinks = st.blink; blinkStart = now; }
+    if (st.spark) addSparks(st.spark);
+    if (st.z) for (let i = 0; i < st.z; i++) setTimeout(() => zs.push({t: performance.now()}), i * 600);
+    stepUntil = now + st.d;
+  }
+}
+function addSparks(n) { for (let i = 0; i < n; i++) sparks.push({x: Math.floor(rnd(4, G - 4)), y: Math.floor(rnd(4, 34)), t: performance.now() + i * 120}); }
+
+function blinkAmount(now) {
+  if (now >= blinkAt && blinkStart < now - 400) { blinks = 1; blinkStart = now; blinkAt = now + rnd(...BLINK[S.state]); }
+  const p = (now - blinkStart) / 220;
+  if (p >= 1) { if (blinks > 1) { blinks--; blinkStart = now + 60; } return 0; }
+  if (p < 0) return 0;
+  return p < .45 ? p / .45 : p < .6 ? 1 : 1 - (p - .6) / .4;
+}
+
+function drawEye(g, x0, y0, w, h, open, tilt, shape, side) {
+  if (shape === 'happy') {
+    const mid = (w - 1) / 2, peak = y0 + Math.round(h * .3);
+    for (let i = 0; i < w; i++) { const y = peak + Math.round(Math.abs(i - mid) * 1.1); g.fillRect(x0 + i, y, 1, 2); }
+    return;
+  }
+  if (shape === 'sleep' || open < .1) {
+    const y = y0 + Math.round(h * .62);
+    for (let i = 0; i < w; i++) g.fillRect(x0 + i, y - (i === 0 || i === w - 1 ? 1 : 0), 1, 1 + (w > 4 && i > 0 && i < w - 1 ? 1 : 0));
+    return;
+  }
+  const grow = open > 1 ? Math.round((open - 1) * 10) : 0;
+  const bottom = y0 + h + grow;
+  for (let i = -grow; i < w + grow; i++) {
+    const t = w > 1 ? Math.min(1, Math.max(0, i / (w - 1))) : 0;
+    const inner = side < 0 ? t : 1 - t;
+    const lid = tilt > 0 ? tilt * inner * h * .45 : -tilt * (1 - inner) * h * .45;
+    const top = Math.round(y0 - grow + (1 - Math.min(open, 1)) * h * .9 + lid);
+    if (bottom - top > 0) g.fillRect(x0 + i, top, 1, bottom - top);
+  }
+}
+
+function eyeLayout(r) {
+  const wFace = Math.round(S.geo.h * 7 / 13), w = Math.round(lerp(wFace, 4, r)), h = Math.round(lerp(S.geo.h, 7, r));
+  const xL = Math.floor(lerp(240 - S.geo.spread, 160, r) / CELL - w / 2), xR = G - xL - w;
+  const y0 = Math.floor(lerp(S.geo.y, 100, r) / CELL - h / 2);
+  return {w, h, xL, xR, y0};
+}
+
+function drawFaceEyes(now, r, ink, dx, dy) {
+  lx.clearRect(0, 0, G, G); lx.fillStyle = ink;
+  const L = eyeLayout(r), b = blinkAmount(now);
+  let gy = E.gy;
+  if (S.state === 'sleep') gy += Math.round(Math.sin(now / 1500) * .6);
+  if (S.state === 'done' && !reduce && now - S.doneAt < 1500) gy -= Math.round(Math.abs(Math.sin((now - S.doneAt) / 150)));
+  const sc = lerp(1, .55, r);
+  const gx = Math.round(E.gx * sc), gyy = Math.round(gy * sc);
+  for (const [i, x0] of [[0, L.xL], [1, L.xR]]) {
+    const shape = E.shape[i], blinkable = shape === 'open';
+    const open = blinkable ? E.open[i] * (1 - b) : E.open[i];
+    drawEye(lx, x0 + gx + Math.round(dx / CELL), L.y0 + gyy + Math.round(dy / CELL), L.w, L.h, open, E.tilt, shape, i === 0 ? -1 : 1);
+  }
+  ctx.drawImage(low, 0, 0, G, G, 0, 0, W, W);
+  ctx.fillStyle = ink;
+  for (const s of sparks) {
+    const a = (now - s.t) / 900; if (a < 0 || a > 1) continue;
+    const k = a < .5 ? 1 : 0, x = s.x * CELL, y = s.y * CELL;
+    ctx.fillRect(x, y - CELL * k, CELL, CELL * (1 + 2 * k)); ctx.fillRect(x - CELL * k, y, CELL * (1 + 2 * k), CELL);
+  }
+  for (const z of zs) {
+    const a = (now - z.t) / 2400; if (a < 0 || a > 1) continue;
+    const x = (L.xR + L.w + 2) * CELL + a * 40 + dx, y = L.y0 * CELL - a * 60 + dy;
+    ctx.globalAlpha = 1 - a; ctx.font = `700 ${Math.round(lerp(28, 18, r))}px "Pixelify Sans", monospace`; ctx.fillText('z', x, y); ctx.globalAlpha = 1;
+  }
+  return L;
+}
+
+function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function hhmm() { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+
+function drawCards(now, alpha, ink, dx, dy) {
+  const cards = S.picture ? ['clock', 'mac'] : ['clock', 'computers'];
+  const card = cards[S.card % cards.length], t = Math.min(1, (now - S.cardAt) / 400);
+  ctx.save(); ctx.globalAlpha = alpha * ease(t); ctx.translate(dx, dy);
+  ctx.fillStyle = ink; ctx.textAlign = 'center';
+  if (card === 'clock') {
+    ctx.font = '700 104px "Pixelify Sans", monospace'; ctx.fillText(hhmm(), 240, 330);
+    ctx.font = '500 18px "JetBrains Mono", monospace'; ctx.globalAlpha *= .7;
+    ctx.fillText(new Date().toLocaleDateString('en-US', {weekday: 'short', day: 'numeric', month: 'short'}), 240, 372);
+  } else if (card === 'mac') {
+    ctx.font = '700 18px "JetBrains Mono", monospace'; ctx.fillText('Work', 240, 222);
+    ctx.save(); roundRect(170, 238, 140, 140, 22); ctx.clip(); ctx.globalAlpha *= .8;
+    const g = ctx.createLinearGradient(170, 238, 310, 378); g.addColorStop(0, '#5a7d9a'); g.addColorStop(1, '#2c3e50');
+    ctx.fillStyle = g; ctx.fillRect(170, 238, 140, 140);
+    ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.beginPath(); ctx.arc(240, 296, 30, 0, 7); ctx.fill(); ctx.fillRect(196, 336, 88, 50);
+    ctx.restore();
+    ctx.fillStyle = ink; ctx.font = '400 17px "JetBrains Mono", monospace'; ctx.globalAlpha = alpha * ease(t) * .7;
+    ctx.fillText('connected 2 h ago', 240, 410);
+  } else {
+    for (const [i, lit] of [[0, true], [1, false]]) {
+      const x = 240 - 76 + i * 88, y = 250;
+      ctx.fillStyle = ink; ctx.fillRect(x, y, 64, 48); ctx.fillRect(x + 24, y + 48, 16, 8); ctx.fillRect(x + 12, y + 56, 40, 6);
+      ctx.fillStyle = lit ? '#7cc8ff' : '#1b1b1f'; ctx.fillRect(x + 6, y + 6, 52, 36);
+      if (lit && Math.floor(now / 500) % 2) { ctx.fillStyle = '#0b2b44'; ctx.fillRect(x + 12, y + 28, 12, 6); }
+    }
+    ctx.fillStyle = ink; ctx.font = '400 17px "JetBrains Mono", monospace'; ctx.globalAlpha *= .7; ctx.fillText('1 Mac connected', 240, 360);
+  }
+  ctx.restore();
+}
+
+const PERMS = [
+  {kind: 'perm', tool: 'Bash', project: 'payments-api', detail: 'npm test -- --watch=false', why: 'Run the unit tests before the commit'},
+  {kind: 'perm', tool: 'Edit', project: 'acme-dashboard', detail: 'src/charts/usage.ts  +18 −4', why: 'Fix the empty state of the usage chart'},
+];
+const RISK = {kind: 'perm', risk: true, tool: 'Bash', project: 'infra-terraform', detail: 'terraform apply -auto-approve', why: 'Apply the staging changes'};
+const QUES = {kind: 'q', tool: 'AskUserQuestion', project: 'hilo-app', detail: 'Which week start should Export .md use?', options: ['The system calendar', 'Always Monday', 'Always Sunday']};
+
+function openAlert(a, now) {
+  if (S.alert) return;
+  S.alert = {...a, t0: now, phase: 'in', hold: -1, outcome: null};
+  if (S.state === 'sleep') { S.prevState = 'sleep'; setState('idle', now); }
+  S.rest = 0; S.restTarget = 0;
+  T = {...base('waiting'), open: [1.15, 1.15], gy: 3, tilt: -.2};
+  S.react = {until: now + 380, name: 'sees the request'};
+}
+function resolve(outcome, now) {
+  const a = S.alert; if (!a || a.phase !== 'shown') return;
+  a.phase = 'out'; a.t0 = now; a.outcome = outcome;
+  const pool = {approved: ['happy', 'happy'], answered: ['happy', 'happy'], mac: ['happy', 'happy']}[outcome];
+  setTimeout(() => {
+    const t = performance.now();
+    if (pool) { T = {...base('idle'), shape: pool}; S.react = {until: t + 1100, name: outcome === 'answered' ? 'pleased with the answer' : 'relieved'}; }
+    else if (outcome === 'denied') { T = base('idle'); blinks = 1; blinkStart = t; S.react = {until: t + 700, name: 'blinks it off'}; }
+    else { T = {...base('waiting'), gx: -3}; S.react = {until: t + 900, name: 'glances at the Mac'}; }
+  }, 340);
+}
+
+function drawAlert(now) {
+  const a = S.alert; if (!a) return;
+  let slide;
+  if (a.phase === 'in') { const p = (now - a.t0 - 380) / 340; slide = 1 - ease(p); if (p >= 1) a.phase = 'shown'; }
+  else if (a.phase === 'out') { const p = (now - a.t0) / 340; slide = ease(p); if (p >= 1) { S.alert = null; if (S.mode === 'auto') S.auto.waitAlert = false; if (S.prevState === 'sleep' && S.mode !== 'auto') { S.prevState = null; } return; } }
+  else slide = 0;
+  if (reduce && a.phase !== 'shown') slide = a.phase === 'in' ? 0 : 1;
+  const oy = slide * W, risk = !!a.risk, col = risk ? '#ff5d62' : '#ffc53d';
+  ctx.save(); ctx.translate(0, oy);
+  const g = ctx.createLinearGradient(0, 0, 0, W * .7); g.addColorStop(0, risk ? '#3a0a0c' : '#3a2a00'); g.addColorStop(1, '#000');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, W);
+  ctx.globalAlpha = reduce ? .8 : .55 + .45 * Math.sin(now / 175) ** 2; ctx.strokeStyle = col; ctx.lineWidth = 5; ctx.strokeRect(2.5, 2.5, W - 5, W - 5); ctx.globalAlpha = 1;
+  roundRect(28, 26, 128, 128, 24); ctx.fillStyle = S.orange; ctx.fill();
+  tx.clearRect(0, 0, 16, 16); tx.fillStyle = '#1d0f08';
+  const b = blinkAmount(now), look = Math.floor(now / 1700) % 3;
+  for (const [i, cx] of [[0, 5], [1, 11]]) drawEye(tx, cx - 1 + (look === 1 ? -1 : 0), 6 + (look === 2 ? 1 : 0), 2, 5, .92 * (1 - b), -.6, 'open', i === 0 ? -1 : 1);
+  ctx.drawImage(tile, 0, 0, 16, 16, 28, 26, 128, 128);
+  ctx.textAlign = 'left'; ctx.fillStyle = col; ctx.font = '700 15px "JetBrains Mono", monospace';
+  ctx.fillText((a.kind === 'q' ? 'QUESTION' : risk ? 'PERMISSION · HIGH RISK' : 'PERMISSION') + ' · ' + a.tool.toUpperCase(), 176, 58);
+  ctx.fillStyle = '#ffeec4'; ctx.font = '600 28px "IBM Plex Sans", sans-serif'; ctx.fillText(a.project, 176, 98);
+  ctx.fillStyle = '#a89b78'; ctx.font = '400 15px "JetBrains Mono", monospace'; ctx.fillText('Work Mac · just now', 176, 128);
+  hits = [];
+  if (a.kind === 'q') {
+    ctx.fillStyle = '#ffeec4'; ctx.font = '500 21px "IBM Plex Sans", sans-serif'; ctx.fillText(a.detail, 28, 200);
+    a.options.forEach((o, i) => {
+      const y = 228 + i * 64; roundRect(28, y, 424, 52, 14); ctx.fillStyle = 'rgba(255,238,196,.08)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,238,196,.22)'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.fillStyle = '#ffeec4'; ctx.font = '500 19px "IBM Plex Sans", sans-serif'; ctx.fillText(`${i + 1}. ${o}`, 46, y + 33);
+      hits.push({x: 28, y: y + oy, w: 424, h: 52, act: 'answer'});
+    });
+  } else {
+    roundRect(28, 172, 424, 60, 12); ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.fill();
+    ctx.fillStyle = '#f3ede4'; ctx.font = '400 18px "JetBrains Mono", monospace'; ctx.fillText(a.detail, 46, 209);
+    ctx.fillStyle = '#c9b98f'; ctx.font = '400 16px "IBM Plex Sans", sans-serif'; ctx.fillText(a.why, 28, 268);
+    roundRect(28, 300, 132, 72, 16); ctx.strokeStyle = 'rgba(255,238,196,.35)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#ffeec4'; ctx.font = '600 20px "IBM Plex Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Deny', 94, 343);
+    hits.push({x: 28, y: 300 + oy, w: 132, h: 72, act: 'deny'});
+    if (risk) {
+      roundRect(176, 300, 276, 72, 16); ctx.fillStyle = 'rgba(255,93,98,.12)'; ctx.fill();
+      ctx.fillStyle = '#ff9a9d'; ctx.font = '600 17px "IBM Plex Sans", sans-serif'; ctx.fillText('High risk: Mac only', 314, 342);
+    } else {
+      roundRect(176, 300, 276, 72, 16); ctx.fillStyle = '#123a2a'; ctx.fill();
+      if (a.hold >= 0) {
+        const p = Math.min(1, (now - a.hold) / 900);
+        ctx.save(); roundRect(176, 300, 276, 72, 16); ctx.clip(); ctx.fillStyle = '#2f9e6e'; ctx.fillRect(176, 300, 276 * p, 72); ctx.restore();
+        if (p >= 1) { a.hold = -1; resolve('approved', now); }
+      }
+      ctx.fillStyle = '#5ee3a8'; ctx.font = '600 20px "IBM Plex Sans", sans-serif'; ctx.fillText('Hold to approve', 314, 343);
+      hits.push({x: 176, y: 300 + oy, w: 276, h: 72, act: 'hold'});
+    }
+  }
+  ctx.textAlign = 'left'; ctx.fillStyle = '#a89b78'; ctx.font = '500 16px "IBM Plex Sans", sans-serif'; ctx.fillText('View details ›', 28, 444);
+  ctx.textAlign = 'right'; ctx.fillText('Later', 452, 444); ctx.textAlign = 'left';
+  hits.push({x: 380, y: 410 + oy, w: 90, h: 60, act: 'later'});
+  ctx.restore();
+}
+
+function drawGuides(L, dx, dy) {
+  ctx.save();
+  for (let i = 0; i <= W; i += CELL) {
+    ctx.strokeStyle = i % 40 === 0 ? 'rgba(255,255,255,.18)' : 'rgba(255,255,255,.06)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(i + .5, 0); ctx.lineTo(i + .5, W); ctx.moveTo(0, i + .5); ctx.lineTo(W, i + .5); ctx.stroke();
+  }
+  ctx.strokeStyle = '#7cc8ff'; ctx.lineWidth = 2; ctx.font = '600 12px "JetBrains Mono", monospace'; ctx.fillStyle = '#7cc8ff';
+  for (const x0 of [L.xL, L.xR]) {
+    const x = x0 * CELL + dx, y = L.y0 * CELL + dy;
+    ctx.strokeRect(x, y, L.w * CELL, L.h * CELL); ctx.textAlign = 'center';
+    ctx.fillText(`${x + L.w * CELL / 2},${y + L.h * CELL / 2}`, x + L.w * CELL / 2, y + L.h * CELL + 16);
+  }
+  ctx.beginPath(); ctx.moveTo(240, 228); ctx.lineTo(240, 252); ctx.moveTo(228, 240); ctx.lineTo(252, 240); ctx.stroke();
+  ctx.textAlign = 'left'; ctx.fillText('480 px = 38.8 mm · cell 8 px = 0.65 mm', 10, 470);
+  ctx.restore();
+}
+
+function update(now, dt) {
+  if (S.react && now >= S.react.until) { S.react = null; T = base(S.state); nextBeat = now + 400; }
+  if (S.mode === 'auto') autoStep(now);
+  if (S.state === 'done' && now - S.doneAt > 4000 && S.mode !== 'done') setState('idle', now);
+  stepBeat(now);
+  E.gx = T.gx; E.gy = T.gy; E.shape = T.shape;
+  const k = Math.min(1, dt * (reduce ? 30 : 14));
+  E.open = E.open.map((o, i) => lerp(o, T.open[i], k)); E.tilt = lerp(E.tilt, T.tilt, k);
+  if (now >= S.restAt) S.rest = reduce ? S.restTarget : lerp(S.rest, S.restTarget, Math.min(1, dt * 4));
+  if (Math.abs(S.rest - S.restTarget) < .004) S.rest = S.restTarget;
+  if (S.rest > .99 && now - S.cardAt > 8000) { S.card++; S.cardAt = now; }
+  if (S.rest > .99 && now - S.driftAt > 6000) { S.drift = [pick([-16, -8, 0, 8, 16]), pick([-16, -8, 0, 8, 16])]; S.driftAt = now; }
+  if (S.rest < .01) S.drift = [0, 0];
+}
+
+function render(now) {
+  const r = S.rest, ember = S.ember && S.state === 'sleep' ? ease(r) : 0;
+  const bg = mix(S.orange, '#1e0d06', S.ember ? Math.max(ember, S.state === 'sleep' && !S.rotation ? 1 : 0) : 0);
+  const emberNow = S.ember && S.state === 'sleep';
+  const ink = emberNow ? mix('#1d0f08', S.orange, S.rotation ? ember : 1) : '#1d0f08';
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, W);
+  const [dx, dy] = S.drift.map(v => v * r);
+  const L = drawFaceEyes(now, r, ink, dx, dy);
+  if (r > .01) drawCards(now, ease(r), emberNow ? S.orange : '#3b1d10', dx, dy);
+  drawAlert(now);
+  if (S.guides && !S.alert) drawGuides(L, dx, dy);
+  panel.style.filter = S.state === 'sleep' && !S.alert ? 'brightness(.62)' : 'none';
+}
+
+const SCRIPT = [
+  ['idle', 9000, 'nobody is working'], ['working', 12000, '2 agents working'], ['perm', 0, 'payments-api asks to run its tests'],
+  ['working', 9000, '1 agent working'], ['done', 4500, 'task done in payments-api'], ['idle', 7000, 'nobody is working'],
+  ['working', 8000, 'hilo-app working'], ['question', 0, 'hilo-app asks a question'], ['waiting', 6000, 'acme-dashboard waits for your reply'],
+  ['idle', 6000, 'nobody is working'], ['sleep', 26000, '60 s without activity'],
+];
+function autoStep(now) {
+  const A = S.auto;
+  if (A.waitAlert) { if (S.alert && S.alert.phase === 'shown' && now - S.alert.t0 > 7500) resolve('mac', now); return; }
+  if (now < A.until) return;
+  A.i = (A.i + 1) % SCRIPT.length;
+  const [st, d, why] = SCRIPT[A.i]; S.autoWhy = why;
+  if (st === 'perm' || st === 'question') { A.waitAlert = true; openAlert(st === 'perm' ? PERMS[0] : QUES, now); return; }
+  setState(st, now); A.until = now + d;
+}
+
+function caption(now) {
+  const a = S.alert;
+  let html;
+  if (a) html = `<b>${a.kind === 'q' ? 'Question' : 'Permission'}</b> · the face steps aside${S.mode === 'auto' && a.phase === 'shown' ? ' · answered on the Mac in a few seconds if you leave it' : ''}`;
+  else {
+    const names = {idle: 'Idle', working: 'Working', waiting: 'Waiting on you', done: 'Task done', sleep: S.rotation ? 'Asleep · rotation' : 'Asleep'};
+    const doing = S.react ? S.react.name : S.beatName || (S.state === 'sleep' ? 'breathing' : 'holding still');
+    html = `<b>${names[S.state]}</b> · ${doing}${S.mode === 'auto' && S.autoWhy ? `<br>auto: ${S.autoWhy}` : ''}`;
+  }
+  if (caption.last !== html) { $('#caption').innerHTML = html; caption.last = html; }
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.1, (now - last) / 1000); last = now;
+  update(now, dt); render(now); caption(now);
+  requestAnimationFrame(frame);
+}
+
+function press(sel, on) { document.querySelectorAll(sel).forEach(b => b.setAttribute('aria-pressed', String(on(b)))); }
+document.querySelectorAll('[data-state]').forEach(b => b.addEventListener('click', () => {
+  const st = b.dataset.state, now = performance.now();
+  S.mode = st; press('[data-state]', x => x.dataset.state === st);
+  if (st === 'auto') { S.auto = {i: -1, until: 0, waitAlert: false}; return; }
+  S.autoWhy = '';
+  if (S.alert && S.auto.waitAlert) S.auto.waitAlert = false;
+  setState(st, now);
+}));
+$('#evPerm').addEventListener('click', () => openAlert(pick(PERMS), performance.now()));
+$('#evRisk').addEventListener('click', () => openAlert(RISK, performance.now()));
+$('#evQ').addEventListener('click', () => openAlert(QUES, performance.now()));
+function toggle(a, b, key, val) {
+  $(a).addEventListener('click', () => { S[key] = val; $(a).setAttribute('aria-pressed', 'true'); $(b).setAttribute('aria-pressed', 'false'); if (key === 'rotation') S.restTarget = S.state === 'sleep' && val ? 1 : 0; });
+}
+toggle('#rotOn', '#rotOff', 'rotation', true); toggle('#rotOff', '#rotOn', 'rotation', false);
+toggle('#bgEmber', '#bgOrange', 'ember', true); toggle('#bgOrange', '#bgEmber', 'ember', false);
+$('#picOn').addEventListener('click', e => { S.picture = !S.picture; e.currentTarget.setAttribute('aria-pressed', String(S.picture)); S.cardAt = performance.now(); });
+$('#guides').addEventListener('click', e => { S.guides = !S.guides; e.currentTarget.setAttribute('aria-pressed', String(S.guides)); });
+$('#viewCase').addEventListener('click', () => { $('#case').classList.remove('bare'); press('#viewCase,#viewPanel', x => x.id === 'viewCase'); fit(); });
+$('#viewPanel').addEventListener('click', () => { $('#case').classList.add('bare'); press('#viewCase,#viewPanel', x => x.id === 'viewPanel'); fit(); });
+$('#orange').addEventListener('input', e => { S.orange = e.target.value; document.documentElement.style.setProperty('--pla', S.orange); });
+
+const mm = px => (px / PX_MM).toFixed(1);
+function geo() {
+  S.geo.spread = +$('#spread').value; S.geo.y = +$('#eyeY').value; S.geo.h = +$('#eyeH').value;
+  const w = Math.round(S.geo.h * 7 / 13);
+  const L = eyeLayout(0), cxL = (L.xL + w / 2) * CELL, cy = (L.y0 + L.h / 2) * CELL;
+  $('#spreadOut').textContent = `x ${cxL} / ${W - cxL} px · ±${mm(240 - cxL)} mm`;
+  $('#eyeYOut').textContent = `y ${cy} px · ${mm(240 - cy)} mm up`;
+  $('#eyeHOut').textContent = `${w}×${S.geo.h} cells · ${mm(w * CELL)}×${mm(S.geo.h * CELL)} mm`;
+  $('#liveGeo').textContent = `With the sliders as set: eye centres at x ${cxL} / ${W - cxL} px, y ${cy} px; each eye ${w * CELL} × ${S.geo.h * CELL} px (boxes x ${L.xL * CELL} and ${L.xR * CELL}, y ${L.y0 * CELL}).`;
+}
+['#spread', '#eyeY', '#eyeH'].forEach(s => $(s).addEventListener('input', geo)); geo();
+
+function toPanel(e) { const b = panel.getBoundingClientRect(); return {x: (e.clientX - b.left) * W / b.width, y: (e.clientY - b.top) * W / b.height}; }
+function hitAt(p) { return hits.find(h => p.x >= h.x && p.x <= h.x + h.w && p.y >= h.y && p.y <= h.y + h.h); }
+panel.addEventListener('pointerdown', e => {
+  const a = S.alert; if (!a || a.phase !== 'shown') return;
+  const h = hitAt(toPanel(e)); if (!h) return;
+  const now = performance.now();
+  if (h.act === 'hold') { a.hold = now; panel.setPointerCapture(e.pointerId); }
+  else if (h.act === 'deny') resolve('denied', now);
+  else if (h.act === 'answer') resolve('answered', now);
+  else if (h.act === 'later') resolve('later', now);
+});
+const cancelHold = e => { if (S.alert && S.alert.hold >= 0) { const h = hitAt(toPanel(e)); if (e.type !== 'pointermove' || !h || h.act !== 'hold') S.alert.hold = -1; } };
+panel.addEventListener('pointerup', cancelHold); panel.addEventListener('pointercancel', cancelHold); panel.addEventListener('pointermove', cancelHold);
+
+const stage = $('#stage');
+function fit() {
+  const bare = $('#case').classList.contains('bare'), span = bare ? 46 : 92;
+  const w = stage.clientWidth - 24, v = Math.min(bare ? 11 : 8, w / span);
+  document.documentElement.style.setProperty('--mm', v.toFixed(3) + 'px');
+}
+new ResizeObserver(fit).observe(stage); fit();
+S.auto.i = -1;
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
