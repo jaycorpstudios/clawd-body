@@ -54,7 +54,7 @@ void ui_attn_create(lv_obj_t *scr)
     lv_obj_set_flex_flow(head, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(head, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(head, 12, 0);
-    ui.ap_pet = ui_pet_create(head, 76);
+    ui_eyes_tile_create(head);
     lv_obj_t *ht = ui_box(head);
     lv_obj_set_flex_grow(ht, 1);
     lv_obj_set_height(ht, LV_SIZE_CONTENT);
@@ -196,10 +196,6 @@ void ui_attn_frame(uint32_t now_ms)
 {
     const bm_session_t *s = bm_attn_session(ui.m);
     if (!s) return;
-    uint16_t hue;
-    bm_acc_t acc;
-    bm_session_look(s, &hue, &acc);
-    ui_pet_draw(ui.ap_pet, BM_PET_ALERT, hue, acc, 0);
     float k = (cosf(ui.t * 2 * 3.14159f / 1.1f) + 1) / 2;
     for (int i = 0; i < 4; i++) lv_obj_set_style_bg_opa(frame[i], (lv_opa_t)(k * 255), 0);
     int32_t fill = (int32_t)(bm_hold_progress(ui.m, now_ms) * lv_obj_get_width(ui.ap_ok));

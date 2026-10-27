@@ -51,6 +51,7 @@ void bm_init(bm_model_t *m, const bm_config_t *cfg, uint32_t now_ms)
     m->ov.session = -1;
     m->last_act_ms = now_ms;
     m->last_remind_ms = now_ms;
+    m->last_touch_ms = now_ms;
     m->acc = BM_ACC_WIZARD;
     bm__settings_defaults(&m->settings);
     m->settings.tz_offset_min = (int16_t)m->cfg.tz_offset_min;
@@ -399,6 +400,12 @@ static void close_sheet(bm_model_t *m)
     bm__touch(m);
 }
 
+static void react(bm_model_t *m, bm_react_t kind, uint32_t now_ms)
+{
+    bool covered = m->ov.type && m->ov.until_ms;
+    bm_eyes_react(&m->eyes, kind, covered ? m->ov.until_ms : now_ms + BM_EYES_REACT_DELAY_MS);
+}
+
 static void decide(bm_model_t *m, bool approve, int choice, uint32_t now_ms)
 {
     if (m->attn < 0) return;
@@ -450,6 +457,7 @@ static void decide(bm_model_t *m, bool approve, int choice, uint32_t now_ms)
     }
     bm__copy(ov.name, sizeof(ov.name), s->project);
     bm__show_overlay(m, &ov, 1600, now_ms);
+    react(m, r->is_question || approve ? BM_REACT_HAPPY : BM_REACT_BLINK, now_ms);
     schedule_next_attn(m, now_ms);
     bm__touch(m);
 }
@@ -481,6 +489,7 @@ static void later(bm_model_t *m, uint32_t now_ms)
     char data[64];
     snprintf(data, sizeof(data), "{\"request_id\":\"%s\"}", s->req.request_id);
     bm__out(m, (uint8_t)(1u << s->host), "device.snooze", data, now_ms);
+    react(m, BM_REACT_GLANCE, now_ms);
     m->attn = -1;
     m->hold_active = false;
     bm__touch(m);
@@ -488,6 +497,7 @@ static void later(bm_model_t *m, uint32_t now_ms)
 
 void bm_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms)
 {
+    m->last_touch_ms = now_ms;
     if (bm__alarm_ack(m, now_ms)) return;
     if (m->sleeping) {
         bm__wake(m, false, BM_BY_TOUCH, now_ms);
@@ -529,6 +539,7 @@ void bm_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms)
 
 void bm_tap_overlay(bm_model_t *m, uint32_t now_ms)
 {
+    m->last_touch_ms = now_ms;
     if (bm__alarm_ack(m, now_ms)) return;
     if (m->sleeping) {
         bm__wake(m, false, BM_BY_TOUCH, now_ms);
@@ -547,6 +558,7 @@ void bm_tap_overlay(bm_model_t *m, uint32_t now_ms)
 
 void bm_touch_wake(bm_model_t *m, uint32_t now_ms)
 {
+    m->last_touch_ms = now_ms;
     if (bm__alarm_ack(m, now_ms)) return;
     if (m->sleeping) bm__wake(m, false, BM_BY_TOUCH, now_ms);
     else m->last_act_ms = now_ms;
@@ -561,6 +573,7 @@ static void next_view(bm_model_t *m, int dir)
 
 void bm_swipe(bm_model_t *m, int dir, uint32_t now_ms)
 {
+    m->last_touch_ms = now_ms;
     if (bm__alarm_ack(m, now_ms)) return;
     if (m->sleeping) {
         bm__wake(m, false, BM_BY_TOUCH, now_ms);
@@ -593,6 +606,7 @@ static void side_press(bm_model_t *m, uint32_t now_ms)
 
 void bm_button(bm_model_t *m, bool pressed, uint32_t now_ms)
 {
+    m->last_touch_ms = now_ms;
     if (pressed) {
         if (bm__alarm_ack(m, now_ms)) {
             m->button_down = false;
@@ -601,7 +615,8 @@ void bm_button(bm_model_t *m, bool pressed, uint32_t now_ms)
         m->button_down = true;
         m->button_long_fired = false;
         m->button_pairing_armed =
-            !m->sleeping && !m->pairing && m->view == BM_VIEW_HOME && m->attn < 0 && m->sheet == BM_SHEET_NONE;
+            !m->sleeping && !m->pairing && (m->view == BM_VIEW_FACE || m->view == BM_VIEW_HOME) && m->attn < 0 &&
+            m->sheet == BM_SHEET_NONE;
         m->button_down_ms = now_ms;
         return;
     }
@@ -615,6 +630,7 @@ bool bm_hold_begin(bm_model_t *m, uint32_t now_ms)
     if (m->sleeping || !s || !s->has_request || s->req.is_question || !bm_request_approvable(&s->req)) return false;
     m->hold_active = true;
     m->hold_start_ms = now_ms;
+    m->last_touch_ms = now_ms;
     m->last_act_ms = now_ms;
     bm__touch(m);
     return true;
@@ -779,7 +795,10 @@ void bm__on_resolved(bm_model_t *m, int host, const char *request_id, const char
 
     if (strcmp(outcome, "expired") == 0) {
         bm__push_step(s, wall_s(m, now_ms), BM_STEP_ASK, "Handed back to the Mac prompt");
-        if (was_open || was_attn) bm__toast(m, "Answer it on the Mac", BM_C_IDLE, now_ms);
+        if (was_open || was_attn) {
+            bm__toast(m, "Answer it on the Mac", BM_C_IDLE, now_ms);
+            react(m, BM_REACT_GLANCE, now_ms);
+        }
     } else if (was_open) {
         s->status = BM_WORKING;
         s->since = wall_s(m, now_ms);
@@ -789,6 +808,7 @@ void bm__on_resolved(bm_model_t *m, int host, const char *request_id, const char
         snprintf(text, sizeof(text), "\xE2\x9C\x93 Resolved on the %s Mac", label);
         bm__toast(m, text, BM_C_INFO, now_ms);
         bm__sound(m, BM_SND_APPROVED);
+        react(m, BM_REACT_HAPPY, now_ms);
     }
     schedule_next_attn(m, now_ms);
     bm__touch(m);
@@ -1025,6 +1045,12 @@ void bm_tick(bm_model_t *m, uint32_t now_ms)
     } else if (now_ms - m->last_act_ms > BM_IDLE_SLEEP_MS && m->attn < 0 && !m->pairing && !any_live_request(m)) {
         go_sleep(m, BM_BY_IDLE, now_ms);
     }
+    if (!m->sleeping && m->view != BM_VIEW_FACE && now_ms - m->last_touch_ms >= BM_FACE_RETURN_MS && m->attn < 0 &&
+        m->sheet == BM_SHEET_NONE && !m->panel && !m->pairing && !m->alarm_until_ms) {
+        m->view = BM_VIEW_FACE;
+        bm__touch(m);
+    }
+    bm_eyes_tick(&m->eyes, bm_face_mood(m), now_ms, m->cfg.random32, m->cfg.random_ctx);
     bm__sleep_card_tick(m, now_ms);
 }
 

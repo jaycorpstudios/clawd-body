@@ -12,12 +12,27 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 
 ## Views
 
+1. **Face** (decided 2026-10-27): Claudio's eyes on the case orange, no top bar; first view, see [Claudio's face](#claudios-face).
 1. **Home**: large pet, a status message ("2 agents working", "<project> needs you"…), a summary line and three stats: 5 h session, week and reset.
-2. **Agents**: up to 5 rows ordered: needs you, failed, working, done, idle. Each row has avatar, name, Mac and task, status and time. Tapping a row opens its detail. Each session's pet wears its own `look` from the Mac: its project's colour family (the hue nudged per session) and its own accessory; the detail has a "Pet" row (‹ name ›) that changes the accessory at once and sends `device.session_look` to that session's Mac. Sessions without a `look` (older daemon) keep the project's look until one is picked. Checked in the host render (`looks-*`).
-3. **Usage**: one ring per connected Mac (usage is kept per Mac): 5 h window ring (orange; amber at 80 % or more; red at 100 %), countdown, weekly bar and token sparkline. Tapping the ring opens the breakdown.
-4. **Hilo**: current task with a timer, next tasks and today's agreements. Tapping opens the detail.
-5. **Music**: Hidden (view and dot, skipped by swipes) when every Mac the buddy knows sent `media_enabled:false`; if it was on screen the buddy moves to Focus. the track's cover from the Mac (`media.cover`, 96 px scaled to 150 px with rounded corners) or, until it arrives or when there is none, a generated pixel-art cover (150 px). While a named cover is on its way the pixel cover "regenerates": a light band sweeps it diagonally and a few cells swap with a neighbour, 10 steps a second, only while the Music view is on screen; it stops when the real cover arrives or 8 s after the buddy asked for it, and then shows the still pixel cover. Then the title, artist and progress. Previous, play/pause and next are live (proposal: the prototype draws them but does nothing) and drawn as round buttons like Focus: play/pause 96 px, previous and next 72 px, 28 px apart. They go to the Mac that is playing, play shows while paused, and they dim when that Mac is not connected or nothing plays. Checked against the host render (`scripts/firmware-render.sh`, 2026-10-27: nothing playing, playing, paused, Mac disconnected).
-6. **Focus** (proposal, below).
+1. **Agents**: up to 5 rows ordered: needs you, failed, working, done, idle. Each row has avatar, name, Mac and task, status and time. Tapping a row opens its detail. Each session's pet wears its own `look` from the Mac: its project's colour family (the hue nudged per session) and its own accessory; the detail has a "Pet" row (‹ name ›) that changes the accessory at once and sends `device.session_look` to that session's Mac. Sessions without a `look` (older daemon) keep the project's look until one is picked. Checked in the host render (`looks-*`).
+1. **Usage**: one ring per connected Mac (usage is kept per Mac): 5 h window ring (orange; amber at 80 % or more; red at 100 %), countdown, weekly bar and token sparkline. Tapping the ring opens the breakdown.
+1. **Hilo**: current task with a timer, next tasks and today's agreements. Tapping opens the detail.
+1. **Music**: Hidden (view and dot, skipped by swipes) when every Mac the buddy knows sent `media_enabled:false`; if it was on screen the buddy moves to Focus. the track's cover from the Mac (`media.cover`, 96 px scaled to 150 px with rounded corners) or, until it arrives or when there is none, a generated pixel-art cover (150 px). While a named cover is on its way the pixel cover "regenerates": a light band sweeps it diagonally and a few cells swap with a neighbour, 10 steps a second, only while the Music view is on screen; it stops when the real cover arrives or 8 s after the buddy asked for it, and then shows the still pixel cover. Then the title, artist and progress. Previous, play/pause and next are live (proposal: the prototype draws them but does nothing) and drawn as round buttons like Focus: play/pause 96 px, previous and next 72 px, 28 px apart. They go to the Mac that is playing, play shows while paused, and they dim when that Mac is not connected or nothing plays. Checked against the host render (`scripts/firmware-render.sh`, 2026-10-27: nothing playing, playing, paused, Mac disconnected).
+1. **Focus** (proposal, below).
+
+## Claudio's face
+
+Reference: [`prototypes/claudio-eyes/`](../../prototypes/claudio-eyes/index.html) (geometry decided 2026-10-27; its numbers and shapes are what the firmware uses).
+
+- **Where**: the Face view, first of the seven. The buddy goes back to it 20 s after the last touch (not while a sheet, the settings panel, a request, pairing or the Focus alarm is open); swiping or the side button leave it as usual. The 5 s pairing hold works on Face and Home.
+- **Look**: orange `#d97757` background, ink `#1d0f08`, 8 px cells. Eyes 9 × 16 cells centred at x 100 / 380 px, y 176 px; every stroke two cells, diagonals one cell per step, no slanted lids; gaze moves in whole cells. The top bar is hidden on this view; the dots stay.
+- **Moods** follow the main pet: idle; working (agents working); waiting (a request, an error or a warning); done (task done, approved, a Mac connected: held at least 4 s, ^ ^ with a bounce and six sparkles); sleep (the 100 % limit, and the sleep screen).
+- **Beats**: each mood picks a random beat from its pool and never the same one twice in a row: idle 8 (looks left / right / up, sweeps the room, double blink, curious, calm ▪ ▪, rests), working 7 (reading line by line, deep focus □ □, pushing through &gt; &lt;, thinking, typing, tracking ▪ ▪, slow blink), waiting 5, done 4 (bounce, wink, hearts, sparkles), sleep 3 (peek, three "z", dream). Gaps and blink intervals are the prototype's (`GAPS`, `BLINK`).
+- **Alerts** take the whole screen as before; the corner slot shows an 80 px orange tile with small worried eyes (16 × 16 cells of 5 px) that blink and glance aside every 1.7 s. The prototype draws a 128 px tile; 80 px keeps the approved permission layout (it was 76 px).
+- **Reactions** when a request closes: happy ^ ^ for 1.1 s after an approval, an answer or a resolution on the Mac; a blink after Deny; a glance aside for 0.9 s after Later or a hand-back to the Mac. They start 340 ms later, or when the "Approved" / "Denied" overlay closes.
+- **Sleep screen**: ember `#1e0d06` background, the eyes on top in orange (4 × 7 cells at x 160 / 320, y 100, gaze at 0.55 of the face's), closed ‿ ‿ eyes that breathe one cell, an occasional peek and "z"; the clock and the Mac / computers cards below (y 200–460, orange text, the picture at 160 px), all moving with the usual 6 s drift.
+- **Drawing**: each eye is a pre-scaled RGB565 image the size of its box (72 × 128 px, 18 KB, in PSRAM), redrawn only when its cells change and moved with `lv_obj_set_pos`; there is no full-screen canvas.
+- Checked in the host render (`face-*`, 2026-10-27).
 
 ## Settings panel (proposal, not in the prototype)
 
@@ -41,11 +56,11 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 
 ## Idle rotation (proposal, not in the prototype)
 
-The prototype's sleep screen is the dimmed clock only. The rotation keeps its look and its 6 s anti burn-in shift.
+The rotation keeps the 6 s anti burn-in shift. Since 2026-10-27 it sits under Claudio's sleeping eyes on an ember background ([Claudio's face](#claudios-face)): the cards fill y 200–460 and use the case orange.
 
 - **Order**: every 8 s the sleep screen moves to the next card: clock → one card per registered Mac that has a picture (slot order) → clock. If no Mac has a picture, it alternates clock → computers.
-- **Mac card**: the Mac's Setup name on top (JetBrains Mono bold 18, `#8a8178`), the picture at 240×240 with 28 px corners at 80 % opacity, and "connected 2 h ago" or "seen 3 h ago" below (JetBrains Mono 17, `#5c564f`, the clock's gray). A Mac without a picture has no card.
-- **Computers card**: the clock's pet slot shows a 32×32 pixel monitor per known Mac (one when none), lit blue with a blinking prompt when connected, dark otherwise, and "1 Mac connected" / "2 Macs connected" / "no Mac connected" below.
+- **Mac card**: the Mac's Setup name on top (JetBrains Mono bold 18, `#8a8178`), the picture at 160×160 with 28 px corners at 80 % opacity, and "connected 2 h ago" or "seen 3 h ago" below (JetBrains Mono 17, `#5c564f`, the clock's gray). A Mac without a picture has no card.
+- **Computers card**: shows a 32×32 pixel monitor per known Mac (one when none), lit blue with a blinking prompt when connected, dark otherwise, and "1 Mac connected" / "2 Macs connected" / "no Mac connected" below.
 - The panel stays at the sleep brightness on every card.
 - Checked against the host render (2026-10-27) with a synthetic picture: card order, both "… ago" texts, the computers card with one lit and one dark monitor and "no Mac connected".
 

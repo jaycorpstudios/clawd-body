@@ -152,11 +152,11 @@ TEST(panel_closes_with_the_button_and_blocks_swipes)
     fresh();
     bm_panel(&M, true, now);
     bm_swipe(&M, 1, now);
-    CHECK(M.view == BM_VIEW_HOME);
+    CHECK(M.view == BM_VIEW_FACE);
     bm_button(&M, true, now);
     bm_button(&M, false, now);
     CHECK(!M.panel);
-    CHECK(M.view == BM_VIEW_HOME);
+    CHECK(M.view == BM_VIEW_FACE);
 }
 
 TEST(a_mac_hears_the_settings_when_its_link_binds)

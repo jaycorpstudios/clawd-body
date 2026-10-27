@@ -11,6 +11,9 @@
 #define C_DIM 0x8a837a
 #define C_LINE 0x1f1c19
 #define C_TRACK 0x1d1b18
+#define UI_ORANGE 0xd97757
+#define UI_INK 0x1d0f08
+#define UI_EMBER 0x1e0d06
 
 #define F_TITLE (&font_pixel_28)
 #define F_SMALL (&font_mono_16)
@@ -38,6 +41,7 @@ typedef struct {
     float t;
 
     lv_obj_t *scr, *strip, *views[BM_VIEWS];
+    lv_obj_t *bar;
     lv_obj_t *clock, *pill[BM_MAX_HOSTS], *pill_dot[BM_MAX_HOSTS], *pill_lbl[BM_MAX_HOSTS], *batt_pct, *batt_charge,
         *batt_lvl;
     lv_obj_t *dots[BM_VIEWS];
@@ -82,7 +86,6 @@ typedef struct {
 
     lv_obj_t *attn, *ap_k, *ap_p, *ap_h, *ap_cmd, *ap_why, *ap_actions, *ap_deny, *ap_ok, *ap_ok_fill, *ap_locked,
         *ap_locked_lbl, *ap_opts, *ap_opt[BM_MAX_OPTIONS], *ap_opt_lbl[BM_MAX_OPTIONS];
-    ui_pet_t *ap_pet;
 
     lv_obj_t *sheet, *sh_title, *sh_body;
     ui_pet_t *sh_pet;
@@ -149,3 +152,8 @@ void ui_panel_update(uint32_t now_ms);
 void ui_misc_create(lv_obj_t *scr);
 void ui_misc_update(uint32_t now_ms);
 void ui_misc_frame(uint32_t now_ms);
+
+void ui_eyes_face_create(lv_obj_t *v);
+lv_obj_t *ui_eyes_tile_create(lv_obj_t *parent);
+void ui_eyes_sleep_create(lv_obj_t *sleep);
+void ui_eyes_frame(uint32_t now_ms);

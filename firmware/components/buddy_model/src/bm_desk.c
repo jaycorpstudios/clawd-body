@@ -112,6 +112,7 @@ void bm__settings_tick(bm_model_t *m, uint32_t now_ms)
 
 void bm_panel(bm_model_t *m, bool open, uint32_t now_ms)
 {
+    m->last_touch_ms = now_ms;
     if (bm__alarm_ack(m, now_ms)) return;
     if (m->sleeping) {
         bm__wake(m, false, BM_BY_TOUCH, now_ms);

@@ -175,6 +175,19 @@ bm_pet_state_t bm_agent_pet(const bm_model_t *m, const bm_session_t *s)
     return map[s->status];
 }
 
+bm_mood_t bm_face_mood(const bm_model_t *m)
+{
+    switch (bm_main_pet(m)) {
+    case BM_PET_SLEEP: return BM_MOOD_SLEEP;
+    case BM_PET_WORKING: return BM_MOOD_WORKING;
+    case BM_PET_HAPPY: return BM_MOOD_DONE;
+    case BM_PET_ALERT:
+    case BM_PET_ERROR:
+    case BM_PET_WORRIED: return BM_MOOD_WAITING;
+    default: return BM_MOOD_IDLE;
+    }
+}
+
 void bm_project_look(const char *project, uint16_t *hue, bm_acc_t *acc)
 {
     uint32_t h = 2166136261u;

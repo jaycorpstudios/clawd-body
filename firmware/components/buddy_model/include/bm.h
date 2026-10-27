@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "bm_eyes.h"
+
 #define BM_MAX_HOSTS 2
 #define BM_SESSIONS_PER_HOST 8
 #define BM_MAX_SESSIONS (BM_MAX_HOSTS * BM_SESSIONS_PER_HOST)
@@ -13,13 +15,14 @@
 #define BM_MAX_NEXT 3
 #define BM_MAX_AGREEMENTS 3
 #define BM_AGENT_ROWS 5
-#define BM_VIEWS 6
+#define BM_VIEWS 7
 #define BM_OUTBOX_LEN 8
 #define BM_OUT_MAX 512
 #define BM_SOUND_QUEUE 8
 #define BM_SEEN_IDS 32
 
 #define BM_IDLE_SLEEP_MS 60000
+#define BM_FACE_RETURN_MS 20000
 #define BM_REMIND_MS 25000
 #define BM_HOLD_MS 900
 #define BM_LONG_PRESS_MS 650
@@ -77,7 +80,9 @@ typedef enum {
 
 typedef enum { BM_SHEET_NONE, BM_SHEET_AGENT, BM_SHEET_PERM, BM_SHEET_USAGE, BM_SHEET_HILO } bm_sheet_t;
 
-typedef enum { BM_VIEW_HOME, BM_VIEW_AGENTS, BM_VIEW_USAGE, BM_VIEW_HILO, BM_VIEW_MUSIC, BM_VIEW_POMODORO } bm_view_t;
+typedef enum {
+    BM_VIEW_FACE, BM_VIEW_HOME, BM_VIEW_AGENTS, BM_VIEW_USAGE, BM_VIEW_HILO, BM_VIEW_MUSIC, BM_VIEW_POMODORO
+} bm_view_t;
 
 typedef enum {
     BM_SND_PERM, BM_SND_QUESTION, BM_SND_RISK, BM_SND_REMINDER,
@@ -291,6 +296,7 @@ typedef struct {
     int16_t sleep_dx, sleep_dy;
     int64_t sleep_shift_s;
     uint32_t last_act_ms;
+    uint32_t last_touch_ms;
     uint32_t last_remind_ms;
     uint32_t next_attn_ms;
     bool hold_active;
@@ -330,6 +336,8 @@ typedef struct {
     uint32_t cover_wait_ms;
     int8_t sleep_card;
     int64_t sleep_card_s;
+
+    bm_eyes_t eyes;
 
     bm_session_t scratch;
 
@@ -420,6 +428,7 @@ int bm_agent_order(const bm_model_t *m, int8_t *out, int max);
 int bm_session_count(const bm_model_t *m);
 bm_pet_state_t bm_main_pet(const bm_model_t *m);
 bm_pet_state_t bm_agent_pet(const bm_model_t *m, const bm_session_t *s);
+bm_mood_t bm_face_mood(const bm_model_t *m);
 void bm_project_look(const char *project, uint16_t *hue, bm_acc_t *acc);
 /* The Mac's pick when it sent one, else the project's own look. */
 void bm_session_look(const bm_session_t *s, uint16_t *hue, bm_acc_t *acc);

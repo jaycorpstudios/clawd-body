@@ -4,11 +4,12 @@
 #include "esp_heap_caps.h"
 #include "ui_priv.h"
 
-#define FACE_PX 240
+#define FACE_PX 160
+#define SLEEP_CARDS_DY 90
 
 void ui_bar_create(lv_obj_t *scr)
 {
-    lv_obj_t *bar = ui_box(scr);
+    lv_obj_t *bar = ui.bar = ui_box(scr);
     lv_obj_set_size(bar, SCREEN, 54);
     lv_obj_set_style_pad_hor(bar, 30, 0);
     lv_obj_set_flex_flow(bar, LV_FLEX_FLOW_ROW);
@@ -121,7 +122,7 @@ static void sleep_card_update(uint32_t now_ms)
     bool face = card >= 0, computers = card == BM_CARD_COMPUTERS;
     ui_show(ui.sleep_face, face);
     ui_show(ui.sleep_name, face);
-    ui_show(ui.sleep_pet->img, !face);
+    ui_show(ui.sleep_pet->img, computers);
     ui_show(ui.sleep_clock, !face && !computers);
     ui_show(ui.sleep_ago, face || computers);
     ui_show(ui.sleep_hint, !face);
@@ -169,16 +170,17 @@ void ui_misc_create(lv_obj_t *scr)
 
     ui.sleep = ui_box(scr);
     lv_obj_set_size(ui.sleep, SCREEN, SCREEN);
-    lv_obj_set_style_bg_color(ui.sleep, ui_hex(C_BG), 0);
+    lv_obj_set_style_bg_color(ui.sleep, ui_hex(UI_EMBER), 0);
     lv_obj_set_style_bg_opa(ui.sleep, LV_OPA_COVER, 0);
     lv_obj_set_clickable(ui.sleep, true);
     lv_obj_add_event_cb(ui.sleep, sleep_tap_cb, LV_EVENT_CLICKED, NULL);
+    ui_eyes_sleep_create(ui.sleep);
     ui.sleep_inner = ui_box(ui.sleep);
     lv_obj_set_size(ui.sleep_inner, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_center(ui.sleep_inner);
     lv_obj_set_flex_flow(ui.sleep_inner, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(ui.sleep_inner, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    ui.sleep_name = ui_label(ui.sleep_inner, &font_mono_bold_18, 0x8a8178, "");
+    ui.sleep_name = ui_label(ui.sleep_inner, &font_mono_bold_18, UI_ORANGE, "");
     lv_obj_set_style_margin_bottom(ui.sleep_name, 12, 0);
     ui.sleep_pet = ui_pet_create(ui.sleep_inner, 128);
     lv_obj_set_style_opa(ui.sleep_pet->img, 179, 0);
@@ -195,10 +197,12 @@ void ui_misc_create(lv_obj_t *scr)
     lv_obj_set_style_radius(ui.sleep_face, 28, 0);
     lv_obj_set_style_clip_corner(ui.sleep_face, true, 0);
     lv_obj_set_style_opa(ui.sleep_face, 200, 0);
-    ui.sleep_clock = ui_label(ui.sleep_inner, &font_pixel_92, 0x5c564f, "--:--");
-    ui.sleep_ago = ui_label(ui.sleep_inner, &font_mono_17, 0x5c564f, "");
+    ui.sleep_clock = ui_label(ui.sleep_inner, &font_pixel_92, UI_ORANGE, "--:--");
+    ui.sleep_ago = ui_label(ui.sleep_inner, &font_mono_17, UI_ORANGE, "");
+    lv_obj_set_style_text_opa(ui.sleep_ago, 179, 0);
     lv_obj_set_style_margin_top(ui.sleep_ago, 14, 0);
-    ui.sleep_hint = ui_label(ui.sleep_inner, &font_mono_16, 0x4a453f, "tap to wake");
+    ui.sleep_hint = ui_label(ui.sleep_inner, &font_mono_16, UI_ORANGE, "tap to wake");
+    lv_obj_set_style_text_opa(ui.sleep_hint, 115, 0);
     lv_obj_set_style_margin_top(ui.sleep_hint, 4, 0);
     ui.face_card = BM_CARD_CLOCK;
     ui_show(ui.sleep, false);
@@ -216,13 +220,12 @@ void ui_misc_update(uint32_t now_ms)
     }
     ui_show(ui.sleep, ui.m->sleeping);
     if (ui.m->sleeping) sleep_card_update(now_ms);
-    lv_obj_align(ui.sleep_inner, LV_ALIGN_CENTER, ui.m->sleep_dx, ui.m->sleep_dy);
+    lv_obj_align(ui.sleep_inner, LV_ALIGN_CENTER, ui.m->sleep_dx, SLEEP_CARDS_DY + ui.m->sleep_dy);
 }
 
 void ui_misc_frame(uint32_t now_ms)
 {
     (void)now_ms;
-    if (!ui.m->sleeping || ui.m->sleep_card >= 0) return;
-    if (ui.m->sleep_card == BM_CARD_COMPUTERS) ui_pet_computers(ui.sleep_pet, known_count(), connected_count());
-    else ui_pet_draw(ui.sleep_pet, BM_PET_SLEEP, BM_PET_MAIN_HUE, ui.m->acc, 0);
+    if (ui.m->sleeping && ui.m->sleep_card == BM_CARD_COMPUTERS)
+        ui_pet_computers(ui.sleep_pet, known_count(), connected_count());
 }

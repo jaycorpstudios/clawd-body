@@ -54,6 +54,7 @@ static void frame_cb(lv_timer_t *t)
     ui_attn_frame(now_ms);
     ui_sheet_frame();
     ui_misc_frame(now_ms);
+    ui_eyes_frame(now_ms);
     ui_pair_frame();
 }
 

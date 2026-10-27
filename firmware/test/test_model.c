@@ -180,7 +180,7 @@ TEST(side_button_click_is_later_while_a_request_is_open)
     bm_button(&M, false, now);
     drain(&o);
     CHECK(find_out(&o, "device.snooze") != NULL);
-    CHECK(M.view == BM_VIEW_HOME);
+    CHECK(M.view == BM_VIEW_FACE);
 }
 
 TEST(resolved_on_mac_closes_the_prompt_and_opens_the_next)
@@ -301,15 +301,15 @@ TEST(swipe_changes_view_but_not_over_a_prompt_or_sheet)
     bm_swipe(&M, -1, now);
     CHECK(M.view == BM_VIEW_POMODORO);
     bm_swipe(&M, 1, now);
-    CHECK(M.view == BM_VIEW_HOME);
+    CHECK(M.view == BM_VIEW_FACE);
     bm_tap(&M, BM_TAP_USAGE, 0, now);
     bm_swipe(&M, 1, now);
-    CHECK(M.view == BM_VIEW_HOME);
+    CHECK(M.view == BM_VIEW_FACE);
     bm_tap(&M, BM_TAP_BACK, 0, now);
     start_session("work", "s", "alpha");
     ask_permission("work", "s", RID1, "low", true);
     bm_swipe(&M, 1, now);
-    CHECK(M.view == BM_VIEW_HOME);
+    CHECK(M.view == BM_VIEW_FACE);
 }
 
 TEST(task_done_overlay_lasts_3s_and_becomes_a_toast_over_a_prompt)

@@ -420,6 +420,7 @@ void ui_views_create(lv_obj_t *scr)
     ui.strip = ui_box(scr);
     lv_obj_set_size(ui.strip, SCREEN * BM_VIEWS, SCREEN);
     for (int i = 0; i < BM_VIEWS; i++) ui.views[i] = view_box(i);
+    ui_eyes_face_create(ui.views[BM_VIEW_FACE]);
     create_home(ui.views[BM_VIEW_HOME]);
     create_agents(ui.views[BM_VIEW_AGENTS]);
     create_usage(ui.views[BM_VIEW_USAGE]);
@@ -470,6 +471,7 @@ static void update_strip(void)
         lv_obj_set_width(ui.dots[i], i == view ? 24 : 8);
         lv_obj_set_style_bg_color(ui.dots[i], ui_hex(i == view ? C_FG : 0x34302b), 0);
     }
+    ui_show(ui.bar, view != BM_VIEW_FACE);
     if (shown == view) return;
     int32_t target = -slot_of(view) * SCREEN;
     if (shown < 0) {

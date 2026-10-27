@@ -116,20 +116,21 @@ static void hold_button(uint32_t ms)
     bm_button(&M, false, now);
 }
 
-TEST(holding_the_button_on_home_starts_pairing)
+TEST(holding_the_button_on_the_face_or_home_starts_pairing)
 {
     fresh();
     hold_button(BM_PAIRING_HOLD_MS + 100);
     CHECK(M.pairing && !M.sleeping && !M.passkey_shown);
-    CHECK(M.view == BM_VIEW_HOME);
+    CHECK(M.view == BM_VIEW_FACE);
     outs_t o;
     drain(&o);
     CHECK(find_out(&o, "device.sleep") && find_out(&o, "device.wake"));
 }
 
-TEST(pairing_needs_home)
+TEST(pairing_needs_the_face_or_home)
 {
     fresh();
+    bm_swipe(&M, 1, now);
     bm_swipe(&M, 1, now);
     hold_button(BM_PAIRING_HOLD_MS + 100);
     CHECK(!M.pairing);
@@ -172,6 +173,6 @@ TEST(side_press_cancels_pairing)
     fresh();
     bm_pairing_start(&M, now);
     hold_button(100);
-    CHECK(!M.pairing && M.view == BM_VIEW_HOME);
+    CHECK(!M.pairing && M.view == BM_VIEW_FACE);
     CHECK(M.toast[0] == '\0');
 }

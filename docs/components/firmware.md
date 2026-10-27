@@ -18,7 +18,7 @@ Spare parts available: PAM8403 amplifiers and 8 Ω 0.5 W speakers, in case the o
 
 ## Functional requirements
 
-1. **Six rotating views**: Home, Agents, Usage, Hilo, Music and Focus (Pomodoro, a proposal: see [device UI](device-ui.md#focus-view-proposal-not-in-the-prototype)). Switched by swiping or with the side button. Music's previous / play-pause / next send `media.control` to the Mac that is playing; Focus runs on the buddy's clock, so it keeps going with every link down and re-syncs through `pomodoro.state` / `device.pomodoro` (newer `updated_at` wins).
+1. **Seven rotating views**: Face (Claudio's eyes, first; the buddy returns to it 20 s after the last touch), Home, Agents, Usage, Hilo, Music and Focus (Pomodoro, a proposal: see [device UI](device-ui.md#focus-view-proposal-not-in-the-prototype)). Switched by swiping or with the side button. Music's previous / play-pause / next send `media.control` to the Mac that is playing; Focus runs on the buddy's clock, so it keeps going with every link down and re-syncs through `pomodoro.state` / `device.pomodoro` (newer `updated_at` wins).
 2. **Animated pet** with states (idle, working, alert, happy, error, worried, sleep) and accessories. Each agent has its own hue and accessory.
 3. **Full-screen alerts**: task done (confetti), error, usage warning at 80 %, limit at 100 %, connect and disconnect, low battery.
 4. **Permission or question screen**: shows project, Mac, tool, command and reason.
@@ -54,6 +54,7 @@ The portable model (`firmware/components/buddy_model/`) follows the prototype; w
 - **Unknown fields are ignored** (minor-version rule), so `extra-envelope-field` and `window-reset-with-data` are accepted; every other invalid fixture is rejected.
 - **Expired requests.** `outcome: expired` (or the local clock passing `expires_at`) removes the decision but keeps the session in "needs you": the Mac prompt still waits for the user.
 - **Pending requests vs. status.** Reminders and the "no idle sleep" rule apply only to requests the buddy can answer; a "needs you" row with no request does neither.
+- **Claudio's eyes.** `bm_eyes.c` (portable) turns the mood derived from the main pet into beats, blinks, gaze, reactions, sparkles and "z", and rasterises each eye shape into a cell mask (`bm_eye_cells`); `bm_tick` runs it, so its timing is covered by the host tests. `main/ui/ui_eyes.c` turns the masks into small pre-scaled images for the Face view, the alert tile and the sleep screen ([device UI](device-ui.md#claudios-face)).
 - **Agent hue and accessory** are derived from a hash of the project name until [Project hue/accessory](../plans/open-questions.md#hilo) is resolved.
 
 ## Board drivers

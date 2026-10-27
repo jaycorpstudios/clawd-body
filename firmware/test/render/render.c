@@ -472,6 +472,98 @@ static void scene_looks(void)
     run(600);
 }
 
+static bool shape_shown(bm_eye_shape_t shape, uint32_t ms)
+{
+    for (uint32_t t = 0; t < ms; t += FRAME_MS) {
+        run(FRAME_MS);
+        if (M.eyes.out.shape[1] == shape && M.eyes.out.blink == 0) return true;
+    }
+    return false;
+}
+
+static void face_shot(const char *name, bm_eye_shape_t shape, uint32_t ms)
+{
+    if (!shape_shown(shape, ms)) test_fail(__FILE__, __LINE__, name);
+    run(2 * FRAME_MS);
+    shot(name);
+}
+
+static void task_done(void)
+{
+    CHECK(send("work", "agent.task_done", "{\"session\":\"s\",\"summary\":\"Tests pass\"}") == BM_OK);
+    run(100);
+    bm__close_overlay(&M);
+}
+
+#define REQ "01K8F5REQ0000000000000000F"
+
+static void scene_face(void)
+{
+    linked();
+    run(BM_EYES_DONE_MS);
+    CHECK(M.view == BM_VIEW_FACE);
+    face_shot("face-idle", BM_EYE_OPEN, 3000);
+    face_shot("face-idle-calm-dots", BM_EYE_DOT, 120000);
+
+    CHECK(send("work", "session.start", "{\"session\":\"s\",\"project\":\"payments-api\",\"task\":\"Retries\"}") == BM_OK);
+    run(3000);
+    face_shot("face-working-deep-focus", BM_EYE_SQUARE, 120000);
+    face_shot("face-working-pushing-through", BM_EYE_SQUEEZE, 120000);
+    face_shot("face-working-tracking", BM_EYE_DOT, 120000);
+
+    task_done();
+    face_shot("face-done-happy", BM_EYE_HAPPY, 1000);
+    bool hearts = false, wink = false;
+    for (int i = 0; i < 30 && !(hearts && wink); i++) {
+        CHECK(send("work", "session.start", "{\"session\":\"s\",\"project\":\"payments-api\",\"task\":\"Retries\"}") == BM_OK);
+        run(BM_EYES_DONE_MS + 500);
+        task_done();
+        for (uint32_t t = 0; t < BM_EYES_DONE_MS - 200; t += FRAME_MS) {
+            run(FRAME_MS);
+            if (!hearts && M.eyes.out.shape[0] == BM_EYE_HEART) {
+                hearts = true;
+                run(2 * FRAME_MS);
+                shot("face-done-hearts");
+            }
+            if (!wink && M.eyes.out.shape[1] == BM_EYE_DASH) {
+                wink = true;
+                run(2 * FRAME_MS);
+                shot("face-done-wink");
+            }
+        }
+    }
+    CHECK(hearts && wink);
+
+    CHECK(send("work", "agent.needs_permission",
+               "{\"request_id\":\"" REQ "\",\"session\":\"s\",\"project\":\"payments-api\",\"tool\":\"Bash\","
+               "\"detail\":\"npm test -- --watch=false\",\"why\":\"Run the unit tests\",\"cwd\":\"~/code/payments-api\",\"risk\":\"low\","
+               "\"remote_allowed\":true,\"expires_at\":%lld}",
+               BASE_TS + now / 1000 + 600) == BM_OK);
+    run(600);
+    shot("face-alert-tile");
+    run(1700);
+    shot("face-alert-tile-looks-aside");
+    bm_tap(&M, BM_TAP_LATER, 0, now);
+    run(BM_EYES_REACT_DELAY_MS + 100);
+    shot("face-later-glance");
+    face_shot("face-waiting-worried", BM_EYE_WORRIED, 5000);
+
+    linked();
+    fall_asleep();
+    wait_card(BM_CARD_CLOCK);
+    shot("face-sleep-clock");
+    wait_card(BM_CARD_COMPUTERS);
+    shot("face-sleep-computers");
+    send_face("work");
+    wait_card(bm__host_slot(&M, "work", false));
+    shot("face-sleep-mac-card");
+    for (int i = 0; i < 200; i++) {
+        run(100);
+        if (M.eyes.beat >= 0 && M.eyes.z_ms[0] && (int32_t)(now - M.eyes.z_ms[0]) > 300) break;
+    }
+    shot("face-sleep-snores");
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -498,6 +590,7 @@ int main(int argc, char **argv)
     scene_music();
     scene_panel();
     scene_looks();
+    scene_face();
 
     return failures ? EXIT_FAILURE : EXIT_SUCCESS;
 }
