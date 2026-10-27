@@ -868,6 +868,10 @@ void bm__on_step(bm_model_t *m, int host, const char *session, bm_step_kind_t ki
 {
     bm_session_t *s = bm__find_session(m, host, session);
     if (!s) return;
+    if (s->status == BM_WAITING && !s->has_request) {
+        s->status = BM_WORKING;
+        s->since = ts;
+    }
     bm__push_step(s, ts, kind, text);
     bm__touch(m);
 }

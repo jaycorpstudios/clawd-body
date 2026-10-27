@@ -64,3 +64,20 @@ private func permission(_ session: String, id: String = ULID.make(), diff: Int =
     #expect(snap.sessions.allSatisfy { $0.pendingPermission != nil })
     _ = try Wire.decodeOutbound(bytes)
 }
+
+@Test func aHandBackKeepsTheSessionWaitingOnTheMacUntilItsNextStep() throws {
+    var store = SessionStore()
+    store.apply(.sessionStart(SessionStart(session: "s1", project: "api", task: "")), now: 10)
+    let p = permission("s1")
+    store.apply(.needsPermission(p), now: 20)
+    store.apply(.requestResolved(RequestResolved(requestId: p.requestId, session: "s1", kind: .permission, outcome: .expired, via: .timeout)), now: 30)
+    var s = try #require(store.snapshot().sessions.first)
+    #expect(s.status == .waiting)
+    #expect(s.pendingPermission == nil)
+    #expect(s.since == 20)
+
+    store.apply(.agentStep(AgentStep(session: "s1", kind: .run, text: "npm test")), now: 40)
+    s = try #require(store.snapshot().sessions.first)
+    #expect(s.status == .working)
+    #expect(s.since == 40)
+}

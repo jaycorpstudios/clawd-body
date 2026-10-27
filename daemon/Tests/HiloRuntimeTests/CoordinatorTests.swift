@@ -113,6 +113,20 @@ private func behavior(_ reply: Data) -> String? {
     #expect(await h.link.types().filter { $0 == "agent.request_resolved" }.count == 2)
 }
 
+@Test func aSnapshotAfterAHandBackKeepsTheSessionWaitingWithNothingToAnswer() async throws {
+    let h = Harness()
+    let hook = Task { await h.coordinator.handleHook(try h.permission("npm test")) }
+    _ = try await h.pendingRequestId()
+    h.presence.present.set(true)
+    _ = try await hook.value
+    await h.coordinator.sendSnapshot()
+    let raw = try #require(await h.link.raw.last)
+    guard case .snapshot(let snap) = try Wire.decodeOutbound(raw).body else { Issue.record("not a snapshot"); return }
+    let s = try #require(snap.sessions.first)
+    #expect(s.status == .waiting)
+    #expect(s.pendingPermission == nil && s.pendingQuestion == nil)
+}
+
 @Test func expiryReleasesTheHook() async throws {
     let h = Harness()
     let hook = Task { await h.coordinator.handleHook(try h.permission("npm test")) }

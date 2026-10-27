@@ -39,7 +39,7 @@ public struct SessionStore: Sendable {
                 guard s.pendingPermission?.requestId == r.requestId || s.pendingQuestion?.requestId == r.requestId else { return }
                 s.pendingPermission = nil
                 s.pendingQuestion = nil
-                s.status = .working
+                s.status = r.outcome == .expired ? .waiting : .working
             }
         case .taskDone(let d):
             update(d.session, now: now) { $0.status = .done; $0.summary = d.summary; $0.error = nil }

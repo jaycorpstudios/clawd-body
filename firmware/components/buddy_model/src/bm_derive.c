@@ -188,6 +188,18 @@ bm_mood_t bm_face_mood(const bm_model_t *m)
     }
 }
 
+/* Handed back to the terminal prompt: still waiting, but nothing to answer here. */
+bool bm_on_mac(const bm_model_t *m, const bm_session_t *s)
+{
+    return bm_waiting(m, s) && !s->has_request;
+}
+
+const char *bm_session_label(const bm_model_t *m, const bm_session_t *s)
+{
+    if (!bm_live(m, s)) return "offline";
+    return bm_on_mac(m, s) ? "on the Mac" : bm_status_label(s->status);
+}
+
 void bm_project_look(const char *project, uint16_t *hue, bm_acc_t *acc)
 {
     uint32_t h = 2166136261u;
@@ -249,12 +261,19 @@ void bm_home(const bm_model_t *m, uint32_t now_ms, bm_home_t *out)
         const bm_session_t *s = &m->sessions[i];
         if (!bm_live(m, s)) continue;
         count[s->status]++;
-        if (s->status == BM_WAITING && (!first_waiting || s->order < first_waiting->order)) first_waiting = s;
+        if (s->status != BM_WAITING) continue;
+        bool better = !first_waiting || (s->has_request && !first_waiting->has_request) ||
+                      (s->has_request == first_waiting->has_request && s->order < first_waiting->order);
+        if (better) first_waiting = s;
     }
     int w = count[BM_WAITING], er = count[BM_ERROR], wk = count[BM_WORKING], dn = count[BM_DONE],
         idl = count[BM_IDLE];
 
-    if (w) {
+    if (w && !first_waiting->has_request) {
+        bm__copy(out->msg, sizeof(out->msg), "Answer it on the Mac");
+        snprintf(out->sub, sizeof(out->sub), "%s \xC2\xB7 handed back", first_waiting->project);
+        out->tap_session = (int8_t)(first_waiting - m->sessions);
+    } else if (w) {
         snprintf(out->msg, sizeof(out->msg), "%s needs you", first_waiting->project);
         out->tap_session = (int8_t)(first_waiting - m->sessions);
         append(out->sub, sizeof(out->sub), "tap to review");

@@ -183,7 +183,7 @@ static void build_agent(const bm_session_t *s, uint32_t now_ms)
     lv_obj_t *col = ui_box(dh);
     lv_obj_set_size(col, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
-    chip_label(col, live ? bm_status_label(s->status) : "offline", bm_status_color(s->status), live);
+    chip_label(col, bm_session_label(ui.m, s), bm_status_color(s->status), live);
     snprintf(buf, sizeof(buf), "%s Mac", host);
     lv_obj_set_style_margin_top(ui_label(col, &font_mono_15, C_DIM, buf), 6, 0);
 
@@ -202,7 +202,7 @@ static void build_agent(const bm_session_t *s, uint32_t now_ms)
         ui_on_tap(b, BM_TAP_OPEN_PERM, ui.sh_pet_session);
         diff(&s->req);
     } else if (s->status == BM_WAITING) {
-        box("Waiting for you on the Mac.", 0x14120f, 0xd9d1c6);
+        box("Answer it on the Mac.", 0x14120f, 0xd9d1c6);
     }
     if (s->status == BM_ERROR) box(s->error[0] ? s->error : "The task failed", 0x2a0a0c, 0xffc7c9);
     if (s->status == BM_DONE) box(s->summary[0] ? s->summary : "Task finished.", 0x06231a, 0xc9ffe6);
@@ -337,7 +337,7 @@ static void build_hilo(uint32_t now_ms)
         lv_obj_set_style_border_width(c, 2, 0);
         lv_obj_set_style_border_color(c, ui_hex(0x2a2520), 0);
         char text[96];
-        snprintf(text, sizeof(text), "%s \xC2\xB7 %s", s->project, bm_status_label(s->status));
+        snprintf(text, sizeof(text), "%s \xC2\xB7 %s", s->project, bm_session_label(ui.m, s));
         ui_label(c, &font_mono_15, C_FG, text);
         ui_on_tap(c, BM_TAP_AGENT, i);
         linked++;

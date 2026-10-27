@@ -626,3 +626,51 @@ TEST(rtc_seeds_an_unknown_clock_and_a_mac_message_overrides_it)
     CHECK(M.clock_synced == 1);
     CHECK(bm_wall_ms(&M, now) == (BASE_TS + now / 1000) * 1000);
 }
+
+#define RID_BACK "01K8F5REQ0000000000000000B"
+
+TEST(a_request_handed_back_to_the_mac_says_answer_it_on_the_mac_until_the_next_step)
+{
+    fresh();
+    start_session("work", "s", "alpha");
+    ask_permission("work", "s", RID_BACK, "low", true);
+    int i = session_index("work", "s");
+    CHECK(send("work", "agent.request_resolved",
+               "{\"request_id\":\"" RID_BACK "\",\"session\":\"s\",\"kind\":\"permission\",\"outcome\":\"expired\","
+               "\"via\":\"timeout\"}") == BM_OK);
+    CHECK(!bm_attn_session(&M) && bm_on_mac(&M, &M.sessions[i]));
+    CHECK_STR(bm_session_label(&M, &M.sessions[i]), "on the Mac");
+    bm_home_t h;
+    bm_home(&M, now, &h);
+    CHECK_STR(h.msg, "Answer it on the Mac");
+    CHECK_STR(h.sub, "alpha \xC2\xB7 handed back");
+    CHECK(h.tap_session == i);
+    bm_tap(&M, BM_TAP_OPEN_PERM, i, now);
+    CHECK(!bm_attn_session(&M) && M.sheet == BM_SHEET_AGENT);
+
+    start_session("work", "t", "beta");
+    ask_permission("work", "t", RID1, "low", true);
+    bm_home(&M, now, &h);
+    CHECK_STR(h.msg, "beta needs you");
+
+    CHECK(send("work", "agent.step", "{\"session\":\"s\",\"kind\":\"run\",\"text\":\"npm test\"}") == BM_OK);
+    CHECK(!bm_on_mac(&M, &M.sessions[i]) && M.sessions[i].status == BM_WORKING);
+    CHECK_STR(bm_session_label(&M, &M.sessions[i]), "working");
+}
+
+TEST(a_snapshot_session_waiting_without_a_request_is_on_the_mac)
+{
+    fresh();
+    CHECK(send("work", "snapshot",
+               "{\"sessions\":[{\"session\":\"s\",\"project\":\"alpha\",\"task\":\"t\",\"status\":\"waiting\",\"since\":%lld}],"
+               "\"usage\":{\"session_pct\":1,\"weekly_pct\":1,\"reset_in_min\":10},"
+               "\"hilo\":{\"current\":null,\"next\":[],\"agreements_today\":[]}}",
+               BASE_TS) == BM_OK);
+    int i = session_index("work", "s");
+    CHECK(bm_on_mac(&M, &M.sessions[i]));
+    bm_home_t h;
+    bm_home(&M, now, &h);
+    CHECK_STR(h.msg, "Answer it on the Mac");
+    advance(BM_REMIND_MS + 1000);
+    CHECK(!heard(BM_SND_REMINDER));
+}

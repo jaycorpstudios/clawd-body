@@ -564,6 +564,32 @@ static void scene_face(void)
     shot("face-sleep-snores");
 }
 
+static void scene_handback(void)
+{
+    linked();
+    CHECK(send("work", "session.start", "{\"session\":\"s\",\"project\":\"payments-api\",\"task\":\"Retries\"}") == BM_OK);
+    CHECK(send("work", "agent.needs_permission",
+               "{\"request_id\":\"" REQ "\",\"session\":\"s\",\"project\":\"payments-api\",\"tool\":\"Bash\","
+               "\"detail\":\"npm test\",\"cwd\":\"~/code/payments-api\",\"risk\":\"low\",\"remote_allowed\":true,"
+               "\"expires_at\":%lld}",
+               BASE_TS + now / 1000 + 600) == BM_OK);
+    run(600);
+    CHECK(send("work", "agent.request_resolved",
+               "{\"request_id\":\"" REQ "\",\"session\":\"s\",\"kind\":\"permission\",\"outcome\":\"expired\","
+               "\"via\":\"timeout\"}") == BM_OK);
+    run(300);
+    shot("handback-toast");
+    go_view(BM_VIEW_HOME);
+    run(3000);
+    shot("handback-home");
+    go_view(BM_VIEW_AGENTS);
+    shot("handback-agents");
+    bm_tap(&M, BM_TAP_AGENT, session_index("work", "s"), now);
+    run(600);
+    shot("handback-sheet");
+    bm_tap(&M, BM_TAP_BACK, 0, now);
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -591,6 +617,7 @@ int main(int argc, char **argv)
     scene_panel();
     scene_looks();
     scene_face();
+    scene_handback();
 
     return failures ? EXIT_FAILURE : EXIT_SUCCESS;
 }

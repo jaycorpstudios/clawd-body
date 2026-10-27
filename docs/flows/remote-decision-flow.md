@@ -40,7 +40,7 @@ flowchart TD
 ```
 
 - Present: nothing on the buddy can be decided, because the hook has already handed the prompt to the terminal. The buddy only logs the step.
-- Away: the daemon polls presence while holding. Coming back to the Mac, or reaching `expires_at`, releases the hook to the terminal prompt and closes the request on the buddy with `agent.request_resolved { outcome: "expired", via: "timeout" }`.
+- Away: the daemon polls presence while holding. Coming back to the Mac, or reaching `expires_at`, releases the hook to the terminal prompt and closes the request on the buddy with `agent.request_resolved { outcome: "expired", via: "timeout" }`. The session stays `waiting` with nothing to answer: the buddy says "Answer it on the Mac" until the next step from that session (#19).
 - The same mode applies to questions (`PreToolUse` on `AskUserQuestion`).
 
 ## Daemon validation

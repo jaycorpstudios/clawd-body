@@ -534,7 +534,7 @@ static void update_agents(void)
         lv_label_set_text(ui.rows[i].name, s->project);
         lv_label_set_text_fmt(ui.rows[i].task, "%s \xC2\xB7 %s", host, s->task);
         uint32_t c = live ? bm_status_color(s->status) : 0x888888;
-        lv_label_set_text(ui.rows[i].chip_lbl, live ? bm_status_label(s->status) : "offline");
+        lv_label_set_text(ui.rows[i].chip_lbl, bm_session_label(ui.m, s));
         lv_obj_set_style_text_color(ui.rows[i].chip_lbl, ui_hex(c), 0);
         lv_obj_set_style_bg_color(ui.rows[i].chip, ui_hex(live ? c : 0x222222), 0);
         lv_obj_set_style_bg_opa(ui.rows[i].chip, live ? 0x22 : LV_OPA_COVER, 0);
@@ -842,7 +842,7 @@ void ui_views_frame(void)
             if (ui.rows[i].session < 0) continue;
             const bm_session_t *s = &ui.m->sessions[ui.rows[i].session];
             ui_session_pet(ui.rows[i].pet, s);
-            bool pulse = bm_waiting(ui.m, s);
+            bool pulse = bm_waiting(ui.m, s) && !bm_on_mac(ui.m, s);
             float k = (sinf(ui.t * 2 * 3.14159f / 1.1f) + 1) / 2;
             lv_obj_set_style_border_opa(ui.rows[i].row, pulse ? (lv_opa_t)(0x33 + k * (255 - 0x33)) : LV_OPA_TRANSP, 0);
         }

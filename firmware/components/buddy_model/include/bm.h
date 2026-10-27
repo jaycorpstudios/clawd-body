@@ -429,6 +429,8 @@ int bm_session_count(const bm_model_t *m);
 bm_pet_state_t bm_main_pet(const bm_model_t *m);
 bm_pet_state_t bm_agent_pet(const bm_model_t *m, const bm_session_t *s);
 bm_mood_t bm_face_mood(const bm_model_t *m);
+bool bm_on_mac(const bm_model_t *m, const bm_session_t *s);
+const char *bm_session_label(const bm_model_t *m, const bm_session_t *s);
 void bm_project_look(const char *project, uint16_t *hue, bm_acc_t *acc);
 /* The Mac's pick when it sent one, else the project's own look. */
 void bm_session_look(const bm_session_t *s, uint16_t *hue, bm_acc_t *acc);
