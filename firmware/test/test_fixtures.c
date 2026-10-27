@@ -13,6 +13,7 @@ static const char *const BUDDY_TO_MAC[] = {"permission.decision", "question.answ
 static const char *const TOLERATED_INVALID[] = {
     "extra-envelope-field.json",
     "window-reset-with-data.json",
+    "media-cover-ref-extra-field.json",
 };
 
 static bool starts_with_any(const char *s, const char *const *prefixes, size_t n)

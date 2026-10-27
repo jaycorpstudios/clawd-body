@@ -166,27 +166,29 @@ static void shot(const char *name)
     printf("%s\n", path);
 }
 
-static void send_face(const char *host)
+typedef bm_err_t (*chunk_fn)(bm_model_t *, int, const char *, int, int, int, int, const char *, uint32_t);
+
+static void put565(uint8_t *px, int i, int r, int g, int b)
 {
-    enum { SIDE = 160, CHUNKS = 16 };
-    static uint8_t px[SIDE * SIDE * 2];
-    for (int y = 0; y < SIDE; y++)
-        for (int x = 0; x < SIDE; x++) {
-            int dx = x - SIDE / 2, dy = y - SIDE / 2;
-            bool ring = dx * dx + dy * dy < 50 * 50;
-            uint16_t r = (uint16_t)(ring ? 31 : x * 31 / SIDE), g = (uint16_t)(ring ? 40 : y * 63 / SIDE),
-                     b = (uint16_t)(ring ? 8 : 20);
-            uint16_t c = (uint16_t)(r << 11 | g << 5 | b);
-            px[(y * SIDE + x) * 2] = (uint8_t)c;
-            px[(y * SIDE + x) * 2 + 1] = (uint8_t)(c >> 8);
-        }
-    char hash[17];
-    snprintf(hash, sizeof(hash), "%016llx", (unsigned long long)bm_fnv1a64(px, sizeof(px)));
+    uint16_t c = (uint16_t)(r << 11 | g << 5 | b);
+    px[i * 2] = (uint8_t)c;
+    px[i * 2 + 1] = (uint8_t)(c >> 8);
+}
+
+static void hash_of(const uint8_t *px, size_t n, char hash[17])
+{
+    snprintf(hash, 17, "%016llx", (unsigned long long)bm_fnv1a64(px, n));
+}
+
+static void send_chunks(chunk_fn take, const char *host, const uint8_t *px, int side, int chunks)
+{
     static const char T[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    size_t part = sizeof(px) / CHUNKS;
     static char data[8000];
+    size_t total = (size_t)side * (size_t)side * 2, part = total / (size_t)chunks;
+    char hash[17];
+    hash_of(px, total, hash);
     int slot = bm__host_slot(&M, host, false);
-    for (int i = 0; i < CHUNKS; i++) {
+    for (int i = 0; i < chunks; i++) {
         const uint8_t *in = px + part * (size_t)i;
         size_t o = 0;
         for (size_t k = 0; k < part; k += 3) {
@@ -198,9 +200,40 @@ static void send_face(const char *host)
             data[o++] = k + 2 < part ? T[v & 63] : '=';
         }
         data[o] = '\0';
-        CHECK(bm__on_face_chunk(&M, slot, hash, SIDE, SIDE, i, CHUNKS, data, now) == BM_OK);
+        CHECK(take(&M, slot, hash, side, side, i, chunks, data, now) == BM_OK);
     }
-    CHECK(M.hosts[slot].has_face);
+}
+
+static void send_face(const char *host)
+{
+    enum { SIDE = 160 };
+    static uint8_t px[SIDE * SIDE * 2];
+    for (int y = 0; y < SIDE; y++)
+        for (int x = 0; x < SIDE; x++) {
+            int dx = x - SIDE / 2, dy = y - SIDE / 2;
+            bool ring = dx * dx + dy * dy < 50 * 50;
+            put565(px, y * SIDE + x, ring ? 31 : x * 31 / SIDE, ring ? 40 : y * 63 / SIDE, ring ? 8 : 20);
+        }
+    send_chunks(bm__on_face_chunk, host, px, SIDE, 16);
+    CHECK(M.hosts[bm__host_slot(&M, host, false)].has_face);
+}
+
+/* A sunset: sky gradient, a sun, dark hills. */
+static uint8_t cover_px[BM_COVER_MAX * BM_COVER_MAX * 2];
+
+static void make_cover(char hash[17])
+{
+    enum { SIDE = BM_COVER_MAX };
+    for (int y = 0; y < SIDE; y++)
+        for (int x = 0; x < SIDE; x++) {
+            int dx = x - 60, dy = y - 52;
+            bool sun = dx * dx + dy * dy < 18 * 18;
+            bool hill = y > 70 + (x - 30) * (x - 30) / 120;
+            if (hill) put565(cover_px, y * SIDE + x, 4, 6, 8);
+            else if (sun) put565(cover_px, y * SIDE + x, 31, 52, 10);
+            else put565(cover_px, y * SIDE + x, 10 + y * 20 / SIDE, 8 + y * 30 / SIDE, 22 - y * 14 / SIDE);
+        }
+    hash_of(cover_px, sizeof(cover_px), hash);
 }
 
 static void wait_card(int card)
@@ -325,11 +358,13 @@ static void scene_focus(void)
     shot("focus-stopped-90-4");
 }
 
-static void now_playing(bool playing)
+static void now_playing(bool playing, const char *cover)
 {
+    char ref[64] = "";
+    if (cover) snprintf(ref, sizeof(ref), ",\"cover\":{\"hash\":\"%s\"}", cover);
     CHECK(send("work", "media.now_playing",
-               "{\"title\":\"Night Build\",\"artist\":\"Tabstop\",\"length_s\":247,\"position_s\":72,\"playing\":%s}",
-               playing ? "true" : "false") == BM_OK);
+               "{\"title\":\"Night Build\",\"artist\":\"Tabstop\",\"length_s\":247,\"position_s\":72,\"playing\":%s%s}",
+               playing ? "true" : "false", ref) == BM_OK);
     run(300);
 }
 
@@ -339,14 +374,22 @@ static void scene_music(void)
     go_view(BM_VIEW_MUSIC);
     shot("music-nothing-playing");
 
-    now_playing(true);
+    now_playing(true, NULL);
     run(5000);
     shot("music-playing");
 
-    now_playing(false);
+    now_playing(false, NULL);
     shot("music-paused");
 
-    now_playing(true);
+    char hash[17];
+    make_cover(hash);
+    now_playing(true, hash);
+    shot("music-cover-requested");
+    send_chunks(bm__on_cover_chunk, "work", cover_px, BM_COVER_MAX, 8);
+    run(300);
+    CHECK(bm_media_cover(&M) != NULL);
+    shot("music-cover");
+
     bm_link(&M, "work", false, now);
     run(600);
     bm_tap_overlay(&M, now);

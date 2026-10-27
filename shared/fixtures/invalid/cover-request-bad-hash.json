@@ -1,0 +1,12 @@
+{
+  "reason": "cover hash is 16 lowercase hex digits",
+  "event": {
+    "v": 1,
+    "id": "01K8F40000000000000000005D",
+    "ts": 1792900000,
+    "type": "device.cover_request",
+    "data": {
+      "hash": "B58977C6B2D76B25"
+    }
+  }
+}

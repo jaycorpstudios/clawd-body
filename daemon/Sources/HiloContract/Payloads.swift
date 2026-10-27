@@ -148,8 +148,10 @@ public struct Media: Codable, Equatable, Sendable {
     public var lengthS: Int
     public var positionS: Int
     public var playing: Bool?
-    public init(title: String, artist: String, lengthS: Int, positionS: Int, playing: Bool? = nil) {
+    public var cover: ImageRef?
+    public init(title: String, artist: String, lengthS: Int, positionS: Int, playing: Bool? = nil, cover: ImageRef? = nil) {
         self.title = title; self.artist = artist; self.lengthS = lengthS; self.positionS = positionS; self.playing = playing
+        self.cover = cover
     }
 }
 
@@ -206,9 +208,9 @@ public struct Snapshot: Codable, Equatable, Sendable {
     public var usage: Usage
     public var hilo: HiloState
     public var media: Media?
-    public var face: FaceRef?
+    public var face: ImageRef?
     public var pomodoro: PomodoroState?
-    public init(sessions: [SessionState], usage: Usage, hilo: HiloState, media: Media? = nil, face: FaceRef? = nil,
+    public init(sessions: [SessionState], usage: Usage, hilo: HiloState, media: Media? = nil, face: ImageRef? = nil,
                 pomodoro: PomodoroState? = nil) {
         self.sessions = sessions; self.usage = usage; self.hilo = hilo; self.media = media
         self.face = face; self.pomodoro = pomodoro
@@ -284,12 +286,12 @@ public struct SettingsChange: Codable, Equatable, Sendable {
     }
 }
 
-public struct FaceRef: Codable, Equatable, Sendable {
+public struct ImageRef: Codable, Equatable, Sendable {
     public var hash: String
     public init(hash: String) { self.hash = hash }
 }
 
-public struct FaceChunk: Codable, Equatable, Sendable {
+public struct ImageChunk: Codable, Equatable, Sendable {
     public var hash: String
     public var format: String
     public var w: Int

@@ -10,7 +10,7 @@ public struct SessionStore: Sendable {
     private var usage = Usage(sessionPct: 0, weeklyPct: 0, resetInMin: 0)
     private var hilo = HiloState(current: nil, next: [], agreementsToday: [])
     private var media: Media?
-    private var face: FaceRef?
+    private var face: ImageRef?
     private var pomodoro: PomodoroState?
 
     public init() {}
@@ -51,7 +51,7 @@ public struct SessionStore: Sendable {
             hilo.current = t
         case .nowPlaying(let m):
             media = m
-        case .snapshot, .settingsSet, .face, .pomodoro:
+        case .snapshot, .settingsSet, .face, .cover, .pomodoro:
             break
         }
     }
@@ -64,7 +64,7 @@ public struct SessionStore: Sendable {
         usage = value
     }
 
-    public mutating func setFace(_ value: FaceRef?) {
+    public mutating func setFace(_ value: ImageRef?) {
         face = value
     }
 

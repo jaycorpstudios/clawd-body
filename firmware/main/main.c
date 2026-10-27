@@ -174,6 +174,14 @@ static void follow_faces(void)
     }
 }
 
+static void follow_cover(void)
+{
+    static uint32_t seen_rev;
+    if (model->covers_rev == seen_rev) return;
+    seen_rev = model->covers_rev;
+    ESP_LOGI(TAG, "cover %s %ux%u", model->cover.hash, model->cover.w, model->cover.h);
+}
+
 static void io_cb(lv_timer_t *t)
 {
     (void)t;
@@ -186,6 +194,7 @@ static void io_cb(lv_timer_t *t)
     sync_rtc();
     follow_settings(now);
     follow_faces();
+    follow_cover();
     follow_brightness();
 }
 

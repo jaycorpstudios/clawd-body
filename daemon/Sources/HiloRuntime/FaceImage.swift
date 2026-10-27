@@ -52,11 +52,11 @@ public struct FaceImage: Equatable, Sendable {
         return FaceImage(pixels: out)
     }
 
-    public var chunks: [FaceChunk] {
+    public var chunks: [ImageChunk] {
         let bytesPerChunk = Self.maxChunkChars / 4 * 3
         let parts = stride(from: 0, to: pixels.count, by: bytesPerChunk).map { pixels[$0..<min($0 + bytesPerChunk, pixels.count)] }
         return parts.enumerated().map { i, part in
-            FaceChunk(hash: hash, w: Self.side, h: Self.side, index: i, count: parts.count, data: Data(part).base64EncodedString())
+            ImageChunk(hash: hash, w: Self.side, h: Self.side, index: i, count: parts.count, data: Data(part).base64EncodedString())
         }
     }
 

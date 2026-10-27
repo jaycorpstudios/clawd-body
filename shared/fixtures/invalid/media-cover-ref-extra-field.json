@@ -1,0 +1,20 @@
+{
+  "reason": "a cover reference holds only its hash",
+  "event": {
+    "v": 1,
+    "id": "01K8F40000000000000000005E",
+    "ts": 1792900000,
+    "host": "work",
+    "type": "media.now_playing",
+    "data": {
+      "title": "Night Build",
+      "artist": "Tabstop",
+      "length_s": 247,
+      "position_s": 12,
+      "cover": {
+        "hash": "b58977c6b2d76b25",
+        "url": "https://example.com/a.jpg"
+      }
+    }
+  }
+}

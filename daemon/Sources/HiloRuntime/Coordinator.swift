@@ -194,7 +194,7 @@ public actor Coordinator {
     public func setFace(_ image: FaceImage?) async {
         guard image != face else { return }
         face = image
-        store.setFace(image.map { FaceRef(hash: $0.hash) })
+        store.setFace(image.map { ImageRef(hash: $0.hash) })
         log(image.map { "face \($0.hash)" } ?? "no face")
         if let image { for chunk in image.chunks { await send(.face(chunk)) } }
         await sendSnapshot()

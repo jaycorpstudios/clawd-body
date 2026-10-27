@@ -34,7 +34,7 @@ public struct StoreRecorder: Sendable {
                 try store.finishSession(d.session, status: .done, summary: d.summary, now: now)
             case .agentError(let e):
                 try store.recordStep(e.session, project: nil, kind: .err, text: e.detail, status: .error, now: now)
-            case .snapshot, .usageUpdate, .usageWindowReset, .hiloTaskChanged, .nowPlaying, .settingsSet, .face, .pomodoro:
+            case .snapshot, .usageUpdate, .usageWindowReset, .hiloTaskChanged, .nowPlaying, .settingsSet, .face, .cover, .pomodoro:
                 break
             }
             if let session = Self.session(of: message) { try store.recordActivity(session: session, now: now) }
@@ -60,7 +60,7 @@ public struct StoreRecorder: Sendable {
         case .requestResolved(let r): r.session
         case .taskDone(let d): d.session
         case .agentError(let e): e.session
-        case .snapshot, .usageUpdate, .usageWindowReset, .hiloTaskChanged, .nowPlaying, .settingsSet, .face, .pomodoro: nil
+        case .snapshot, .usageUpdate, .usageWindowReset, .hiloTaskChanged, .nowPlaying, .settingsSet, .face, .cover, .pomodoro: nil
         }
     }
 

@@ -127,11 +127,16 @@ static void hash_hex(uint64_t h, char out[17])
     snprintf(out, 17, "%016llx", (unsigned long long)h);
 }
 
-static void request_face(bm_model_t *m, int host, const char *hash, uint32_t now_ms)
+static void request_image(bm_model_t *m, int host, const char *type, const char *hash, uint32_t now_ms)
 {
     char data[48];
     snprintf(data, sizeof(data), "{\"hash\":\"%s\"}", hash);
-    bm__out(m, (uint8_t)(1u << host), "device.face_request", data, now_ms);
+    bm__out(m, (uint8_t)(1u << host), type, data, now_ms);
+}
+
+static bool receiving(const bm_rx_t *rx, int host, const char *hash)
+{
+    return rx->count && rx->host == host && strcmp(rx->hash, hash) == 0;
 }
 
 void bm__on_face_ref(bm_model_t *m, int host, const char *hash, uint32_t now_ms)
@@ -145,25 +150,21 @@ void bm__on_face_ref(bm_model_t *m, int host, const char *hash, uint32_t now_ms)
         }
         return;
     }
-    bool receiving = m->face_rx.host == host && strcmp(m->face_rx.hash, hash) == 0 && m->face_rx.count;
-    if ((!h->has_face || strcmp(h->face.hash, hash) != 0) && !receiving) request_face(m, host, hash, now_ms);
+    if ((!h->has_face || strcmp(h->face.hash, hash) != 0) && !receiving(&m->face_rx, host, hash))
+        request_image(m, host, "device.face_request", hash, now_ms);
 }
 
-bm_err_t bm__on_face_chunk(bm_model_t *m, int host, const char *hash, int w, int h, int index, int count,
-                           const char *data, uint32_t now_ms)
+/* Returns true once the last chunk arrived and the bytes match the hash; a gap or a new transfer restarts it. */
+static bool take_chunk(bm_rx_t *rx, uint8_t *px, int host, const char *hash, int w, int h, int index, int count,
+                       const char *data, bm_err_t *err)
 {
-    (void)now_ms;
-    bm_face_rx_t *rx = &m->face_rx;
     size_t total = (size_t)w * (size_t)h * 2;
-    if (w < 16 || h < 16 || w > BM_FACE_MAX || h > BM_FACE_MAX || count < 1 || count > BM_FACE_CHUNKS || index < 0 ||
-        index >= count)
-        return BM_E_DATA;
-    bool same = rx->count && rx->host == host && strcmp(rx->hash, hash) == 0 && rx->w == w && rx->h == h &&
-                rx->count == count;
+    *err = BM_OK;
+    bool same = receiving(rx, host, hash) && rx->w == w && rx->h == h && rx->count == count;
     if (index == 0 || !same) {
         if (index != 0) {
             rx->count = 0;
-            return BM_OK;
+            return false;
         }
         rx->host = (int8_t)host;
         bm__copy(rx->hash, sizeof(rx->hash), hash);
@@ -175,23 +176,39 @@ bm_err_t bm__on_face_chunk(bm_model_t *m, int host, const char *hash, int w, int
     }
     if (index != rx->next) {
         rx->count = 0;
-        return BM_OK;
+        return false;
     }
-    size_t n = bm_base64_decode(data, rx->px + rx->bytes, total - rx->bytes);
+    size_t n = bm_base64_decode(data, px + rx->bytes, total - rx->bytes);
     if (!n) {
         rx->count = 0;
-        return BM_E_DATA;
+        *err = BM_E_DATA;
+        return false;
     }
     rx->bytes += (uint32_t)n;
     rx->next++;
-    if (rx->next < rx->count) return BM_OK;
+    if (rx->next < rx->count) return false;
 
     char got[17];
-    hash_hex(bm_fnv1a64(rx->px, rx->bytes), got);
+    hash_hex(bm_fnv1a64(px, rx->bytes), got);
     rx->count = 0;
-    if (rx->bytes != total || strcmp(got, hash) != 0) return BM_OK;
+    return rx->bytes == total && strcmp(got, hash) == 0;
+}
+
+static bool chunk_fits(int w, int h, int index, int count, int max_side, int max_chunks)
+{
+    return w >= 16 && h >= 16 && w <= max_side && h <= max_side && count >= 1 && count <= max_chunks && index >= 0 &&
+           index < count;
+}
+
+bm_err_t bm__on_face_chunk(bm_model_t *m, int host, const char *hash, int w, int h, int index, int count,
+                           const char *data, uint32_t now_ms)
+{
+    (void)now_ms;
+    if (!chunk_fits(w, h, index, count, BM_FACE_MAX, BM_FACE_CHUNKS)) return BM_E_DATA;
+    bm_err_t err;
+    if (!take_chunk(&m->face_rx, m->face_rx_px, host, hash, w, h, index, count, data, &err)) return err;
     bm_host_t *dst = &m->hosts[host];
-    memcpy(dst->face.px, rx->px, total);
+    memcpy(dst->face.px, m->face_rx_px, (size_t)w * (size_t)h * 2);
     dst->face.w = (uint16_t)w;
     dst->face.h = (uint16_t)h;
     bm__copy(dst->face.hash, sizeof(dst->face.hash), hash);
@@ -199,6 +216,37 @@ bm_err_t bm__on_face_chunk(bm_model_t *m, int host, const char *hash, int w, int
     m->faces_rev++;
     bm__touch(m);
     return BM_OK;
+}
+
+void bm__want_cover(bm_model_t *m, int host, uint32_t now_ms)
+{
+    const char *hash = m->hosts[host].media.cover;
+    if (!hash[0] || (m->has_cover && strcmp(m->cover.hash, hash) == 0) || receiving(&m->cover_rx, host, hash)) return;
+    request_image(m, host, "device.cover_request", hash, now_ms);
+}
+
+bm_err_t bm__on_cover_chunk(bm_model_t *m, int host, const char *hash, int w, int h, int index, int count,
+                            const char *data, uint32_t now_ms)
+{
+    (void)now_ms;
+    if (!chunk_fits(w, h, index, count, BM_COVER_MAX, BM_COVER_CHUNKS)) return BM_E_DATA;
+    bm_err_t err;
+    if (!take_chunk(&m->cover_rx, m->cover_rx_px, host, hash, w, h, index, count, data, &err)) return err;
+    memcpy(m->cover.px, m->cover_rx_px, (size_t)w * (size_t)h * 2);
+    m->cover.w = (uint16_t)w;
+    m->cover.h = (uint16_t)h;
+    bm__copy(m->cover.hash, sizeof(m->cover.hash), hash);
+    m->has_cover = true;
+    m->covers_rev++;
+    bm__touch(m);
+    return BM_OK;
+}
+
+const bm_cover_t *bm_media_cover(const bm_model_t *m)
+{
+    int mh = bm_media_host(m);
+    if (mh < 0 || !m->has_cover) return NULL;
+    return strcmp(m->hosts[mh].media.cover, m->cover.hash) == 0 ? &m->cover : NULL;
 }
 
 int bm_faces_count(const bm_model_t *m)

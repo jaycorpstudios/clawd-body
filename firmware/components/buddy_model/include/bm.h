@@ -34,6 +34,8 @@
 #define BM_SLEEP_CARD_S 8
 #define BM_FACE_MAX 160
 #define BM_FACE_CHUNKS 16
+#define BM_COVER_MAX 96
+#define BM_COVER_CHUNKS 8
 #define BM_POMO_WORK_MIN 25
 #define BM_POMO_BREAK_MIN 5
 
@@ -171,6 +173,7 @@ typedef struct {
     int32_t length_s;
     int32_t position_s;
     uint32_t received_ms;
+    char cover[17];
 } bm_media_t;
 
 typedef struct {
@@ -178,6 +181,12 @@ typedef struct {
     uint16_t w, h;
     uint16_t px[BM_FACE_MAX * BM_FACE_MAX];
 } bm_face_t;
+
+typedef struct {
+    char hash[17];
+    uint16_t w, h;
+    uint16_t px[BM_COVER_MAX * BM_COVER_MAX];
+} bm_cover_t;
 
 typedef struct {
     bool used;
@@ -217,8 +226,7 @@ typedef struct {
     uint16_t w, h;
     uint8_t count, next;
     uint32_t bytes;
-    uint8_t px[BM_FACE_MAX * BM_FACE_MAX * 2];
-} bm_face_rx_t;
+} bm_rx_t;
 
 typedef struct {
     bm_overlay_t type;
@@ -295,7 +303,13 @@ typedef struct {
     bool panel;
     bm_pomo_t pomo;
     uint32_t faces_rev;
-    bm_face_rx_t face_rx;
+    bm_rx_t face_rx;
+    uint8_t face_rx_px[BM_FACE_MAX * BM_FACE_MAX * 2];
+    bool has_cover;
+    bm_cover_t cover;
+    uint32_t covers_rev;
+    bm_rx_t cover_rx;
+    uint8_t cover_rx_px[BM_COVER_MAX * BM_COVER_MAX * 2];
     int8_t sleep_card;
     int64_t sleep_card_s;
 
@@ -402,6 +416,7 @@ uint32_t bm_usage_color(int pct);
 int32_t bm_usage_reset_s(const bm_usage_t *u, uint32_t now_ms);
 int bm_hilo_host(const bm_model_t *m);
 int bm_media_host(const bm_model_t *m);
+const bm_cover_t *bm_media_cover(const bm_model_t *m);
 int32_t bm_media_position_s(const bm_media_t *media, uint32_t now_ms);
 
 const char *bm_status_label(bm_status_t s);

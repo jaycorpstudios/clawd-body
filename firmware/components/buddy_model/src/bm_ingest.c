@@ -254,15 +254,18 @@ static field_t get_bool(const cJSON *obj, const char *key, bool *out)
     return PRESENT;
 }
 
+static bool parse_face_ref(const cJSON *o, char hash[17]);
+
 static bool parse_media(const cJSON *o, bm_media_t *media)
 {
     memset(media, 0, sizeof(*media));
+    const cJSON *cover = cJSON_GetObjectItemCaseSensitive(o, "cover");
     int64_t len = 0, pos = 0;
     bool playing = true;
     bool ok = cJSON_IsObject(o) && req_str(o, "title", 1, 80, media->title, sizeof(media->title)) &&
               req_str(o, "artist", 0, 80, media->artist, sizeof(media->artist)) &&
               req_int(o, "length_s", 0, INT32_MAX, &len) && req_int(o, "position_s", 0, INT32_MAX, &pos) &&
-              get_bool(o, "playing", &playing) != BAD;
+              get_bool(o, "playing", &playing) != BAD && (!cover || parse_face_ref(cover, media->cover));
     media->length_s = (int32_t)len;
     media->position_s = (int32_t)pos;
     media->paused = !playing;
@@ -330,17 +333,21 @@ static bool is_base64(const char *s)
     return true;
 }
 
-static bm_err_t apply_face(bm_model_t *m, int host, const cJSON *d, uint32_t now_ms)
+typedef bm_err_t (*chunk_fn)(bm_model_t *, int, const char *, int, int, int, int, const char *, uint32_t);
+
+static bm_err_t apply_chunk(bm_model_t *m, int host, const cJSON *d, int max_side, int max_chunks, chunk_fn take,
+                            uint32_t now_ms)
 {
     char hash[17], format[8];
     int64_t w = 0, h = 0, index = 0, count = 0;
     const cJSON *data = cJSON_GetObjectItemCaseSensitive(d, "data");
     if (!parse_face_ref(d, hash) || !req_str(d, "format", 1, 6, format, sizeof(format)) ||
-        strcmp(format, "rgb565") != 0 || !req_int(d, "w", 16, 160, &w) || !req_int(d, "h", 16, 160, &h) ||
-        !req_int(d, "index", 0, 15, &index) || !req_int(d, "count", 1, 16, &count) || !cJSON_IsString(data) ||
-        strlen(data->valuestring) < 4 || strlen(data->valuestring) > 6000 || !is_base64(data->valuestring))
+        strcmp(format, "rgb565") != 0 || !req_int(d, "w", 16, max_side, &w) || !req_int(d, "h", 16, max_side, &h) ||
+        !req_int(d, "index", 0, max_chunks - 1, &index) || !req_int(d, "count", 1, max_chunks, &count) ||
+        !cJSON_IsString(data) || strlen(data->valuestring) < 4 || strlen(data->valuestring) > 6000 ||
+        !is_base64(data->valuestring))
         return BM_E_DATA;
-    return bm__on_face_chunk(m, host, hash, (int)w, (int)h, (int)index, (int)count, data->valuestring, now_ms);
+    return take(m, host, hash, (int)w, (int)h, (int)index, (int)count, data->valuestring, now_ms);
 }
 
 static bool parse_hilo(const cJSON *o, bm_hilo_t *h)
@@ -413,6 +420,7 @@ static bm_err_t apply_snapshot(bm_model_t *m, int host, const cJSON *d, uint32_t
     h->media = med;
     h->media.playing = media != NULL;
     h->media.received_ms = now_ms;
+    bm__want_cover(m, host, now_ms);
     bm__on_face_ref(m, host, face ? face_hash : NULL, now_ms);
     bm__on_pomodoro(m, host, &pomodoro, true, pomo != NULL, now_ms);
     bm__after_snapshot(m, host, now_ms);
@@ -488,7 +496,9 @@ static bm_err_t apply(bm_model_t *m, int host, const char *type, const cJSON *d,
         if (!parse_settings_set(d, &m->settings, &s)) return BM_E_DATA;
         bm__on_settings(m, &s, now_ms);
     } else if (strcmp(type, "host.face") == 0) {
-        return apply_face(m, host, d, now_ms);
+        return apply_chunk(m, host, d, BM_FACE_MAX, BM_FACE_CHUNKS, bm__on_face_chunk, now_ms);
+    } else if (strcmp(type, "media.cover") == 0) {
+        return apply_chunk(m, host, d, BM_COVER_MAX, BM_COVER_CHUNKS, bm__on_cover_chunk, now_ms);
     } else if (strcmp(type, "pomodoro.state") == 0) {
         bm_pomo_t p;
         if (!parse_pomodoro(d, &p)) return BM_E_DATA;

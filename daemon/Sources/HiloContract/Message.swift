@@ -15,8 +15,9 @@ public enum Outbound: Equatable, Sendable {
     case hiloTaskChanged(HiloTask)
     case nowPlaying(Media)
     case settingsSet(SettingsChange)
-    case face(FaceChunk)
+    case face(ImageChunk)
     case pomodoro(PomodoroState)
+    case cover(ImageChunk)
 
     public var type: String {
         switch self {
@@ -36,6 +37,7 @@ public enum Outbound: Equatable, Sendable {
         case .settingsSet: "settings.set"
         case .face: "host.face"
         case .pomodoro: "pomodoro.state"
+        case .cover: "media.cover"
         }
     }
 
@@ -57,6 +59,7 @@ public enum Outbound: Equatable, Sendable {
         case .settingsSet(let p): p
         case .face(let p): p
         case .pomodoro(let p): p
+        case .cover(let p): p
         }
     }
 }
@@ -71,9 +74,10 @@ public enum Inbound: Equatable, Sendable {
     case wake(SleepWake)
     case petAccessory(PetAccessory)
     case settings(DeviceSettings)
-    case faceRequest(FaceRef)
+    case faceRequest(ImageRef)
     case pomodoro(PomodoroState)
     case mediaControl(MediaControl)
+    case coverRequest(ImageRef)
 }
 
 public struct Envelope<Body: Sendable>: Sendable {
@@ -146,9 +150,13 @@ public enum Wire {
             }
             body = .settings(p)
         case "device.face_request":
-            let p: FaceRef = try payload(data, keys: ["hash"])
+            let p: ImageRef = try payload(data, keys: ["hash"])
             guard p.hash.range(of: "^[0-9a-f]{16}$", options: .regularExpression) != nil else { throw .badPayload("bad face hash") }
             body = .faceRequest(p)
+        case "device.cover_request":
+            let p: ImageRef = try payload(data, keys: ["hash"])
+            guard p.hash.range(of: "^[0-9a-f]{16}$", options: .regularExpression) != nil else { throw .badPayload("bad cover hash") }
+            body = .coverRequest(p)
         case "device.pomodoro":
             let p: PomodoroState = try payload(data, keys: ["state", "phase", "ends_at", "left_s", "work_min", "break_min", "cycle", "updated_at"])
             guard p.isValid else { throw .badPayload("pomodoro out of range") }
@@ -184,6 +192,7 @@ public enum Wire {
         case "settings.set": body = .settingsSet(try payload(data))
         case "host.face": body = .face(try payload(data))
         case "pomodoro.state": body = .pomodoro(try payload(data))
+        case "media.cover": body = .cover(try payload(data))
         default: throw .unknownType(type)
         }
         return Envelope(id: header.id, ts: header.ts, host: host, body: body)
@@ -224,7 +233,7 @@ extension Inbound {
         case .questionAnswer(let p): p.requestId
         case .ack(let p): p.requestId
         case .snooze(let p): p.requestId
-        case .battery, .sleep, .wake, .petAccessory, .settings, .faceRequest, .pomodoro, .mediaControl: nil
+        case .battery, .sleep, .wake, .petAccessory, .settings, .faceRequest, .pomodoro, .mediaControl, .coverRequest: nil
         }
     }
 }
@@ -244,6 +253,7 @@ extension Inbound {
         case .faceRequest: "device.face_request"
         case .pomodoro: "device.pomodoro"
         case .mediaControl: "media.control"
+        case .coverRequest: "device.cover_request"
         }
     }
 
@@ -260,6 +270,7 @@ extension Inbound {
         case .faceRequest(let p): p
         case .pomodoro(let p): p
         case .mediaControl(let p): p
+        case .coverRequest(let p): p
         }
     }
 }

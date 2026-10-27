@@ -48,6 +48,9 @@ void bm__send_settings(bm_model_t *m, uint8_t hosts, uint32_t now_ms);
 bm_err_t bm__on_face_chunk(bm_model_t *m, int host, const char *hash, int w, int h, int index, int count,
                            const char *data, uint32_t now_ms);
 void bm__on_face_ref(bm_model_t *m, int host, const char *hash, uint32_t now_ms);
+bm_err_t bm__on_cover_chunk(bm_model_t *m, int host, const char *hash, int w, int h, int index, int count,
+                            const char *data, uint32_t now_ms);
+void bm__want_cover(bm_model_t *m, int host, uint32_t now_ms);
 void bm__pomo_defaults(bm_pomo_t *p);
 void bm__on_pomodoro(bm_model_t *m, int host, const bm_pomo_t *p, bool from_snapshot, bool present, uint32_t now_ms);
 void bm__pomo_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms);

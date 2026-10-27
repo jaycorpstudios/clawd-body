@@ -1,0 +1,19 @@
+{
+  "reason": "a cover is at most 96 pixels a side",
+  "event": {
+    "v": 1,
+    "id": "01K8F40000000000000000005C",
+    "ts": 1792900000,
+    "host": "work",
+    "type": "media.cover",
+    "data": {
+      "hash": "b58977c6b2d76b25",
+      "format": "rgb565",
+      "w": 120,
+      "h": 120,
+      "index": 0,
+      "count": 1,
+      "data": "AAAA"
+    }
+  }
+}

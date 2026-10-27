@@ -67,8 +67,9 @@ typedef struct {
     ui_pet_t *pomo_pet;
     lv_obj_t *pomo_cycle, *pomo_time, *pomo_phase, *pomo_bar, *pomo_steps, *pomo_work, *pomo_break, *pomo_play;
     lv_image_dsc_t cover_dsc;
-    uint32_t cover_px[BM_COVER_GRID * BM_COVER_GRID];
-    char cover_title[81];
+    uint16_t *cover_px;
+    uint32_t cover_grid[BM_COVER_GRID * BM_COVER_GRID];
+    char cover_key[82];
 
     lv_obj_t *ov, *ov_big, *ov_det, *ov_hint;
     ui_pet_t *ov_pet;

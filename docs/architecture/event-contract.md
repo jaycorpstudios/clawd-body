@@ -36,10 +36,11 @@ Senders produce exactly the schema: no extra fields in the envelope or any paylo
 | `usage.update` | `{ session_pct, weekly_pct, reset_in_min, tokens_today? }` |
 | `usage.window_reset` | `{}` |
 | `hilo.task_changed` | `{ title, project, jira?, started_at }` |
-| `media.now_playing` | `{ title, artist, length_s, position_s, playing? }`. `playing:false` = paused; absent means playing (older senders) |
+| `media.now_playing` | `{ title, artist, length_s, position_s, playing?, cover? }`. `playing:false` = paused; absent means playing (older senders). `cover`: `{ hash }` of the track's cover, once the Mac has it; see [covers](#covers) |
 | `settings.set` | `{ sound?, volume?, brightness? }`, at least one. Asks the buddy to apply device settings; it answers with `device.settings`. See [device settings](#device-settings) |
 | `host.face` | `{ hash, format:"rgb565", w, h, index, count, data }`: one chunk of this Mac's profile picture. See [faces](#faces) |
 | `pomodoro.state` | `pomodoro`: the timer as set on this Mac. See [pomodoro](#pomodoro) |
+| `media.cover` | `{ hash, format:"rgb565", w, h, index, count, data }`: one chunk of the playing track's cover, only in answer to `device.cover_request`. See [covers](#covers) |
 
 ### `snapshot`
 
@@ -77,6 +78,7 @@ A snapshot must fit the 8 KB message cap ([framing](ble-transport.md#framing)). 
 | `device.face_request` | `{ hash }`: the buddy does not hold the face the snapshot named; the Mac answers with its `host.face` chunks |
 | `device.pomodoro` | `pomodoro`: the buddy's timer, after a change on the buddy or when its copy is newer than the snapshot's |
 | `media.control` | `{ action:"play_pause"\|"next"\|"previous" }`. Playback only; the daemon maps each action to one player command and nothing else |
+| `device.cover_request` | `{ hash }`: the buddy does not hold the cover a `media` payload named; the Mac answers with its `media.cover` chunks if that track still plays |
 
 Naming: commands from the buddy use the imperative (`approve`/`deny`); state reported by the Mac uses the past tense (`approved`/`denied`).
 
@@ -100,6 +102,15 @@ A Mac's profile picture, shown by the buddy's idle rotation.
 - `hash`: FNV-1a 64 over those bytes, 16 lowercase hex digits. Change detection only, not a security check (the link is already encrypted and bound to the host).
 - The bytes are split into `count` chunks (at most 16), each base64 in `data` (≤ 6000 characters, so every message stays far below the 8 KB cap), sent in `index` order. A chunk with another `hash` or `w`/`h` restarts the transfer; the buddy keeps the face only when all chunks arrived and the hash matches.
 - On every snapshot the buddy compares `face.hash` with what it holds for that host and sends `device.face_request` on a mismatch; a Mac also sends the chunks unasked right after the picture changes. No `face` in the snapshot removes the stored one. The buddy also drops a host's face when another Mac takes that host's slot.
+
+## Covers
+
+The playing track's cover art on the Music view. Same encoding as [faces](#faces) (RGB565, FNV-1a 64 `hash`, base64 chunks of ≤ 6000 characters), with these differences:
+
+- `w`×`h` 16–96 each (`hilod` sends 96×96: 18 432 bytes in 5 chunks); at most 8 chunks.
+- Pull only: `media` (in `media.now_playing` or a snapshot) names the cover by `hash`; the buddy asks with `device.cover_request` when it holds a different one and is not already receiving it, and the Mac answers only for the cover of the track playing now. A `media` without `cover` means the Mac has none yet (or the track has none).
+- The buddy keeps one cover, not one per host: it is content-addressed, and the view shows it only while the playing host's `media.cover.hash` matches; otherwise it draws the generated pixel cover. A Mac taking another's slot drops a half-received cover from that slot.
+- Where the picture comes from is the Mac's business (see [daemon](../components/daemon.md)); the buddy never fetches anything.
 
 ## Pomodoro
 

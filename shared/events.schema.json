@@ -15,10 +15,10 @@
       "agent.needs_permission", "agent.question", "agent.request_resolved",
       "agent.task_done", "agent.error", "agent.step",
       "usage.update", "usage.window_reset", "hilo.task_changed", "media.now_playing",
-      "settings.set", "host.face", "pomodoro.state",
+      "settings.set", "host.face", "pomodoro.state", "media.cover",
       "permission.decision", "question.answer",
       "device.ack", "device.snooze", "device.battery", "device.sleep", "device.wake", "device.pet_accessory",
-      "device.settings", "device.face_request", "device.pomodoro", "media.control"
+      "device.settings", "device.face_request", "device.pomodoro", "media.control", "device.cover_request"
     ] },
     "data": { "type": "object" }
   },
@@ -29,7 +29,7 @@
         "agent.needs_permission", "agent.question", "agent.request_resolved",
         "agent.task_done", "agent.error", "agent.step",
         "usage.update", "usage.window_reset", "hilo.task_changed", "media.now_playing",
-        "settings.set", "host.face", "pomodoro.state"
+        "settings.set", "host.face", "pomodoro.state", "media.cover"
       ] } } },
       "then": { "required": ["host"] }
     },
@@ -57,10 +57,12 @@
     { "if": { "properties": { "type": { "const": "settings.set" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/settingsSet" } } } },
     { "if": { "properties": { "type": { "const": "host.face" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/faceChunk" } } } },
     { "if": { "properties": { "type": { "const": "pomodoro.state" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/pomodoro" } } } },
+    { "if": { "properties": { "type": { "const": "media.cover" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/coverChunk" } } } },
     { "if": { "properties": { "type": { "const": "device.settings" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/settings" } } } },
     { "if": { "properties": { "type": { "const": "device.face_request" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/faceRef" } } } },
     { "if": { "properties": { "type": { "const": "device.pomodoro" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/pomodoro" } } } },
-    { "if": { "properties": { "type": { "const": "media.control" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/mediaControl" } } } }
+    { "if": { "properties": { "type": { "const": "media.control" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/mediaControl" } } } },
+    { "if": { "properties": { "type": { "const": "device.cover_request" } } }, "then": { "properties": { "data": { "$ref": "#/$defs/faceRef" } } } }
   ],
   "$defs": {
     "ulid": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
@@ -226,7 +228,8 @@
         "artist": { "type": "string", "maxLength": 80 },
         "length_s": { "type": "integer", "minimum": 0 },
         "position_s": { "type": "integer", "minimum": 0 },
-        "playing": { "type": "boolean" }
+        "playing": { "type": "boolean" },
+        "cover": { "$ref": "#/$defs/faceRef" }
       }
     },
     "sessionState": {
@@ -360,6 +363,19 @@
         "h": { "type": "integer", "minimum": 16, "maximum": 160 },
         "index": { "type": "integer", "minimum": 0, "maximum": 15 },
         "count": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "data": { "type": "string", "minLength": 4, "maxLength": 6000, "pattern": "^[A-Za-z0-9+/]+={0,2}$" }
+      }
+    },
+    "coverChunk": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hash", "format", "w", "h", "index", "count", "data"],
+      "properties": {
+        "hash": { "$ref": "#/$defs/faceHash" },
+        "format": { "const": "rgb565" },
+        "w": { "type": "integer", "minimum": 16, "maximum": 96 },
+        "h": { "type": "integer", "minimum": 16, "maximum": 96 },
+        "index": { "type": "integer", "minimum": 0, "maximum": 7 },
+        "count": { "type": "integer", "minimum": 1, "maximum": 8 },
         "data": { "type": "string", "minLength": 4, "maxLength": 6000, "pattern": "^[A-Za-z0-9+/]+={0,2}$" }
       }
     },

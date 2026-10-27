@@ -55,6 +55,7 @@ void bm_init(bm_model_t *m, const bm_config_t *cfg, uint32_t now_ms)
     bm__settings_defaults(&m->settings);
     bm__pomo_defaults(&m->pomo);
     m->face_rx.host = -1;
+    m->cover_rx.host = -1;
     m->sleep_card = BM_CARD_CLOCK;
 }
 
@@ -106,6 +107,7 @@ int bm__host_slot(bm_model_t *m, const char *name, bool create)
     if (slot < 0) return -1;
     bm__clear_host(m, slot);
     if (m->face_rx.host == slot) m->face_rx.count = 0;
+    if (m->cover_rx.host == slot) m->cover_rx.count = 0;
     memset(&m->hosts[slot], 0, sizeof(m->hosts[slot]));
     m->hosts[slot].used = true;
     bm__copy(m->hosts[slot].name, sizeof(m->hosts[slot].name), name);
@@ -853,6 +855,7 @@ void bm__on_media(bm_model_t *m, int host, const bm_media_t *media, uint32_t now
     dst->playing = true;
     dst->received_ms = now_ms;
     bm__touch(m);
+    bm__want_cover(m, host, now_ms);
     if (!news) return;
     bm__wake(m, true, BM_BY_TOUCH, now_ms);
     char text[180];

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "esp_heap_caps.h"
 #include "ui_priv.h"
 
 #define PAD_TOP 62
@@ -286,22 +287,19 @@ static lv_obj_t *round_button(lv_obj_t *parent, int32_t size, const lv_font_t *f
 static void create_music(lv_obj_t *v)
 {
     lv_obj_set_flex_align(v, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    ui.cover_px = heap_caps_calloc_prefer(COVER_SIDE * COVER_SIDE, 2, 2, MALLOC_CAP_SPIRAM, MALLOC_CAP_DEFAULT);
     ui.cover_dsc.header.magic = LV_IMAGE_HEADER_MAGIC;
-    ui.cover_dsc.header.cf = LV_COLOR_FORMAT_ARGB8888;
-    ui.cover_dsc.header.w = BM_COVER_GRID;
-    ui.cover_dsc.header.h = BM_COVER_GRID;
-    ui.cover_dsc.header.stride = BM_COVER_GRID * 4;
-    ui.cover_dsc.data_size = sizeof(ui.cover_px);
+    ui.cover_dsc.header.cf = LV_COLOR_FORMAT_RGB565;
+    ui.cover_dsc.header.w = COVER_SIDE;
+    ui.cover_dsc.header.h = COVER_SIDE;
+    ui.cover_dsc.header.stride = COVER_SIDE * 2;
+    ui.cover_dsc.data_size = COVER_SIDE * COVER_SIDE * 2;
     ui.cover_dsc.data = (const uint8_t *)ui.cover_px;
-    lv_obj_t *frame = ui_box(v);
-    lv_obj_set_size(frame, COVER_SIDE, COVER_SIDE);
-    lv_obj_set_style_radius(frame, 16, 0);
-    lv_obj_set_style_clip_corner(frame, true, 0);
-    ui.cover = lv_image_create(frame);
+    ui.cover = lv_image_create(v);
     lv_image_set_src(ui.cover, &ui.cover_dsc);
-    lv_image_set_inner_align(ui.cover, LV_IMAGE_ALIGN_STRETCH);
-    lv_image_set_antialias(ui.cover, false);
     lv_obj_set_size(ui.cover, COVER_SIDE, COVER_SIDE);
+    lv_obj_set_style_radius(ui.cover, 16, 0);
+    lv_obj_set_style_clip_corner(ui.cover, true, 0);
 
     ui.song = ui_label(v, F_TITLE, C_FG, "");
     lv_obj_set_width(ui.song, LV_PCT(100));
@@ -605,6 +603,40 @@ static void update_hilo(void)
     lv_label_set_text_fmt(ui.hilo_agree, "Agreements logged today: #5ee3a8 %d#", h ? h->n_agreements : 0);
 }
 
+static uint16_t rgb565_mix(uint16_t a, uint16_t b, uint32_t t)
+{
+    uint32_t r = ((a >> 11) * (256 - t) + (b >> 11) * t) >> 8;
+    uint32_t g = (((a >> 5) & 63) * (256 - t) + ((b >> 5) & 63) * t) >> 8;
+    uint32_t bl = ((a & 31) * (256 - t) + (b & 31) * t) >> 8;
+    return (uint16_t)(r << 11 | g << 5 | bl);
+}
+
+/* Scaled once per cover so LVGL draws it unscaled: its corner clip only holds for unscaled images. */
+static void art_scale(const bm_cover_t *c)
+{
+    for (int y = 0; y < COVER_SIDE; y++) {
+        uint32_t fy = (uint32_t)y * (uint32_t)(c->h - 1) * 256 / (COVER_SIDE - 1);
+        int y0 = (int)(fy >> 8), y1 = y0 + 1 < c->h ? y0 + 1 : y0;
+        for (int x = 0; x < COVER_SIDE; x++) {
+            uint32_t fx = (uint32_t)x * (uint32_t)(c->w - 1) * 256 / (COVER_SIDE - 1);
+            int x0 = (int)(fx >> 8), x1 = x0 + 1 < c->w ? x0 + 1 : x0;
+            uint16_t top = rgb565_mix(c->px[y0 * c->w + x0], c->px[y0 * c->w + x1], fx & 255);
+            uint16_t bottom = rgb565_mix(c->px[y1 * c->w + x0], c->px[y1 * c->w + x1], fx & 255);
+            ui.cover_px[y * COVER_SIDE + x] = rgb565_mix(top, bottom, fy & 255);
+        }
+    }
+}
+
+static void pixel_cover(const char *title)
+{
+    bm_cover_render(ui.cover_grid, title);
+    for (int y = 0; y < COVER_SIDE; y++)
+        for (int x = 0; x < COVER_SIDE; x++) {
+            uint32_t c = ui.cover_grid[y * BM_COVER_GRID / COVER_SIDE * BM_COVER_GRID + x * BM_COVER_GRID / COVER_SIDE];
+            ui.cover_px[y * COVER_SIDE + x] = (uint16_t)((c >> 19 & 31) << 11 | (c >> 10 & 63) << 5 | (c >> 3 & 31));
+        }
+}
+
 static void update_music(uint32_t now_ms)
 {
     int mh = bm_media_host(ui.m);
@@ -612,9 +644,13 @@ static void update_music(uint32_t now_ms)
     const char *title = media ? media->title : "Nothing playing";
     lv_label_set_text(ui.song, title);
     lv_label_set_text(ui.artist, media ? media->artist : "");
-    if (strcmp(ui.cover_title, title) != 0) {
-        snprintf(ui.cover_title, sizeof(ui.cover_title), "%s", title);
-        bm_cover_render(ui.cover_px, title);
+    const bm_cover_t *art = bm_media_cover(ui.m);
+    char key[sizeof(ui.cover_key)];
+    snprintf(key, sizeof(key), "%c%s", art ? '#' : '~', art ? art->hash : title);
+    if (ui.cover_px && strcmp(ui.cover_key, key) != 0) {
+        memcpy(ui.cover_key, key, sizeof(key));
+        if (art) art_scale(art);
+        else pixel_cover(title);
         lv_obj_invalidate(ui.cover);
     }
     lv_label_set_text(ui.song_play, media && media->paused ? LV_SYMBOL_PLAY : LV_SYMBOL_PAUSE);

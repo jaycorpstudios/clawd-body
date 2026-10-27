@@ -97,7 +97,7 @@ private func solidImage(width: Int, height: Int, rgb: (UInt8, UInt8, UInt8)) -> 
         await coordinator.buddyLink(up: true)
         await coordinator.sendSnapshot()
         guard case .snapshot(let snap) = await link.decoded().last else { Issue.record("no snapshot"); return }
-        #expect(snap.face == FaceRef(hash: face.hash))
+        #expect(snap.face == ImageRef(hash: face.hash))
         #expect(await link.raw.count == first + 1)
 
         try await coordinator.handleBuddy(buddyMessage("device.face_request", #"{"hash":"\#(face.hash)"}"#))
@@ -114,7 +114,7 @@ private func solidImage(width: Int, height: Int, rgb: (UInt8, UInt8, UInt8)) -> 
         await coordinator.setFace(face)
         #expect(await link.types() == Array(repeating: "host.face", count: 7) + ["snapshot"])
         guard case .snapshot(let snap) = await link.decoded().last else { Issue.record("no snapshot"); return }
-        #expect(snap.face == FaceRef(hash: face.hash))
+        #expect(snap.face == ImageRef(hash: face.hash))
 
         try await coordinator.handleBuddy(buddyMessage("device.face_request", #"{"hash":"\#(face.hash)"}"#))
         #expect(await link.types().count == 15)
