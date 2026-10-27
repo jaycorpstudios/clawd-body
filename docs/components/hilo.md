@@ -23,7 +23,7 @@ Visual reference approved as direction: `prototypes/hilo/`. Dark theme only, wit
 | Screen | Prototype | Contents |
 | :--- | :--- | :--- |
 | **Today** | `Main.dc.html` | Quick task capture; tasks grouped as *In progress*, *Next*, *Done today* (project, Jira ticket, meta); selected task detail: notes, linked sessions with avatar and status, branch commits, linked agreements |
-| **Sessions** | `Sessions.dc.html` | Table of this Mac's sessions (avatar, status, linked task, Warp tab, duration, tokens, last action); banner when a session needs you; detail with timeline and `claude --resume <id>`; automatic-capture status panel |
+| **Sessions** | `Sessions.dc.html` | Table of this Mac's sessions (avatar, status, linked task, Warp tab, duration, tokens — from the local transcripts when `tokens_from_transcripts` is on, otherwise "—" —, last action); banner when a session needs you; detail with timeline and `claude --resume <id>`; automatic-capture status panel |
 | **Week** | `Week.dc.html` | Totals (active time, tasks closed, sessions, agreements); per-project summary drafted by Claude and editable; hours per project and per day; closed tasks; Markdown copy/export |
 | **Agreements** | `Agreements.dc.html` | Log by date with project, context, origin (meeting, session, manual) and linked task; **To confirm** column with agreements Claude detected in sessions — nothing enters the log without confirmation |
 | **Resume context** | `Resume.dc.html` | Per project: where you left off, suggested next step, open threads, files touched, recent agreements, commands to get back in |

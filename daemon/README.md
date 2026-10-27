@@ -82,7 +82,7 @@ Answer a held request as the buddy would:
   ```
 
   Without a wrapped command it prints nothing. Values only move while a Claude Code window is open; a new 5 h window (a later `resets_at`) sends `usage.window_reset` first. `hilod` sends an update only when a percent or the window changes; the buddy counts the reset down by itself.
-- **Tokens today** (opt-in, `--tokens-from-transcripts` or `tokens_from_transcripts`): every 60 s `hilod` reads the new lines of today's `~/.claude/projects/**/*.jsonl` (`CLAUDE_CONFIG_DIR` respected) and sums `input + cache writes + output` of each assistant message once (cache reads are left out; they would dwarf the rest). Opt-in because the transcript format is internal to Claude Code and may change.
+- **Tokens today** (opt-in, `--tokens-from-transcripts` or `tokens_from_transcripts`): every 60 s `hilod` reads the new lines of today's `~/.claude/projects/**/*.jsonl` (`CLAUDE_CONFIG_DIR` respected) and sums `input + cache writes + output` of each assistant message once (cache reads are left out; they would dwarf the rest). The same scan stores each session's whole-transcript total (its subagents included) in the Hilo store, shown in Hilo › Sessions; a transcript is named after its session id. Opt-in because the transcript format is internal to Claude Code and may change.
 
 ## Claude Code hooks
 

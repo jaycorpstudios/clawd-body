@@ -274,6 +274,11 @@ enum Format {
         return m < 60 ? "\(m) min" : String(format: "%d h %02d min", m / 60, m % 60)
     }
 
+    /// As the prototype writes them: "41 k", "1.2 M".
+    static func tokens(_ n: Int) -> String {
+        n < 1_000 ? "\(n)" : n < 1_000_000 ? "\(n / 1_000) k" : String(format: "%.1f M", Double(n) / 1_000_000)
+    }
+
     static func clock(_ ts: Int) -> String {
         Date(timeIntervalSince1970: TimeInterval(ts)).formatted(date: .omitted, time: .shortened)
     }

@@ -75,6 +75,7 @@ if tokensFromTranscripts {
     Task.detached {
         while true {
             await coordinator.updateUsage(tokensToday: transcripts.scan())
+            for (session, tokens) in transcripts.takeSessionTotals() { try? store?.setTokens(session: session, tokens: tokens) }
             try? await Task.sleep(for: .seconds(60))
         }
     }

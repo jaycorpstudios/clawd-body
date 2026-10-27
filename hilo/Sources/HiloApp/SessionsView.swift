@@ -73,6 +73,7 @@ struct SessionsView: View {
                 Text("Status").frame(width: 100, alignment: .leading)
                 Text("Hilo task").frame(maxWidth: .infinity, alignment: .leading)
                 Text("Duration").frame(width: 90, alignment: .trailing)
+                Text("Tokens").frame(width: 80, alignment: .trailing)
                 Text("Last action").frame(maxWidth: .infinity, alignment: .leading)
             }
             .font(.system(size: 11.5, weight: .semibold)).tracking(0.8).textCase(.uppercase).foregroundStyle(Theme.secondary)
@@ -93,6 +94,7 @@ struct SessionsView: View {
                     StatusChip(status: s.status).frame(width: 100, alignment: .leading)
                     Text(s.taskTitle ?? "—").lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
                     Text(Format.duration(Format.sessionTime(s))).monospacedDigit().frame(width: 90, alignment: .trailing)
+                    Text(s.tokens.map(Format.tokens) ?? "—").monospacedDigit().frame(width: 80, alignment: .trailing)
                     Text(s.lastAction).foregroundStyle(Color(hex: "#c2bbb0")).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .padding(.horizontal, 16).padding(.vertical, 6)

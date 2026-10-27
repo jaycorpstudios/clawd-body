@@ -189,7 +189,7 @@ public final class HiloStore: @unchecked Sendable {
 
     private static let sessionSelect = """
         SELECT s.id, s.task_id, t.title, s.status, s.started_at, s.updated_at, s.ended_at, s.last_action, s.waiting_on, s.summary,
-          p.id, p.name, p.color, p.jira_key
+          p.id, p.name, p.color, p.jira_key, s.tokens
         FROM session s LEFT JOIN project p ON p.id = s.project_id LEFT JOIN task t ON t.id = s.task_id
         """
 
@@ -211,6 +211,6 @@ public final class HiloStore: @unchecked Sendable {
         SessionRecord(id: r.text(0) ?? "", project: joinedProject(r, at: 10), taskId: r.int(1), taskTitle: r.text(2),
                       status: SessionStatus(rawValue: r.text(3) ?? "") ?? .idle, startedAt: r.int(4) ?? 0,
                       updatedAt: r.int(5) ?? 0, endedAt: r.int(6), lastAction: r.text(7) ?? "",
-                      waitingOn: r.text(8), summary: r.text(9))
+                      waitingOn: r.text(8), summary: r.text(9), tokens: r.int(14))
     }
 }

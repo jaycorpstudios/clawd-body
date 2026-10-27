@@ -8,6 +8,15 @@ private func makeStore() throws -> HiloStore {
 }
 
 @Suite struct CaptureTests {
+    @Test func sessionTokensAreStoredForKnownSessionsOnly() throws {
+        let store = try makeStore()
+        try store.recordSessionStart("s1", project: "api", now: 1_000)
+        #expect(try store.sessions(since: 0).first?.tokens == nil)
+        try store.setTokens(session: "s1", tokens: 41_200)
+        try store.setTokens(session: "unknown", tokens: 9)
+        #expect(try store.sessions(since: 0).map(\.tokens) == [41_200])
+    }
+
     @Test func activityJoinsEventsAndPausesAfterFiveMinutes() throws {
         let store = try makeStore()
         try store.recordSessionStart("s1", project: "api", now: 1_000)

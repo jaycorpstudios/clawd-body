@@ -9,6 +9,11 @@ extension HiloStore {
         try db.run("UPDATE session SET repo = ? WHERE id = ? AND repo IS NULL", [repo, session])
     }
 
+    /// Only sessions the hooks already recorded; a transcript of an unknown session is ignored.
+    public func setTokens(session: String, tokens: Int) throws {
+        try db.run("UPDATE session SET tokens = ? WHERE id = ?", [tokens, session])
+    }
+
     /// Repos of sessions active since `since`, with the session's project.
     public func sessionRepos(since: Int) throws -> [(repo: String, project: String?)] {
         try db.rows("""

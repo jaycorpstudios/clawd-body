@@ -36,6 +36,7 @@ public struct SessionRecord: Equatable, Sendable, Identifiable {
     public var lastAction: String
     public var waitingOn: String?
     public var summary: String?
+    public var tokens: Int?
 }
 
 public struct StepRecord: Equatable, Sendable {

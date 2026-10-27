@@ -80,5 +80,6 @@ Things only the board can confirm. Run them once flashing is approved; tick them
 
 - [x] A status line payload piped into `hilo statusline` reaches `hilod`, which sends `usage.update` and the buddy accepts it. *2026-10-25: synthetic payload (33 % / 21 %), buddy `rx 176 bytes`, no rejection.*
 - [x] `--tokens-from-transcripts` counts today's tokens from the local transcripts. *2026-10-25: ~3.0 M tokens on the dev Mac (input + cache writes + output).*
+- [ ] With `tokens_from_transcripts` on, Hilo › Sessions shows each session's tokens within a minute of a reply, and a session with subagents counts theirs too.
 - [ ] With `hilo statusline -- <your status line command>` in `~/.claude/settings.json`, the buddy's Usage ring and Home stats match Claude Code's `/usage` within a minute of a reply, and the existing status line still prints.
 
