@@ -319,8 +319,9 @@ TEST(an_alert_takes_the_face_and_the_eyes_react_when_it_closes)
 
     CHECK(bm_hold_begin(&M, now));
     advance(BM_HOLD_MS + 100);
-    CHECK(!bm_attn_session(&M) && M.ov.type == BM_OV_APPROVED);
-    CHECK(M.eyes.react_pending == BM_REACT_HAPPY && M.eyes.react_at_ms == M.ov.until_ms);
+    CHECK(!bm_attn_session(&M) && !M.ov.type && M.view == BM_VIEW_FACE);
+    CHECK(strstr(M.toast, "Approved") && M.cheer_until_ms && M.eyes.react_pending == BM_REACT_HAPPY);
+    CHECK(M.eyes.react_at_ms <= now + BM_EYES_REACT_DELAY_MS);
 
     settled();
     start_session("work", "s", "alpha");
@@ -408,4 +409,23 @@ TEST(sleep_from_another_view_or_an_overlay_switches_at_once)
     bm_touch_wake(&M, now);
     advance(100);
     CHECK(M.rest == 0);
+}
+
+TEST(task_done_on_the_face_cheers_with_a_toast_and_no_overlay)
+{
+    settled();
+    start_session("work", "s", "alpha");
+    advance(100);
+    CHECK(send("work", "agent.task_done", "{\"session\":\"s\",\"summary\":\"done\"}") == BM_OK);
+    CHECK(!M.ov.type && strstr(M.toast, "alpha finished") && bm_main_pet(&M) == BM_PET_HAPPY);
+    advance(200);
+    CHECK(M.eyes.mood == BM_MOOD_DONE);
+    advance(3000);
+    CHECK(!M.cheer_until_ms && bm_main_pet(&M) != BM_PET_HAPPY);
+
+    bm_swipe(&M, 1, now);
+    CHECK(M.view == BM_VIEW_HOME);
+    start_session("work", "t", "beta");
+    CHECK(send("work", "agent.task_done", "{\"session\":\"t\",\"summary\":\"done\"}") == BM_OK);
+    CHECK(M.ov.type == BM_OV_DONE && !M.cheer_until_ms);
 }

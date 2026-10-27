@@ -67,6 +67,7 @@ TEST(permission_needs_a_full_900ms_hold)
 {
     outs_t o;
     fresh();
+    M.view = BM_VIEW_HOME;
     start_session("work", "s", "alpha");
     ask_permission("work", "s", RID1, "low", true);
     drain(&o);
@@ -125,6 +126,7 @@ TEST(question_answer_carries_index_and_escaped_choice)
 {
     outs_t o;
     fresh();
+    M.view = BM_VIEW_HOME;
     start_session("work", "q", "alpha");
     ask_question("work", "q", RID1);
     CHECK(heard(BM_SND_QUESTION));
@@ -315,6 +317,7 @@ TEST(swipe_changes_view_but_not_over_a_prompt_or_sheet)
 TEST(task_done_overlay_lasts_3s_and_becomes_a_toast_over_a_prompt)
 {
     fresh();
+    M.view = BM_VIEW_HOME;
     start_session("work", "a", "alpha");
     start_session("work", "b", "beta");
     set_status("work", "a", "agent.task_done", "summary");
@@ -337,6 +340,7 @@ TEST(task_done_overlay_lasts_3s_and_becomes_a_toast_over_a_prompt)
 TEST(tapping_done_overlay_opens_agent_sheet)
 {
     fresh();
+    M.view = BM_VIEW_HOME;
     start_session("work", "a", "alpha");
     set_status("work", "a", "agent.task_done", "summary");
     bm_tap_overlay(&M, now);

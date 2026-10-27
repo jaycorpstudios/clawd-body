@@ -556,7 +556,6 @@ static void task_done(void)
 {
     CHECK(send("work", "agent.task_done", "{\"session\":\"s\",\"summary\":\"Tests pass\"}") == BM_OK);
     run(100);
-    bm__close_overlay(&M);
 }
 
 #define REQ "01K8F5REQ0000000000000000F"
@@ -576,6 +575,9 @@ static void scene_face(void)
     face_shot("face-working-tracking", BM_EYE_DOT, 120000);
 
     task_done();
+    CHECK(!M.ov.type);
+    run(300);
+    shot("face-task-done-toast");
     face_shot("face-done-happy", BM_EYE_HAPPY, 1000);
     bool hearts = false, wink = false;
     for (int i = 0; i < 30 && !(hearts && wink); i++) {

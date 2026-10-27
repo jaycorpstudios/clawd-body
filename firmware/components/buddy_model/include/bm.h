@@ -298,6 +298,7 @@ typedef struct {
 
     bm_view_t view;
     bm_overlay_state_t ov;
+    uint32_t cheer_until_ms;
     bm_look_pick_t look_pick;
     char toast[121];
     uint32_t toast_color;

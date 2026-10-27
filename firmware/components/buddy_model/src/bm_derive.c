@@ -165,6 +165,7 @@ bm_pet_state_t bm_main_pet(const bm_model_t *m)
     case BM_OV_LIMIT: return BM_PET_SLEEP;
     default: break;
     }
+    if (m->cheer_until_ms) return BM_PET_HAPPY;
     int pct = max_usage_pct(m);
     if (pct >= 100) return BM_PET_SLEEP;
     if (any_live_status(m, BM_WAITING)) return BM_PET_ALERT;

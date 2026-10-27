@@ -397,6 +397,16 @@ static uint32_t toast_color_for(bm_overlay_t type)
 void bm__show_overlay(bm_model_t *m, const bm_overlay_state_t *ov, uint32_t duration_ms, uint32_t now_ms)
 {
     bm__wake(m, true, BM_BY_TOUCH, now_ms);
+    bool cheer = ov->type == BM_OV_DONE || ov->type == BM_OV_APPROVED;
+    if (cheer && m->attn < 0 && m->view == BM_VIEW_FACE && !m->sheet && !m->panel && !m->pairing) {
+        char text[96];
+        if (ov->type == BM_OV_DONE) snprintf(text, sizeof(text), "\xE2\x9C\x93 %s finished", ov->name);
+        else if (ov->question) snprintf(text, sizeof(text), "\xE2\x9C\x93 Answered: %.64s", ov->text);
+        else snprintf(text, sizeof(text), "\xE2\x9C\x93 Approved \xC2\xB7 %s", ov->name);
+        bm__toast(m, text, BM_C_DONE, now_ms);
+        m->cheer_until_ms = deadline(now_ms, duration_ms);
+        return;
+    }
     if (m->attn >= 0) {
         char text[96];
         if (ov->type == BM_OV_DONE) snprintf(text, sizeof(text), "\xE2\x9C\x93 %s finished", ov->name);
@@ -1156,6 +1166,10 @@ void bm_tick(bm_model_t *m, uint32_t now_ms)
     if (m->pairing && due(now_ms, m->pairing_until_ms)) bm_pairing_end(m, BM_PAIR_TIMEOUT, now_ms);
 
     if (m->ov.type && m->ov.until_ms && due(now_ms, m->ov.until_ms)) bm__close_overlay(m);
+    if (m->cheer_until_ms && due(now_ms, m->cheer_until_ms)) {
+        m->cheer_until_ms = 0;
+        bm__touch(m);
+    }
 
     if (m->toast_until_ms && due(now_ms, m->toast_until_ms)) {
         m->toast[0] = '\0';
