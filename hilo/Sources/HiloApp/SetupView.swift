@@ -16,7 +16,7 @@ struct SetupView: View {
             step(1, "Name this Mac", done: model.config.host != nil) { nameCard }
             step(2, "Run hilod", done: model.daemonRunning) { daemonCard }
             step(3, "Pair the buddy", done: model.daemonStatus?.buddy.link == .connected) { buddyCard }
-            step(4, "Usage on the buddy", done: false, optional: true) { usageCard }
+            step(4, "Usage on the buddy", done: model.statusLine == .wrapped, optional: true) { usageCard }
             step(5, "Buddy settings", done: false, optional: true) { BuddySettingsCard() }
             step(6, "Picture for this Mac", done: model.daemonStatus?.face != nil, optional: true) { ProfileCard() }
             step(7, "Music", done: false, optional: true) { MusicCard() }
@@ -114,6 +114,18 @@ struct SetupView: View {
                 Button("Copy") { model.copy(AppModel.statusLineCommand) }.buttonStyle(SecondaryButtonStyle())
             }
             .padding(10).background(Theme.softPanel, in: RoundedRectangle(cornerRadius: 8))
+            HStack(spacing: 12) {
+                Circle().fill(model.statusLine == .wrapped ? Theme.selected : Theme.muted).frame(width: 8, height: 8)
+                Text(statusLineState).font(.system(size: 12.5)).foregroundStyle(Theme.secondary)
+                Spacer()
+                Button("Copy prompt for Claude Code") {
+                    if let hilo = model.hiloPath { model.copy(StatusLineSetup.prompt(hilo: hilo)) }
+                }
+                .buttonStyle(SecondaryButtonStyle())
+                .disabled(model.hiloPath == nil || model.statusLine == .wrapped)
+                .help(model.hiloPath == nil ? "No hilo next to hilod: run scripts/build-hilod.sh, then rebuild the app."
+                      : "Paste it into a Claude Code session: it backs up settings.json, shows the diff and waits for your OK.")
+            }
             Toggle(isOn: Binding(get: { model.config.tokensFromTranscripts == true }, set: { model.setTokensFromTranscripts($0) })) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Count today's tokens from Claude Code's local transcripts")
@@ -122,6 +134,15 @@ struct SetupView: View {
                 }
             }
             .toggleStyle(.switch)
+        }
+    }
+
+    private var statusLineState: String {
+        switch model.statusLine {
+        case .wrapped: "The status line goes through hilo statusline."
+        case .notWrapped: "Your status line does not go through hilo statusline yet."
+        case .noStatusLine: "No status line set in Claude Code yet."
+        case .unreadable: "Claude Code's settings.json is not valid JSON; Hilo cannot tell."
         }
     }
 

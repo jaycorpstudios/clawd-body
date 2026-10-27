@@ -47,6 +47,7 @@ final class AppModel {
     /// hilod's view, from the `music` op; `musicHere` is this app's own Automation consent.
     var musicStatus: MusicStatus?
     var musicHere: [String: AutomationAccess] = [:]
+    var statusLine = StatusLineSetup.State.noStatusLine
     var daemonError: String?
     var config = HiloConfig.load()
     var selectedTask: Int?
@@ -100,6 +101,8 @@ final class AppModel {
             if running != daemonRunning { daemonRunning = running }
             let status = reply.flatMap { try? JSONDecoder().decode(DaemonStatus.self, from: $0) }
             if status != daemonStatus { daemonStatus = status }
+            let line = StatusLineSetup.detect()
+            if line != statusLine { statusLine = line }
             if let begun = phaseAlarm.check(status?.pomodoro, now: Self.now) { PhaseNotifier.announce(begun) }
             let connected = running && (status.map { $0.buddy.link == .connected } ?? (state?.buddyConnected == true))
             if connected != buddyConnected { buddyConnected = connected }
@@ -197,6 +200,13 @@ final class AppModel {
         if let path = ProcessInfo.processInfo.environment["HILO_HILOD"] { return path }
         let bundled = Bundle.main.bundleURL.appending(path: "Contents/MacOS/hilod").path(percentEncoded: false)
         return FileManager.default.isExecutableFile(atPath: bundled) ? bundled : nil
+    }
+
+    /// The `hilo` CLI bundled next to `hilod`, or the build `HILO_HILOD` points at.
+    var hiloPath: String? {
+        guard let hilodPath else { return nil }
+        let path = URL(filePath: hilodPath).deletingLastPathComponent().appending(path: "hilo").path(percentEncoded: false)
+        return FileManager.default.isExecutableFile(atPath: path) ? path : nil
     }
 
     func saveHost(_ display: String) {
