@@ -6,6 +6,6 @@ Approved visual references. When prose in `docs/` and a prototype disagree on la
 | :--- | :--- |
 | `buddy-sim.html` | Interactive device simulator (approved). Open it in a browser; the console fires contract events and logs the payloads. |
 | [`hilo/`](hilo/README.md) | Source of the five Hilo screens and their design tokens (approved as direction) |
-| `claudio-eyes/index.html` | Proposal, not approved: the buddy as Claudio's orange face inside the printed case (pixel eyes by agent state, hand-over to permission and question screens, sleep rotation), with the eye positions derived from the case |
+| `claudio-eyes/index.html` | Placement, sleep background, alert tile and eye geometry decided (2026-10-27); expression set v2 awaiting approval: the buddy as Claudio's orange face inside the printed case (pixel eyes by agent state, hand-over to permission and question screens, sleep rotation), with the eye positions derived from the case |
 
 All project names, tickets and people in the sample data are fictional.

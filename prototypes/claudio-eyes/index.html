@@ -79,6 +79,10 @@ ol.dec em{font-style:normal;color:var(--accent)}
 .legend{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;font-size:14px}
 .legend dt{font-family:var(--f-mono);font-size:13px;color:var(--accent)}
 .legend dd{margin:0;color:var(--muted)}
+.sheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:12px}
+.sheet figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.sheet canvas{border-radius:10px;display:block}
+.sheet figcaption{font:500 12.5px var(--f-mono);color:var(--muted);text-align:center}
 @media (prefers-reduced-motion:reduce){.case canvas{transition:none}}
 </style>
 </head>
@@ -142,8 +146,8 @@ ol.dec em{font-style:normal;color:var(--accent)}
       <div class="row" style="margin-top:10px">
         <div class="lbl">Tune the face (numbers are what would go to the firmware)</div>
         <label class="slider"><span>Eye spread</span><input type="range" id="spread" min="76" max="164" step="8" value="140"><output id="spreadOut"></output></label>
-        <label class="slider"><span>Eye height</span><input type="range" id="eyeY" min="104" max="240" step="8" value="160"><output id="eyeYOut"></output></label>
-        <label class="slider"><span>Eye size</span><input type="range" id="eyeH" min="9" max="17" step="1" value="13"><output id="eyeHOut"></output></label>
+        <label class="slider"><span>Eye height</span><input type="range" id="eyeY" min="104" max="240" step="8" value="176"><output id="eyeYOut"></output></label>
+        <label class="slider"><span>Eye size</span><input type="range" id="eyeH" min="9" max="18" step="1" value="16"><output id="eyeHOut"></output></label>
         <label class="color"><input type="color" id="orange" value="#d97757"> Case and screen orange (match the filament)</label>
       </div>
     </section>
@@ -151,14 +155,20 @@ ol.dec em{font-style:normal;color:var(--accent)}
     <section class="card" aria-label="Expressions">
       <h2>What each state does</h2>
       <dl class="legend">
-        <dt>Idle</dt><dd>Blinks every 2–6 s, sometimes twice; looks left, right, up, or sweeps the room; one eye narrows when curious.</dd>
-        <dt>Working</dt><dd>Lids lowered and tilted in (concentrating); reads lines left to right, glances up to think, twitches while "typing". Blinks less.</dd>
-        <dt>Waiting</dt><dd>Inner lids raised (worried), eyes a cell lower; glances at you and to the sides, nervous double blinks, small sighs.</dd>
-        <dt>Task done</dt><dd>^ ^ eyes with a bounce and sparkles, sometimes a wink; back to idle after 4 s.</dd>
+        <dt>Idle</dt><dd>Blinks every 2–6 s, sometimes twice; looks left, right, up, or sweeps the room; one eye narrows when curious; now and then calm ▪ ▪ dots.</dd>
+        <dt>Working</dt><dd>Seven looks, never the same one twice in a row: heads down reading line by line (flat half lids), deep focus □ □, pushing through &gt; &lt;, thinking it over (glance up, one eye a little narrower), typing (small bob), tracking the output ▪ ▪, a slow blink. Lids stay flat: no slant, so it reads focused, not cross.</dd>
+        <dt>Waiting</dt><dd>Outer half of each eye one stroke lower (worried), eyes a cell lower; glances at you and to the sides, nervous double blinks, small sighs.</dd>
+        <dt>Task done</dt><dd>^ ^ eyes with a bounce and sparkles, sometimes a wink (▮ –) or heart eyes; back to idle after 4 s.</dd>
         <dt>Asleep</dt><dd>Closed ‿ ‿ eyes breathing one cell up and down, a pixel "z", now and then one eye peeks.</dd>
         <dt>Interrupted</dt><dd>Eyes widen and look down at the request, then the permission or question card slides up; the eyes ride along in the card's corner tile, worried, and come back with a reaction: happy after an approval or answer, a blink after Deny, a glance after Later.</dd>
       </dl>
-      <p class="note">Each beat is chosen at random from the state's pool, so two minutes of "working" never loop the same way. Gaze moves in whole 8 px cells, like the case's pixel grid.</p>
+      <p class="note">Each beat is chosen at random from the state's pool, never repeating the last one. Gaze moves in whole 8 px cells, every line is the same two cells thick (1.3 mm) and diagonals step one cell at a time, so strokes never thin out. Shapes follow the printed Claudio expressions: ▪ ▪, &gt; &lt;, □ □, hearts, wink, ^ ^.</p>
+    </section>
+
+    <section class="card" aria-label="Expression sheet">
+      <h2>Expression sheet</h2>
+      <div class="sheet" id="sheet"></div>
+      <p class="note">Every shape at the approved size, drawn cell by cell exactly as the firmware would.</p>
     </section>
 
     <section class="card" aria-label="Derived numbers">
@@ -173,10 +183,10 @@ ol.dec em{font-style:normal;color:var(--accent)}
           <tr><td>Black border around the panel</td><td class="n">2.5 mm each side</td><td>(43.8 − 38.8) / 2, assumes the panel is centred under the glass</td></tr>
           <tr><td>Body front</td><td class="n">72 × 52 mm</td><td>window centre 0.2 mm below the body's centre</td></tr>
           <tr><td>Clawd's eyes on the body</td><td class="n">±21.0 mm, 6.7 mm up</td><td>pixel Clawd: eyes at columns 2 and 9 of 12, row 1 of 4</td></tr>
-          <tr><td>…on the panel</td><td class="n">x 100 / 380 px, y 156 px</td><td>±21 mm falls 1.6 mm outside the panel, so the spread is scaled to the panel (±11.3 mm = ±140 px, the same 3.5 of 12 columns); the height is kept (6.7 mm, the nearest cell row puts the centre 84 px above the panel centre)</td></tr>
-          <tr><td>Eye</td><td class="n">7 × 13 cells = 56 × 104 px = 4.5 × 8.4 mm</td><td>8 px cells (0.65 mm)</td></tr>
+          <tr><td>…on the panel (approved)</td><td class="n">x 100 / 380 px, y 176 px (5.2 mm up)</td><td>±21 mm falls 1.6 mm outside the panel, so the spread is scaled to the panel (±11.3 mm = ±140 px, the same 3.5 of 12 columns); height and size tuned by eye on this prototype (2026-10-27)</td></tr>
+          <tr><td>Eye (approved)</td><td class="n">9 × 16 cells = 72 × 128 px = 5.8 × 10.3 mm</td><td>8 px cells (0.65 mm); strokes 2 cells</td></tr>
           <tr><td>Sleep screen eyes</td><td class="n">4 × 7 cells at x 160 / 320, y 100 px</td><td>cards below, y 200–460</td></tr>
-          <tr><td>Alert corner tile</td><td class="n">128 × 128 px at (28, 26)</td><td>the pet slot of the approved permission screen</td></tr>
+          <tr><td>Alert corner tile</td><td class="n">128 × 128 px at (24, 24), on whole cells</td><td>the pet slot of the approved permission screen</td></tr>
         </tbody>
       </table>
       </div>
@@ -184,13 +194,17 @@ ol.dec em{font-style:normal;color:var(--accent)}
     </section>
 
     <section class="card" aria-label="Decisions">
-      <h2>To decide before the firmware</h2>
+      <h2>Decided (2026-10-27)</h2>
       <ol class="dec">
-        <li><b>Where the face lives.</b> (a) A new first view "Face" before Home; the buddy goes back to it after 20 s without a touch, a tap opens Home. (b) The face replaces Home and Home's text moves to the Agents view. (c) The face only on the sleep screen. <em>Recommended: (a)</em>, nothing on Home is lost.</li>
-        <li><b>Sleep background.</b> Orange keeps Claudio looking awake at 20 % brightness, but a full orange screen draws far more power than black on an AMOLED and wears the panel evenly lit for hours. Ember (dark background, orange eyes and text) reads as "Claudio dozing". <em>Recommended: ember.</em></li>
-        <li><b>The alert's corner.</b> The approved permission screen shows the pet in its corner; here it shows Claudio's eyes in an orange tile. <em>Recommended: eyes</em>, the pet stays on Agents and Home.</li>
-        <li><b>Eye spacing.</b> Clawd's eyes sit wider than the panel; the default scales them in to x 100 / 380 px. The spread slider shows closer-set options.</li>
-        <li><b>Per-session pets.</b> With the face on top, the main pet appears less; session pets (task #14) stay as they are on Agents and in the sheets.</li>
+        <li><b>Where the face lives:</b> a new first view "Face" before Home. The buddy goes back to it after 20 s without a touch, and you can swipe back to it any time.</li>
+        <li><b>Sleep background:</b> ember (dark background, orange eyes and text).</li>
+        <li><b>The alert's corner:</b> Claudio's eyes in an orange tile; the pet stays on Agents and Home.</li>
+        <li><b>Eye geometry:</b> x 100 / 380 px, y 176 px, 9 × 16 cells (the sliders start there).</li>
+        <li><b>Per-session pets</b> (task #14) stay on Agents and in the sheets.</li>
+      </ol>
+      <h2 style="margin-top:16px">Still to approve</h2>
+      <ol class="dec">
+        <li><b>Version 2 of the expressions:</b> the working set (seven looks, flat lids), the worried step, hearts and wink. Check them below in the expression sheet and live with "Working".</li>
       </ol>
       <p class="note">Nothing here changes the contract: the face reads the same pet state the firmware already derives (idle, working, waiting, happy, sleep).</p>
     </section>
@@ -211,16 +225,16 @@ const tx = tile.getContext('2d');
 
 const S = {
   mode: 'auto', state: 'idle', rotation: true, ember: true, picture: true, guides: false,
-  geo: {spread: 140, y: 160, h: 13},
+  geo: {spread: 140, y: 176, h: 16},
   orange: '#d97757',
   rest: 0, restTarget: 0, restAt: 0,
   alert: null, react: null,
   card: 0, cardAt: 0, drift: [0, 0], driftAt: 0,
   doneAt: 0, auto: {i: 0, until: 0, waitAlert: false},
 };
-const E = {gx: 0, gy: 0, open: [1, 1], tilt: 0, shape: ['open', 'open']};
+const E = {gx: 0, gy: 0, open: [1, 1], shape: ['open', 'open']};
 let T = base('idle');
-let beat = null, beatI = 0, stepUntil = 0, nextBeat = 0, blinkAt = 0, blinkStart = -1e9, blinks = 0;
+let beat = null, lastBeat = '', beatI = 0, stepUntil = 0, nextBeat = 0, blinkAt = 0, blinkStart = -1e9, blinks = 0;
 const zs = [], sparks = [];
 let hits = [];
 
@@ -232,13 +246,15 @@ function hex(c) { const n = parseInt(c.slice(1), 16); return [n >> 16, (n >> 8) 
 function mix(a, b, t) { const A = hex(a), B = hex(b); return '#' + A.map((v, i) => Math.round(lerp(v, B[i], t)).toString(16).padStart(2, '0')).join(''); }
 function rgba(c, a) { const [r, g, b] = hex(c); return `rgba(${r},${g},${b},${a})`; }
 
+/* Shapes: open (a block; `open` lowers a flat lid), worried (block, outer half one stroke lower), closed, sleep (‿),
+   happy (^), squeeze (> <, pointing inward), square (□), dot (▪), heart, dash (-). No slanted lids anywhere. */
 function base(state) {
   switch (state) {
-    case 'working': return {gx: 0, gy: 1, open: [.62, .62], tilt: .55, shape: ['open', 'open']};
-    case 'waiting': return {gx: 0, gy: 1, open: [.92, .92], tilt: -.6, shape: ['open', 'open']};
-    case 'done': return {gx: 0, gy: 0, open: [1, 1], tilt: 0, shape: ['happy', 'happy']};
-    case 'sleep': return {gx: 0, gy: 0, open: [0, 0], tilt: 0, shape: ['sleep', 'sleep']};
-    default: return {gx: 0, gy: 0, open: [1, 1], tilt: 0, shape: ['open', 'open']};
+    case 'working': return {gx: 0, gy: 1, open: [.6, .6], shape: ['open', 'open']};
+    case 'waiting': return {gx: 0, gy: 1, open: [.9, .9], shape: ['worried', 'worried']};
+    case 'done': return {gx: 0, gy: 0, open: [1, 1], shape: ['happy', 'happy']};
+    case 'sleep': return {gx: 0, gy: 0, open: [0, 0], shape: ['sleep', 'sleep']};
+    default: return {gx: 0, gy: 0, open: [1, 1], shape: ['open', 'open']};
   }
 }
 const rep = (steps, n) => Array.from({length: n}, () => steps).flat();
@@ -249,35 +265,39 @@ const BEATS = {
     {n: 'looks up', s: [{gx: 1, gy: -2, d: 1300}]},
     {n: 'sweeps the room', s: [{gx: -3, d: 650}, {gx: 0, d: 350}, {gx: 3, d: 750}, {gx: 0, d: 300}]},
     {n: 'double blink', s: [{blink: 2, d: 900}]},
-    {n: 'curious', s: [{gx: 2, open: [1, .55], tilt: .15, d: 1500}]},
+    {n: 'curious', s: [{gx: 2, open: [1, .6], d: 1500}]},
+    {n: 'calm dots', s: [{shape: ['dot', 'dot'], d: 2200}, {shape: ['dot', 'dot'], gx: 2, d: 1200}]},
     {n: 'rests', s: [{d: 1800}]},
   ],
   working: [
-    {n: 'reads', s: [{gx: -2, gy: 1, d: 380}, {gx: 0, gy: 1, d: 380}, {gx: 2, gy: 1, d: 380}, {gx: -2, gy: 2, d: 380}, {gx: 0, gy: 2, d: 380}, {gx: 2, gy: 2, d: 500}]},
-    {n: 'thinks', s: [{gx: 2, gy: -2, open: [.85, .85], tilt: .15, d: 1600}]},
-    {n: 'types', s: rep([{gy: 1, d: 140}, {gy: 2, d: 140}], 5)},
-    {n: 'scans', s: [{gx: -3, gy: 1, d: 700}, {gx: 3, gy: 1, d: 700}]},
-    {n: 'squints harder', s: [{open: [.45, .45], tilt: .8, d: 1200}]},
+    {n: 'heads down, reading', s: [{gx: -2, gy: 2, d: 420}, {gx: 0, gy: 2, d: 420}, {gx: 2, gy: 2, d: 420}, {gx: -2, gy: 3, d: 420}, {gx: 0, gy: 3, d: 420}, {gx: 2, gy: 3, d: 600}]},
+    {n: 'deep focus', s: [{shape: ['square', 'square'], gy: 0, d: 2400}, {shape: ['square', 'square'], gx: 1, gy: 0, d: 1400}]},
+    {n: 'pushes through', s: [{shape: ['squeeze', 'squeeze'], gy: 0, d: 1100}, {open: [.6, .6], d: 300}, {shape: ['squeeze', 'squeeze'], gy: 0, d: 700}]},
+    {n: 'thinks it over', s: [{gx: 2, gy: -2, open: [1, .75], d: 1700}]},
+    {n: 'types', s: rep([{gy: 1, d: 150}, {gy: 2, d: 150}], 5)},
+    {n: 'tracks the output', s: [{shape: ['dot', 'dot'], gx: -3, gy: 1, d: 500}, {shape: ['dot', 'dot'], gx: 0, gy: 1, d: 400}, {shape: ['dot', 'dot'], gx: 3, gy: 1, d: 500}, {shape: ['dot', 'dot'], gx: -3, gy: 2, d: 500}, {shape: ['dot', 'dot'], gx: 3, gy: 2, d: 600}]},
+    {n: 'slow blink', s: [{open: [.3, .3], d: 260}, {open: [.6, .6], d: 900}]},
   ],
   waiting: [
     {n: 'glances left', s: [{gx: -3, d: 650}, {gx: 0, d: 700}]},
     {n: 'glances right', s: [{gx: 3, d: 650}, {gx: 0, d: 700}]},
-    {n: 'looks at you', s: [{gy: 0, open: [1.08, 1.08], tilt: -.75, d: 1600}]},
+    {n: 'looks at you', s: [{gy: 0, open: [1, 1], d: 1600}]},
     {n: 'nervous blinks', s: [{blink: 2, d: 800}]},
-    {n: 'sighs', s: [{open: [.55, .55], gy: 2, d: 1000}]},
+    {n: 'sighs', s: [{open: [.5, .5], gy: 2, d: 1000}]},
   ],
   done: [
     {n: 'bounces', s: rep([{gy: -1, d: 150}, {gy: 0, d: 150}], 3)},
-    {n: 'winks', s: [{shape: ['happy', 'open'], d: 700}]},
+    {n: 'winks', s: [{shape: ['open', 'dash'], d: 800}]},
+    {n: 'heart eyes', s: [{shape: ['heart', 'heart'], d: 1300}]},
     {n: 'sparkles', s: [{spark: 6, d: 1200}]},
   ],
   sleep: [
-    {n: 'peeks', s: [{open: [0, .35], shape: ['sleep', 'open'], gx: 1, d: 1100}]},
+    {n: 'peeks', s: [{open: [0, .4], shape: ['sleep', 'open'], gx: 1, d: 1100}]},
     {n: 'snores', s: [{z: 3, d: 2200}]},
     {n: 'dreams', s: [{d: 2600}]},
   ],
 };
-const GAPS = {idle: [600, 2200], working: [200, 1200], waiting: [500, 1600], done: [200, 700], sleep: [1500, 4000]};
+const GAPS = {idle: [600, 2200], working: [150, 900], waiting: [500, 1600], done: [200, 700], sleep: [1500, 4000]};
 const BLINK = {idle: [2000, 6000], working: [4000, 8000], waiting: [1500, 3500], done: [3000, 5000], sleep: [1e9, 1e9]};
 
 function setState(st, now) {
@@ -289,12 +309,15 @@ function setState(st, now) {
 }
 function stepBeat(now) {
   if (S.react) return;
-  if (!beat && now >= nextBeat) { beat = pick(BEATS[S.state]); beatI = -1; stepUntil = now; S.beatName = beat.n; }
+  if (!beat && now >= nextBeat) {
+    const pool = BEATS[S.state].filter(b => b.n !== lastBeat);
+    beat = pick(pool.length ? pool : BEATS[S.state]); lastBeat = beat.n; beatI = -1; stepUntil = now; S.beatName = beat.n;
+  }
   if (beat && now >= stepUntil) {
     beatI++;
     if (beatI >= beat.s.length) { beat = null; T = base(S.state); S.beatName = ''; nextBeat = now + rnd(...GAPS[S.state]); return; }
     const st = beat.s[beatI], b = base(S.state);
-    T = {gx: st.gx ?? b.gx, gy: st.gy ?? b.gy, open: st.open ?? b.open, tilt: st.tilt ?? b.tilt, shape: st.shape ?? b.shape};
+    T = {gx: st.gx ?? b.gx, gy: st.gy ?? b.gy, open: st.open ?? b.open, shape: st.shape ?? b.shape};
     if (reduce) { T.gy = b.gy; }
     if (st.blink) { blinks = st.blink; blinkStart = now; }
     if (st.spark) addSparks(st.spark);
@@ -312,30 +335,63 @@ function blinkAmount(now) {
   return p < .45 ? p / .45 : p < .6 ? 1 : 1 - (p - .6) / .4;
 }
 
-function drawEye(g, x0, y0, w, h, open, tilt, shape, side) {
-  if (shape === 'happy') {
-    const mid = (w - 1) / 2, peak = y0 + Math.round(h * .3);
-    for (let i = 0; i < w; i++) { const y = peak + Math.round(Math.abs(i - mid) * 1.1); g.fillRect(x0 + i, y, 1, 2); }
+const HEART = ['.XX...XX.', 'XXXX.XXXX', 'XXXXXXXXX', 'XXXXXXXXX', '.XXXXXXX.', '..XXXXX..', '...XXX...', '....X....'];
+
+/* Every stroke is the same `s` cells thick and every diagonal steps one cell at a time, so lines never thin out.
+   `side` is -1 for the left eye; "inward" points at the other eye. */
+function drawEye(g, x0, y0, w, h, open, shape, side) {
+  const s = Math.max(1, Math.round(w / 4.5)), mid = x0 + Math.floor((w - s) / 2);
+  const rect = (x, y, rw, rh) => { if (rw > 0 && rh > 0) g.fillRect(x, y, rw, rh); };
+  switch (shape) {
+    case 'happy': {
+      const top = y0 + Math.round(h * .32), n = Math.floor((w - s) / 2);
+      for (let i = 0; i <= n; i++) { rect(mid - i, top + i, s, s); rect(mid + i, top + i, s, s); }
+      return;
+    }
+    case 'squeeze': {
+      const n = Math.min(Math.floor(h * .3), w - s - 1), left = x0 + Math.floor((w - n - s) / 2), cy = y0 + Math.floor((h - s) / 2);
+      for (let i = 0; i <= n; i++) {
+        const x = side < 0 ? left + n - i : left + i;
+        rect(x, cy - i, s, s); rect(x, cy + i, s, s);
+      }
+      return;
+    }
+    case 'square': {
+      const q = w, y = y0 + Math.round((h - q) / 2);
+      rect(x0, y, q, s); rect(x0, y + q - s, q, s); rect(x0, y, s, q); rect(x0 + q - s, y, s, q);
+      return;
+    }
+    case 'dot': {
+      const d = 2 * s;
+      rect(x0 + Math.floor((w - d) / 2), y0 + Math.floor((h - d) / 2), d, d);
+      return;
+    }
+    case 'heart': {
+      if (w < HEART[0].length) return drawEye(g, x0, y0, w, h, 1, 'dot', side);
+      const hx = x0 + Math.floor((w - HEART[0].length) / 2), hy = y0 + Math.floor((h - HEART.length) / 2);
+      HEART.forEach((row, y) => [...row].forEach((c, x) => { if (c === 'X') rect(hx + x, hy + y, 1, 1); }));
+      return;
+    }
+    case 'dash':
+      rect(x0 + 1, y0 + Math.round(h * .58), w - 2, s);
+      return;
+  }
+  const rows = Math.round(Math.min(open, 1) * h);
+  if (shape === 'sleep' || rows <= s + 1) {
+    const y = y0 + Math.round(h * .6);
+    rect(x0 + s, y, w - 2 * s, s);
+    if (shape === 'sleep') { rect(x0, y - Math.ceil(s / 2), s, s); rect(x0 + w - s, y - Math.ceil(s / 2), s, s); }
+    else { rect(x0, y, s, s); rect(x0 + w - s, y, s, s); }
     return;
   }
-  if (shape === 'sleep' || open < .1) {
-    const y = y0 + Math.round(h * .62);
-    for (let i = 0; i < w; i++) g.fillRect(x0 + i, y - (i === 0 || i === w - 1 ? 1 : 0), 1, 1 + (w > 4 && i > 0 && i < w - 1 ? 1 : 0));
-    return;
-  }
-  const grow = open > 1 ? Math.round((open - 1) * 10) : 0;
-  const bottom = y0 + h + grow;
-  for (let i = -grow; i < w + grow; i++) {
-    const t = w > 1 ? Math.min(1, Math.max(0, i / (w - 1))) : 0;
-    const inner = side < 0 ? t : 1 - t;
-    const lid = tilt > 0 ? tilt * inner * h * .45 : -tilt * (1 - inner) * h * .45;
-    const top = Math.round(y0 - grow + (1 - Math.min(open, 1)) * h * .9 + lid);
-    if (bottom - top > 0) g.fillRect(x0 + i, top, 1, bottom - top);
-  }
+  const top = y0 + h - rows;
+  rect(x0, top, w, rows);
+  if (shape === 'worried' && rows > 2 * s) g.clearRect(side < 0 ? x0 : x0 + w - Math.ceil(w / 2), top, Math.ceil(w / 2), s);
+  if (w >= 5 && rows >= 4) for (const [cx, cy] of [[x0, top], [x0 + w - 1, top], [x0, y0 + h - 1], [x0 + w - 1, y0 + h - 1]]) g.clearRect(cx, cy, 1, 1);
 }
 
 function eyeLayout(r) {
-  const wFace = Math.round(S.geo.h * 7 / 13), w = Math.round(lerp(wFace, 4, r)), h = Math.round(lerp(S.geo.h, 7, r));
+  const wFace = Math.round(S.geo.h * 9 / 16), w = Math.round(lerp(wFace, 4, r)), h = Math.round(lerp(S.geo.h, 7, r));
   const xL = Math.floor(lerp(240 - S.geo.spread, 160, r) / CELL - w / 2), xR = G - xL - w;
   const y0 = Math.floor(lerp(S.geo.y, 100, r) / CELL - h / 2);
   return {w, h, xL, xR, y0};
@@ -350,9 +406,9 @@ function drawFaceEyes(now, r, ink, dx, dy) {
   const sc = lerp(1, .55, r);
   const gx = Math.round(E.gx * sc), gyy = Math.round(gy * sc);
   for (const [i, x0] of [[0, L.xL], [1, L.xR]]) {
-    const shape = E.shape[i], blinkable = shape === 'open';
+    const shape = E.shape[i], blinkable = shape === 'open' || shape === 'worried';
     const open = blinkable ? E.open[i] * (1 - b) : E.open[i];
-    drawEye(lx, x0 + gx + Math.round(dx / CELL), L.y0 + gyy + Math.round(dy / CELL), L.w, L.h, open, E.tilt, shape, i === 0 ? -1 : 1);
+    drawEye(lx, x0 + gx + Math.round(dx / CELL), L.y0 + gyy + Math.round(dy / CELL), L.w, L.h, open, shape, i === 0 ? -1 : 1);
   }
   ctx.drawImage(low, 0, 0, G, G, 0, 0, W, W);
   ctx.fillStyle = ink;
@@ -414,7 +470,7 @@ function openAlert(a, now) {
   S.alert = {...a, t0: now, phase: 'in', hold: -1, outcome: null};
   if (S.state === 'sleep') { S.prevState = 'sleep'; setState('idle', now); }
   S.rest = 0; S.restTarget = 0;
-  T = {...base('waiting'), open: [1.15, 1.15], gy: 3, tilt: -.2};
+  T = {...base('waiting'), shape: ['open', 'open'], open: [1, 1], gy: 3};
   S.react = {until: now + 380, name: 'sees the request'};
 }
 function resolve(outcome, now) {
@@ -441,11 +497,11 @@ function drawAlert(now) {
   const g = ctx.createLinearGradient(0, 0, 0, W * .7); g.addColorStop(0, risk ? '#3a0a0c' : '#3a2a00'); g.addColorStop(1, '#000');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, W);
   ctx.globalAlpha = reduce ? .8 : .55 + .45 * Math.sin(now / 175) ** 2; ctx.strokeStyle = col; ctx.lineWidth = 5; ctx.strokeRect(2.5, 2.5, W - 5, W - 5); ctx.globalAlpha = 1;
-  roundRect(28, 26, 128, 128, 24); ctx.fillStyle = S.orange; ctx.fill();
+  roundRect(24, 24, 128, 128, 24); ctx.fillStyle = S.orange; ctx.fill();
   tx.clearRect(0, 0, 16, 16); tx.fillStyle = '#1d0f08';
   const b = blinkAmount(now), look = Math.floor(now / 1700) % 3;
-  for (const [i, cx] of [[0, 5], [1, 11]]) drawEye(tx, cx - 1 + (look === 1 ? -1 : 0), 6 + (look === 2 ? 1 : 0), 2, 5, .92 * (1 - b), -.6, 'open', i === 0 ? -1 : 1);
-  ctx.drawImage(tile, 0, 0, 16, 16, 28, 26, 128, 128);
+  for (const [i, cx] of [[0, 5], [1, 11]]) drawEye(tx, cx - 2 + (look === 1 ? -1 : 0), 5 + (look === 2 ? 1 : 0), 3, 6, 1 - b, 'worried', i === 0 ? -1 : 1);
+  ctx.drawImage(tile, 0, 0, 16, 16, 24, 24, 128, 128);
   ctx.textAlign = 'left'; ctx.fillStyle = col; ctx.font = '700 15px "JetBrains Mono", monospace';
   ctx.fillText((a.kind === 'q' ? 'QUESTION' : risk ? 'PERMISSION · HIGH RISK' : 'PERMISSION') + ' · ' + a.tool.toUpperCase(), 176, 58);
   ctx.fillStyle = '#ffeec4'; ctx.font = '600 28px "IBM Plex Sans", sans-serif'; ctx.fillText(a.project, 176, 98);
@@ -510,7 +566,7 @@ function update(now, dt) {
   stepBeat(now);
   E.gx = T.gx; E.gy = T.gy; E.shape = T.shape;
   const k = Math.min(1, dt * (reduce ? 30 : 14));
-  E.open = E.open.map((o, i) => lerp(o, T.open[i], k)); E.tilt = lerp(E.tilt, T.tilt, k);
+  E.open = E.open.map((o, i) => lerp(o, T.open[i], k));
   if (now >= S.restAt) S.rest = reduce ? S.restTarget : lerp(S.rest, S.restTarget, Math.min(1, dt * 4));
   if (Math.abs(S.rest - S.restTarget) < .004) S.rest = S.restTarget;
   if (S.rest > .99 && now - S.cardAt > 8000) { S.card++; S.cardAt = now; }
@@ -593,7 +649,7 @@ $('#orange').addEventListener('input', e => { S.orange = e.target.value; documen
 const mm = px => (px / PX_MM).toFixed(1);
 function geo() {
   S.geo.spread = +$('#spread').value; S.geo.y = +$('#eyeY').value; S.geo.h = +$('#eyeH').value;
-  const w = Math.round(S.geo.h * 7 / 13);
+  const w = Math.round(S.geo.h * 9 / 16);
   const L = eyeLayout(0), cxL = (L.xL + w / 2) * CELL, cy = (L.y0 + L.h / 2) * CELL;
   $('#spreadOut').textContent = `x ${cxL} / ${W - cxL} px · ±${mm(240 - cxL)} mm`;
   $('#eyeYOut').textContent = `y ${cy} px · ${mm(240 - cy)} mm up`;
@@ -617,12 +673,46 @@ const cancelHold = e => { if (S.alert && S.alert.hold >= 0) { const h = hitAt(to
 panel.addEventListener('pointerup', cancelHold); panel.addEventListener('pointercancel', cancelHold); panel.addEventListener('pointermove', cancelHold);
 
 const stage = $('#stage');
+/* Each 8 px cell gets a whole number of device pixels, so strokes keep one width and nothing is resampled. */
 function fit() {
   const bare = $('#case').classList.contains('bare'), span = bare ? 46 : 92;
-  const w = stage.clientWidth - 24, v = Math.min(bare ? 11 : 8, w / span);
-  document.documentElement.style.setProperty('--mm', v.toFixed(3) + 'px');
+  const w = stage.clientWidth - 24, mmMax = Math.min(bare ? 11 : 8, w / span);
+  const dpr = window.devicePixelRatio || 1, k = Math.max(1, Math.floor(mmMax * 38.8 * dpr / G)), css = G * k / dpr;
+  document.documentElement.style.setProperty('--mm', (css / 38.8).toFixed(4) + 'px');
+  panel.style.width = panel.style.height = css + 'px';
+  if (panel.width !== G * k) panel.width = panel.height = G * k;
+  ctx.setTransform(k / CELL, 0, 0, k / CELL, 0, 0);
+  ctx.imageSmoothingEnabled = false;
 }
-new ResizeObserver(fit).observe(stage); fit();
+matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`).addEventListener?.('change', fit);
+const SHEET = [
+  ['Idle', {}], ['Blink', {open: [0, 0]}], ['Curious', {open: [1, .6], gx: 2}], ['Calm', {shape: ['dot', 'dot']}],
+  ['Reading', {open: [.6, .6], gy: 2}], ['Deep focus', {shape: ['square', 'square']}], ['Pushing through', {shape: ['squeeze', 'squeeze']}],
+  ['Thinking', {open: [1, .75], gx: 2, gy: -2}], ['Tracking', {shape: ['dot', 'dot'], gx: -3, gy: 1}], ['Typing', {open: [.6, .6], gy: 1}],
+  ['Worried', {shape: ['worried', 'worried'], open: [.9, .9], gy: 1}], ['Happy', {shape: ['happy', 'happy']}],
+  ['Wink', {shape: ['open', 'dash']}], ['Hearts', {shape: ['heart', 'heart']}], ['Asleep', {shape: ['sleep', 'sleep']}],
+  ['Peeks', {shape: ['sleep', 'open'], open: [0, .4], gx: 1}],
+];
+function drawSheet() {
+  const box = $('#sheet'), dpr = window.devicePixelRatio || 1, k = Math.max(1, Math.floor(104 * dpr / G));
+  const g = document.createElement('canvas'); g.width = g.height = G;
+  const gx = g.getContext('2d');
+  box.textContent = '';
+  for (const [name, p] of SHEET) {
+    const c = document.createElement('canvas'); c.width = c.height = G * k;
+    c.style.width = c.style.height = G * k / dpr + 'px';
+    const cx = c.getContext('2d'); cx.imageSmoothingEnabled = false;
+    gx.clearRect(0, 0, G, G); gx.fillStyle = '#1d0f08';
+    const L = eyeLayout(0), shape = p.shape || ['open', 'open'], open = p.open || [1, 1];
+    for (const [i, x0] of [[0, L.xL], [1, L.xR]]) drawEye(gx, x0 + (p.gx || 0), L.y0 + (p.gy || 0), L.w, L.h, open[i], shape[i], i === 0 ? -1 : 1);
+    cx.fillStyle = S.orange; cx.fillRect(0, 0, c.width, c.height);
+    cx.drawImage(g, 0, 0, G, G, 0, 0, c.width, c.height);
+    const fig = document.createElement('figure'), cap = document.createElement('figcaption');
+    cap.textContent = name; c.setAttribute('aria-label', name); fig.append(c, cap); box.append(fig);
+  }
+}
+['#spread', '#eyeY', '#eyeH', '#orange'].forEach(s => $(s).addEventListener('input', drawSheet));
+new ResizeObserver(fit).observe(stage); fit(); drawSheet();
 S.auto.i = -1;
 requestAnimationFrame(frame);
 })();
