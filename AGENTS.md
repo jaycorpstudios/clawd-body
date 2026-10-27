@@ -28,7 +28,7 @@ Correct means: nothing high-risk is ever approved off the Mac, and the device ne
 5. Open decisions live in `docs/plans/open-questions.md`: present options with trade-offs, never decide silently.
 6. Repo content is English; keep docs and indexes in sync when adding files.
 
-Validate with `pnpm test` (contract, `shared/`) and `scripts/swift-test.sh` (daemon), `scripts/firmware-test.sh` (firmware model, host) and `scripts/idf.sh build` (firmware). `scripts/build-hilod.sh` and `scripts/build-hilo-app.sh` make the signed Mac builds. Node version: `.nvmrc`.
+Validate with `pnpm test` (contract, `shared/`) and `scripts/swift-test.sh` (daemon), `scripts/firmware-test.sh` (firmware model, host) and `scripts/idf.sh build` (firmware); `scripts/firmware-render.sh` draws buddy screens to PNG on the Mac for a layout check. `scripts/build-hilod.sh` and `scripts/build-hilo-app.sh` make the signed Mac builds. Node version: `.nvmrc`.
 
 ## Start here
 

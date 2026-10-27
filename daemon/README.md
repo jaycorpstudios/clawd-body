@@ -41,7 +41,7 @@ Hold the side button 5 s on the buddy's Home view, then run `hilod --pair`. macO
 
 ## Now playing
 
-Every 3 s `hilod` asks Spotify and then Music.app (only if already running) what is playing over AppleScript and forwards changes as `media.now_playing`; the buddy's play/pause, next and previous come back as `media.control` and run as the matching AppleScript command on that app. macOS asks once per app for Automation permission ("hilod wants to control Spotify"); if it is denied the log says so and `hilod` leaves that app alone until restarted. See [open questions](../docs/plans/open-questions.md) for what to do if the prompt never shows under launchd.
+Every 3 s `hilod` asks Spotify and then Music.app (only if already running) what is playing over AppleScript and forwards changes as `media.now_playing`; the buddy's play/pause, next and previous come back as `media.control` and run as the matching AppleScript command on that app. macOS asks once per app for Automation permission ("hilod wants to control Spotify"); if it is denied (-1743) the log says so once and `hilod` asks that app again only every 5 min, so allowing it later in System Settings works without a restart. Scripts run off the coordinator with a 5 s AppleEvent timeout, so a pending prompt or a hung player never delays hooks or buddy messages; buddy controls run in order on one serial queue, and a player that quits mid-query simply reads as "nothing playing". See [open questions](../docs/plans/open-questions.md) for what to do if the prompt never shows under launchd.
 
 ## Socket ops
 
@@ -58,6 +58,8 @@ One request per connection on the Unix socket: the first line is the op, the res
 | `host` | Display name | `DaemonStatus`; saves `config.json`, re-links | Setup |
 | `settings` | `{ sound?, volume?, brightness? }` | `DaemonStatus`; sends `settings.set` (the buddy's answer shows up in a later `status`) | Setup |
 | `pomodoro` | `{"action":"toggle"}`, `{"action":"reset"}` or `{"action":"durations","work_min"?,"break_min"?}` | `DaemonStatus` with `pomodoro`; sends `pomodoro.state`. Durations change only while stopped | Hilo › Focus |
+
+The Pomodoro state is saved in the store (`focus_state`) in the same transaction as the work phases it finished (`focus_cycle`) and restored when `hilod` starts: a restart mid-cycle records the phases that ended while it was down exactly once, and Hilo › Focus has the timer before the buddy reconnects. A buddy with a newer `updated_at` still wins when it reconnects.
 | `face` | — | `DaemonStatus`; reloads `face.png` next to `config.json`, scales it to 120×120 RGB565 (ImageIO/CoreGraphics) and sends it, or clears it if the file is gone | Setup |
 
 ## Try it without a buddy

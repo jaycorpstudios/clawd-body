@@ -48,7 +48,7 @@ The portable model (`firmware/components/buddy_model/`) holds all state and timi
 
 The portable model (`firmware/components/buddy_model/`) follows the prototype; where the prototype is silent:
 
-- **Two host slots.** A message from a third host name takes the slot of a disconnected Mac (its sessions are dropped), so renaming a Mac in Hilo does not lock a slot until the next reboot; with both Macs connected it is rejected.
+- **Two host slots.** A message from a third host name takes the slot of a disconnected Mac (its sessions are dropped), so renaming a Mac in Hilo does not lock a slot until the next reboot; with both Macs connected it is rejected. The slot's picture and any half-received one go with it, so the new Mac never shows the old one's picture. A link that comes up before the buddy knows the time (first boot without a valid RTC) gets its "connected" time when the first Mac message or the RTC sets the clock.
 - **Usage per Mac.** Each Mac's `usage.update` is kept separately; the Usage view shows one ring per Mac. Home stats, the pet and the Home "Limit reached" message use the connected Mac with the highest 5 h value. The 80 % warning fires once per Mac per crossing.
 - **Clock from the envelope.** A `snapshot` sets the clock to its `ts`; any other message only moves it forward. The PCF85063 holds UTC: it is written every time a Mac sets the clock and read once at boot, so the clock is known before any Mac connects (an RTC with its oscillator-stop flag set, or a year before 2026, is ignored). The time zone is a build setting until [pending](../plans/open-questions.md#firmware).
 - **Unknown fields are ignored** (minor-version rule), so `extra-envelope-field` and `window-reset-with-data` are accepted; every other invalid fixture is rejected.

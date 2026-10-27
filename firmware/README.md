@@ -14,7 +14,7 @@ Status: all five views, pet, alerts, permission screen, sheets and the pairing s
 | `main/ble/` | NimBLE peripheral: GATT service, pairing, advertising, per-link reassembly |
 | `main/hw/` | Board drivers: AXP2101 battery and PCF85063 RTC over the BSP's I²C bus, ES8311 sound task |
 | `main/fonts/` | Generated LVGL fonts (do not edit) |
-| `test/` | Host tests for `buddy_model` |
+| `test/` | Host tests for `buddy_model`; `test/render/` draws the real UI to PNG on the Mac |
 | `tools/fonts/` | Generates `main/fonts/` from the prototype fonts ([README](tools/fonts/README.md)) |
 
 ## Memory
@@ -33,6 +33,14 @@ scripts/firmware-test.sh   # clang + UBSan; uses cJSON from the ESP-IDF tree and
 ```
 
 The run also pipes every message the model emits through `buddy-emit validate`, so outgoing messages are checked against the schema.
+
+## Screens on the Mac
+
+```sh
+scripts/firmware-render.sh [out-dir] [scene-filter]   # PNGs, default firmware/build-render/shots
+```
+
+Builds LVGL 9, the fonts, `main/ui/` and `buddy_model` for the host (LVGL settings from `build/config/sdkconfig.h`, so run `scripts/idf.sh build` once; no OS, libc malloc, RGB565 like the panel) and plays the scenes in `test/render/render.c` against the real model: idle rotation (clock, computers, a Mac's synthetic picture connected and seen) and Focus (stopped, no clock, running, paused, break, link down, after a phase change alone). It checks model state along the way and fails on a mismatch. Use it to review layout and text; colours, the AMOLED's contrast and timing still need the board.
 
 ## Build
 

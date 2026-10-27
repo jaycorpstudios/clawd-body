@@ -37,6 +37,7 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 - Round buttons: reset and a larger play/pause. Play dims until the buddy knows the time.
 - Pet: working during work, happy during the break, idle when paused or stopped. A phase change shows a toast ("Break time" / "Back to work") and plays Success / Start when sound is on.
 - Hilo › Focus shows the same timer with the same pet look.
+- Checked against the host render (`scripts/firmware-render.sh`, 2026-10-27): every state above draws as described. Open: the buddy still sleeps after 60 s on a running timer ([open questions](../plans/open-questions.md#firmware)).
 
 ## Idle rotation (proposal, not in the prototype)
 
@@ -46,6 +47,7 @@ The prototype's sleep screen is the dimmed clock only. The rotation keeps its lo
 - **Mac card**: the Mac's Setup name on top (JetBrains Mono bold 18, `#8a8178`), the picture at 240×240 with 28 px corners at 80 % opacity, and "connected 2 h ago" or "seen 3 h ago" below (JetBrains Mono 17, `#5c564f`, the clock's gray). A Mac without a picture has no card.
 - **Computers card**: the clock's pet slot shows a 32×32 pixel monitor per known Mac (one when none), lit blue with a blinking prompt when connected, dark otherwise, and "1 Mac connected" / "2 Macs connected" / "no Mac connected" below.
 - The panel stays at the sleep brightness on every card.
+- Checked against the host render (2026-10-27) with a synthetic picture: card order, both "… ago" texts, the computers card with one lit and one dark monitor and "no Mac connected".
 
 ## Pet
 
