@@ -1,0 +1,19 @@
+{
+  "v": 1,
+  "id": "01K8F400000000000000000030",
+  "ts": 1792900000,
+  "host": "work",
+  "type": "agent.needs_permission",
+  "data": {
+    "request_id": "01K8F3Z9QW4Y6R2M7N5P8T0V2A",
+    "session": "7f3a9c1e-2b4d-4e8f-9a01-5c6d7e8f9a0b",
+    "project": "payments-api",
+    "tool": "Bash",
+    "detail": "curl -sS -H \"Authorization: [redacted]\" -H \"X-Api-Key: [redacted]\" \"https://api.example.com/v1/charges?limit=5\"",
+    "why": "List the latest charges to check the fix.",
+    "cwd": "~/code/payments-api",
+    "risk": "high",
+    "remote_allowed": false,
+    "expires_at": 1792900600
+  }
+}

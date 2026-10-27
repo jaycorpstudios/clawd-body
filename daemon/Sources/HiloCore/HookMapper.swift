@@ -57,16 +57,16 @@ public struct HookMapper: Sendable {
         case "PostToolUseFailure":
             return .emit([.agentStep(AgentStep(session: session, kind: .err, text: Text.clip("\(tool) failed", 120)))])
         case "Stop":
-            let summary = Text.clip(hook.lastAssistantMessage ?? "", 300)
+            let summary = Text.clip(Redactor.redact(hook.lastAssistantMessage ?? ""), 300)
             return .emit([.taskDone(TaskDone(session: session, summary: summary.isEmpty ? "Finished" : summary))])
         case "StopFailure":
-            return .emit([.agentError(AgentError(session: session, detail: Text.clip(hook.error ?? "Turn failed", 300)))])
+            return .emit([.agentError(AgentError(session: session, detail: Text.clip(Redactor.redact(hook.error ?? "Turn failed"), 300)))])
         case "PermissionRequest":
             let call = ToolCall(tool: tool, input: Self.flatStrings(input), cwd: hook.cwd, repoRoot: root)
             let c = policy.classify(call)
             return .awaitPermission(PermissionRequest(
                 requestId: requestId, session: session, project: project, tool: Text.clip(tool.isEmpty ? "Tool" : tool, 32),
-                detail: Self.detail(tool: tool, input: input, root: root), why: input["description"]?.string.map { Text.clip($0, 300) },
+                detail: Self.detail(tool: tool, input: input, root: root), why: input["description"]?.string.map { Text.clip(Redactor.redact($0), 300) },
                 diff: Self.diff(input), cwd: Text.clipLeft(hook.cwd, 120), risk: c.risk, remoteAllowed: c.remoteAllowed,
                 expiresAt: now + Self.expirySeconds))
         case "PreToolUse" where tool == "AskUserQuestion":
@@ -74,7 +74,7 @@ public struct HookMapper: Sendable {
                 return .emit([.agentStep(AgentStep(session: session, kind: .ask, text: "Asked a question on the Mac"))])
             }
             return .awaitQuestion(QuestionRequest(requestId: requestId, session: session, project: project,
-                                                  detail: Text.clip(q.text, 300), options: q.options, expiresAt: now + Self.expirySeconds),
+                                                  detail: Text.clip(Redactor.redact(q.text), 300), options: q.options, expiresAt: now + Self.expirySeconds),
                                   toolInput: input)
         default:
             return .emit([])
@@ -97,13 +97,13 @@ public struct HookMapper: Sendable {
         else if let path = input["file_path"]?.string { text = relative(path, root: root) }
         else if let url = input["url"]?.string { text = url }
         else { text = tool }
-        return Text.clip(text.isEmpty ? tool : text, 300)
+        return Text.clip(Redactor.redact(text.isEmpty ? tool : text), 300)
     }
 
     static func diff(_ input: JSONValue) -> [DiffLine]? {
         guard let old = input["old_string"]?.string, let new = input["new_string"]?.string else { return nil }
-        let removed = old.split(separator: "\n", omittingEmptySubsequences: false).map { DiffLine(.removed, Text.clipLine(String($0), 120)) }
-        let added = new.split(separator: "\n", omittingEmptySubsequences: false).map { DiffLine(.added, Text.clipLine(String($0), 120)) }
+        let removed = old.split(separator: "\n", omittingEmptySubsequences: false).map { DiffLine(.removed, Text.clipLine(Redactor.redact(String($0)), 120)) }
+        let added = new.split(separator: "\n", omittingEmptySubsequences: false).map { DiffLine(.added, Text.clipLine(Redactor.redact(String($0)), 120)) }
         return Array((removed + added).prefix(12))
     }
 

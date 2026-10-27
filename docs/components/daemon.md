@@ -21,7 +21,7 @@ Runs on each Mac as a login item. Connects Claude Code, Hilo and the buddy.
 ## Security
 
 - BLE with LE Secure Connections and passkey on first pairing. Trusted-device list revocable from Hilo.
-- No secret ever travels to the buddy.
+- No secret ever travels to the buddy. Text taken from tool input or Claude's output (`detail`, `why`, diff lines, step text, task summary, error detail, question text) goes through `Redactor` first: values of `Authorization`/`Cookie`/`X-…-Key` headers, `NAME=value`, `--name value` and `"name": "value"` where the name contains token, secret, password, pwd, key, credential, auth, session or cookie, URL passwords, AWS access key ids, hex runs of 32+ and long base64-like runs that mix cases and digits become `[redacted]`. The risk policy still classifies the unredacted input. Unknown tools send only their name.
 - Messages carry `id`, `ts` and `v`. The daemon rejects duplicates and stale messages.
 - Local logs without sensitive content: no full diffs, no environment variables.
 
