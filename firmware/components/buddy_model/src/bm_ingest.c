@@ -314,11 +314,12 @@ static bool parse_pomodoro(const cJSON *o, bm_pomo_t *p)
 static bool parse_settings_set(const cJSON *o, const bm_settings_t *base, bm_settings_t *out)
 {
     *out = *base;
-    int64_t volume = 0, brightness = 0;
+    int64_t volume = 0, brightness = 0, tz = 0;
     field_t sound = get_bool(o, "sound", &out->sound), vol = get_int(o, "volume", 0, 100, &volume),
-            bri = get_int(o, "brightness", 10, 100, &brightness);
-    if (!cJSON_IsObject(o) || sound == BAD || vol == BAD || bri == BAD) return false;
-    if (sound == ABSENT && vol == ABSENT && bri == ABSENT) return false;
+            bri = get_int(o, "brightness", 10, 100, &brightness), zone = get_int(o, "tz_offset_min", BM_TZ_MIN, BM_TZ_MAX, &tz);
+    if (!cJSON_IsObject(o) || sound == BAD || vol == BAD || bri == BAD || zone == BAD || tz % BM_TZ_STEP) return false;
+    if (sound == ABSENT && vol == ABSENT && bri == ABSENT && zone == ABSENT) return false;
+    if (zone == PRESENT) out->tz_offset_min = (int16_t)tz;
     if (vol == PRESENT) out->volume = (uint8_t)volume;
     if (bri == PRESENT) out->brightness = (uint8_t)brightness;
     return true;

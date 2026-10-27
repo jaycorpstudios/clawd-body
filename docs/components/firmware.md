@@ -33,7 +33,7 @@ Spare parts available: PAM8403 amplifiers and 8 Ω 0.5 W speakers, in case the o
 8. **Reminder** for pending decisions every 25 s (Attention sound family).
 9. **Multi-Mac**: bonded with one or two Macs. The top bar shows each link's state; sessions of a disconnected Mac are dimmed.
 10. **Battery**: indicator in the top bar and an alert at 15 %.
-11. **Settings panel**: swipe down for sound on/off, volume and brightness ([device UI](device-ui.md#settings-panel-proposal-not-in-the-prototype)). Kept in NVS under the namespace `buddy_ui` (a 4-byte blob, saved 2 s after the last change); NimBLE's bonds stay in `nimble_bond`, untouched. Hilo changes them with `settings.set`; the buddy answers every change, and every Mac link that binds, with `device.settings`.
+11. **Settings panel**: swipe down for sound on/off, volume, brightness and time zone ([device UI](device-ui.md#settings-panel-proposal-not-in-the-prototype)). Kept in NVS under the namespace `buddy_ui` (a 6-byte blob with a version byte, saved 2 s after the last change; the older 4-byte blob without a time zone still loads, with the default offset); NimBLE's bonds stay in `nimble_bond`, untouched. Hilo changes them with `settings.set`; the buddy answers every change, and every Mac link that binds, with `device.settings`.
 
 ## Non-functional requirements
 

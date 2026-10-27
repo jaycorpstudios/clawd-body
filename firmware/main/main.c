@@ -154,7 +154,8 @@ static void follow_settings(uint32_t now)
     if (model->settings_rev != applied_rev) {
         applied_rev = model->settings_rev;
         changed_at = now;
-        ESP_LOGI(TAG, "settings sound %d, volume %u, brightness %u%%", s->sound, s->volume, s->brightness);
+        ESP_LOGI(TAG, "settings sound %d, volume %u, brightness %u%%, tz %d min", s->sound, s->volume, s->brightness,
+                 s->tz_offset_min);
     }
     if (settings_saved_rev != applied_rev && now - changed_at >= SETTINGS_SAVE_MS) {
         settings_saved_rev = applied_rev;
@@ -227,7 +228,7 @@ void app_main(void)
     bsp_display_lock(-1);
     uint32_t now = lv_tick_get();
     bm_init(model, &cfg, now);
-    bm_settings_t saved;
+    bm_settings_t saved = model->settings;
     if (settings_store_load(&saved)) bm_settings_load(model, &saved);
     settings_saved_rev = model->settings_rev;
     ui_init(model);

@@ -3,9 +3,9 @@ menu "Hilo Buddy"
 config BUDDY_TZ_OFFSET_MIN
     int "Local time offset from UTC, in minutes"
     range -720 840
-    default 0
+    default -360
     help
-        The clock follows the envelope ts (UTC). Where the user sets the time zone is still pending.
+        Default for the time zone setting until a Mac or the panel changes it (then kept in NVS). UTC-6 is Mexico.
 
 config BUDDY_DEMO
     bool "Play a scripted demo Mac instead of starting BLE"

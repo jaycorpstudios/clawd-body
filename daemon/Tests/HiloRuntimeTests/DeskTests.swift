@@ -41,6 +41,8 @@ func buddyMessage(_ type: String, _ data: String) -> Data {
         #expect(await coordinator.changeSettings(SettingsChange()) == false)
         #expect(await coordinator.changeSettings(SettingsChange(volume: 101)) == false)
         #expect(await coordinator.changeSettings(SettingsChange(brightness: 9)) == false)
+        #expect(await coordinator.changeSettings(SettingsChange(tzOffsetMin: -350)) == false)
+        #expect(await coordinator.changeSettings(SettingsChange(tzOffsetMin: 900)) == false)
         #expect(await link.raw.isEmpty)
     }
 
@@ -53,6 +55,20 @@ func buddyMessage(_ type: String, _ data: String) -> Data {
         try await coordinator.handleBuddy(buddyMessage("device.settings", #"{"sound":false,"volume":60,"brightness":40}"#))
         let status = try JSONDecoder().decode(DaemonStatus.self, from: try #require(await ops.handle(op: "status", body: Data())))
         #expect(status.settings == DeviceSettings(sound: false, volume: 60, brightness: 40))
+    }
+
+    @Test func timeZoneTravelsAsAnOptionalFourthSetting() async throws {
+        let ops = ControlOps(coordinator: coordinator, buddy: nil, configPath: "/nonexistent/config.json", tokensFromTranscripts: false)
+        _ = await ops.handle(op: "settings", body: try JSONEncoder().encode(SettingsChange(tzOffsetMin: 330)))
+        #expect(await link.decoded() == [.settingsSet(SettingsChange(tzOffsetMin: 330))])
+        #expect(String(decoding: await link.raw[0], as: UTF8.self).contains(#""tz_offset_min":330"#))
+        try await coordinator.handleBuddy(buddyMessage("device.settings", #"{"sound":false,"volume":60,"brightness":40,"tz_offset_min":330}"#))
+        #expect(await coordinator.settings?.tzOffsetMin == 330)
+        try await coordinator.handleBuddy(buddyMessage("device.settings", #"{"sound":false,"volume":60,"brightness":40}"#))
+        #expect(await coordinator.settings == DeviceSettings(sound: false, volume: 60, brightness: 40))
+        await #expect(throws: (any Error).self) {
+            try await coordinator.handleBuddy(buddyMessage("device.settings", #"{"sound":false,"volume":60,"brightness":40,"tz_offset_min":7}"#))
+        }
     }
 }
 

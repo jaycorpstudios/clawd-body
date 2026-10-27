@@ -794,7 +794,7 @@ void ui_views_tick(uint32_t now_ms)
         lv_label_set_text(ui.hilo_time, "");
     }
     if (ui.m->clock_known) {
-        civil_date(bm_wall_ms(ui.m, now_ms), ui.m->cfg.tz_offset_min, buf, sizeof(buf));
+        civil_date(bm_wall_ms(ui.m, now_ms), ui.m->settings.tz_offset_min, buf, sizeof(buf));
         lv_label_set_text(ui.hilo_day, buf);
     }
 

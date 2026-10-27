@@ -1,0 +1,15 @@
+{
+  "reason": "no time zone is more than 14 h ahead of UTC or 12 h behind it",
+  "event": {
+    "v": 1,
+    "id": "01K8F400000000000000000063",
+    "ts": 1792900000,
+    "type": "device.settings",
+    "data": {
+      "sound": true,
+      "volume": 60,
+      "brightness": 100,
+      "tz_offset_min": 900
+    }
+  }
+}

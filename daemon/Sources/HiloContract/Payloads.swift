@@ -265,24 +265,34 @@ public struct DeviceSettings: Codable, Equatable, Sendable {
     public var sound: Bool
     public var volume: Int
     public var brightness: Int
-    public init(sound: Bool, volume: Int, brightness: Int) { self.sound = sound; self.volume = volume; self.brightness = brightness }
+    /// Absent from a buddy whose firmware predates the setting.
+    public var tzOffsetMin: Int?
+    public init(sound: Bool, volume: Int, brightness: Int, tzOffsetMin: Int? = nil) {
+        self.sound = sound; self.volume = volume; self.brightness = brightness; self.tzOffsetMin = tzOffsetMin
+    }
 
     public static let volumeRange = 0...100
     public static let brightnessRange = 10...100
+    public static let tzRange = -720...840
+    public static let defaultTzOffsetMin = -360
+
+    public static func validTz(_ minutes: Int) -> Bool { tzRange.contains(minutes) && minutes % 15 == 0 }
 }
 
 public struct SettingsChange: Codable, Equatable, Sendable {
     public var sound: Bool?
     public var volume: Int?
     public var brightness: Int?
-    public init(sound: Bool? = nil, volume: Int? = nil, brightness: Int? = nil) {
-        self.sound = sound; self.volume = volume; self.brightness = brightness
+    public var tzOffsetMin: Int?
+    public init(sound: Bool? = nil, volume: Int? = nil, brightness: Int? = nil, tzOffsetMin: Int? = nil) {
+        self.sound = sound; self.volume = volume; self.brightness = brightness; self.tzOffsetMin = tzOffsetMin
     }
 
     public var isValid: Bool {
-        (sound != nil || volume != nil || brightness != nil)
+        (sound != nil || volume != nil || brightness != nil || tzOffsetMin != nil)
             && volume.map(DeviceSettings.volumeRange.contains) != false
             && brightness.map(DeviceSettings.brightnessRange.contains) != false
+            && tzOffsetMin.map(DeviceSettings.validTz) != false
     }
 }
 

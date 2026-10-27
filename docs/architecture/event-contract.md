@@ -37,7 +37,7 @@ Senders produce exactly the schema: no extra fields in the envelope or any paylo
 | `usage.window_reset` | `{}` |
 | `hilo.task_changed` | `{ title, project, jira?, started_at }` |
 | `media.now_playing` | `{ title, artist, length_s, position_s, playing?, cover? }`. `playing:false` = paused; absent means playing (older senders). `cover`: `{ hash }` of the track's cover, once the Mac has it; see [covers](#covers) |
-| `settings.set` | `{ sound?, volume?, brightness? }`, at least one. Asks the buddy to apply device settings; it answers with `device.settings`. See [device settings](#device-settings) |
+| `settings.set` | `{ sound?, volume?, brightness?, tz_offset_min? }`, at least one. Asks the buddy to apply device settings; it answers with `device.settings`. See [device settings](#device-settings) |
 | `host.face` | `{ hash, format:"rgb565", w, h, index, count, data }`: one chunk of this Mac's profile picture. See [faces](#faces) |
 | `pomodoro.state` | `pomodoro`: the timer as set on this Mac. See [pomodoro](#pomodoro) |
 | `media.cover` | `{ hash, format:"rgb565", w, h, index, count, data }`: one chunk of the playing track's cover, only in answer to `device.cover_request`. See [covers](#covers) |
@@ -74,7 +74,7 @@ A snapshot must fit the 8 KB message cap ([framing](ble-transport.md#framing)). 
 | `device.battery` | `{ pct, charging }` |
 | `device.sleep` / `device.wake` | `{ by: "touch"\|"button"\|"long_press"\|"idle" }` |
 | `device.pet_accessory` | `{ acc }`: `none` `wizard` `shades` `headphones` `crown` `party` `band` `heart` |
-| `device.settings` | `{ sound, volume, brightness }`: the values the buddy applied. Sent to a Mac when its link binds, and to every Mac after any change (panel or `settings.set`) |
+| `device.settings` | `{ sound, volume, brightness, tz_offset_min? }`: the values the buddy applied. Sent to a Mac when its link binds, and to every Mac after any change (panel or `settings.set`) |
 | `device.face_request` | `{ hash }`: the buddy does not hold the face the snapshot named; the Mac answers with its `host.face` chunks |
 | `device.pomodoro` | `pomodoro`: the buddy's timer, after a change on the buddy or when its copy is newer than the snapshot's |
 | `media.control` | `{ action:"play_pause"\|"next"\|"previous" }`. Playback only; the daemon maps each action to one player command and nothing else |
@@ -91,6 +91,7 @@ The simulator also logs `ble.connected` / `ble.disconnected`. Those are local li
 | `sound` | boolean | `false` | Sound cues on or off |
 | `volume` | 0–100 | 60 | Codec output volume |
 | `brightness` | 10–100 | 100 | Panel brightness while awake (the sleep clock stays dimmer) |
+| `tz_offset_min` | −720…+840, multiple of 15 | −360 (UTC−6, the build option `CONFIG_BUDDY_TZ_OFFSET_MIN`) | The clock's offset from UTC, in minutes. Optional on the wire: a buddy without it omits it and a Mac that does not know it never sends it. No daylight saving: the user changes it by hand (the panel's −/+ 1 h, or Hilo's picker and "Use this Mac's") |
 
 The buddy owns the values (kept in its own NVS namespace, never next to the BLE keys). `settings.set` carries only what changed; the buddy clamps nothing silently: an out-of-range value fails validation and changes nothing. Its `device.settings` reply is the only source the Mac shows, so Hilo and the buddy's panel never disagree.
 

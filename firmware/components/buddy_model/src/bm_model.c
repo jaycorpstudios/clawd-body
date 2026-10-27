@@ -53,6 +53,7 @@ void bm_init(bm_model_t *m, const bm_config_t *cfg, uint32_t now_ms)
     m->last_remind_ms = now_ms;
     m->acc = BM_ACC_WIZARD;
     bm__settings_defaults(&m->settings);
+    m->settings.tz_offset_min = (int16_t)m->cfg.tz_offset_min;
     bm__pomo_defaults(&m->pomo);
     m->face_rx.host = -1;
     m->cover_rx.host = -1;

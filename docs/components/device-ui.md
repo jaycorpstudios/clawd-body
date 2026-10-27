@@ -24,9 +24,9 @@ Reference prototype: `prototypes/buddy-sim.html`. Open it in a browser and use t
 `buddy-sim.html` has no settings screen (its only sound control is the console's Sound toggle), so this is a proposal in the simulator's style.
 
 - **Open**: swipe down anywhere (not over a permission screen, a sheet or the pairing screen). **Close**: swipe up, tap below the panel, or the side button.
-- **Look**: a 330 px sheet sliding from the top in 220 ms (ease-out) over the current view, background `#0d0c0b` with a `#1f1c19` bottom border and 28 px corners, like the agent rows; the rest of the screen dims to 60 % black. A 44×5 px grabber sits at its bottom edge.
-- **Controls**, top to bottom: a full-width **Sound** button (speaker icon, "Sound", "On" in done green on a dark green fill, or "Off" in dim gray); **Volume** slider 0–100 (done green, half opacity while sound is off); **Brightness** slider 10–100 % (needs-you amber). Values show at the right of each label in JetBrains Mono.
-- **Behavior**: each change applies at once (volume to the codec, brightness to the panel); the Macs get one `device.settings` once the finger rests for 400 ms. Turning sound on plays the Button cue as feedback. Values persist on the buddy across reboots; Hilo › Setup shows and changes the same three.
+- **Look**: a 336 px sheet sliding from the top in 220 ms (ease-out) over the current view, background `#0d0c0b` with a `#1f1c19` bottom border and 28 px corners, like the agent rows; the rest of the screen dims to 60 % black. A 44×5 px grabber sits at its bottom edge.
+- **Controls**, top to bottom: a full-width **Sound** button (speaker icon, "Sound", "On" in done green on a dark green fill, or "Off" in dim gray); **Volume** slider 0–100 (done green, half opacity while sound is off); **Brightness** slider 10–100 % (needs-you amber); **Time zone** with − and + round buttons (1 h steps, 44 px) around the offset ("UTC−6", "UTC+5:45"). Values show at the right of each label in JetBrains Mono.
+- **Behavior**: each change applies at once (volume to the codec, brightness to the panel); the Macs get one `device.settings` once the finger rests for 400 ms. Turning sound on plays the Button cue as feedback. Values persist on the buddy across reboots; Hilo › Setup shows and changes the same four. The time zone moves the top bar clock, the sleep clock and the Hilo view's date. Checked against the host render (2026-10-27, `panel-tz-*`).
 
 ## Focus view (proposal, not in the prototype)
 

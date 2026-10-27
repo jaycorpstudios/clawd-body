@@ -413,6 +413,23 @@ static void scene_music(void)
     shot("music-mac-disconnected");
 }
 
+static void scene_panel(void)
+{
+    linked();
+    go_view(BM_VIEW_HOME);
+    CHECK(send("work", "settings.set", "{\"tz_offset_min\":-360}") == BM_OK);
+    bm_panel(&M, true, now);
+    run(600);
+    shot("panel-tz-utc-6");
+    bm_settings_t s = M.settings;
+    s.tz_offset_min = 345;
+    bm_settings_change(&M, &s, now);
+    run(300);
+    shot("panel-tz-utc+5-45");
+    bm_panel(&M, false, now);
+    run(600);
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -437,6 +454,7 @@ int main(int argc, char **argv)
     scene_sleep();
     scene_focus();
     scene_music();
+    scene_panel();
 
     return failures ? EXIT_FAILURE : EXIT_SUCCESS;
 }

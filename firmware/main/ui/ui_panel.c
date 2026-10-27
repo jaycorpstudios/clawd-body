@@ -2,32 +2,56 @@
 
 #include "ui_priv.h"
 
-#define PANEL_H 330
+#define PANEL_H 336
+#define TZ_STEP_MIN 60
 #define SLIDE_MS 220
 
-static lv_obj_t *backdrop, *panel, *sound_btn, *sound_icon, *sound_state, *vol_val, *bri_val;
+static lv_obj_t *backdrop, *panel, *sound_btn, *sound_icon, *sound_state, *vol_val, *bri_val, *tz_val;
 static lv_obj_t *vol_slider, *bri_slider;
 static bool shown;
 
-static void change(bool sound, int volume, int brightness)
+static void change(const bm_settings_t *s)
 {
-    bm_settings_t s = {.sound = sound, .volume = (uint8_t)volume, .brightness = (uint8_t)brightness};
-    bm_settings_change(ui.m, &s, lv_tick_get());
+    bm_settings_change(ui.m, s, lv_tick_get());
 }
 
 static void sound_cb(lv_event_t *e)
 {
     (void)e;
-    const bm_settings_t *s = &ui.m->settings;
-    change(!s->sound, s->volume, s->brightness);
+    bm_settings_t s = ui.m->settings;
+    s.sound = !s.sound;
+    change(&s);
 }
 
 static void slider_cb(lv_event_t *e)
 {
-    const bm_settings_t *s = &ui.m->settings;
-    int v = (int)lv_slider_get_value(lv_event_get_target(e));
-    if (lv_event_get_target(e) == vol_slider) change(s->sound, v, s->brightness);
-    else change(s->sound, s->volume, v);
+    bm_settings_t s = ui.m->settings;
+    uint8_t v = (uint8_t)lv_slider_get_value(lv_event_get_target(e));
+    if (lv_event_get_target(e) == vol_slider) s.volume = v;
+    else s.brightness = v;
+    change(&s);
+}
+
+static void tz_cb(lv_event_t *e)
+{
+    bm_settings_t s = ui.m->settings;
+    int tz = s.tz_offset_min + (int)(intptr_t)lv_event_get_user_data(e) * TZ_STEP_MIN;
+    s.tz_offset_min = (int16_t)(tz < BM_TZ_MIN ? BM_TZ_MIN : tz > BM_TZ_MAX ? BM_TZ_MAX : tz);
+    change(&s);
+}
+
+static lv_obj_t *tz_button(lv_obj_t *parent, const char *symbol, int dir)
+{
+    lv_obj_t *b = ui_box(parent);
+    lv_obj_set_size(b, 44, 44);
+    lv_obj_set_style_radius(b, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(b, ui_hex(0x1f1c19), 0);
+    lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
+    lv_obj_set_clickable(b, true);
+    lv_obj_set_ext_click_area(b, 8);
+    lv_obj_add_event_cb(b, tz_cb, LV_EVENT_CLICKED, (void *)(intptr_t)dir);
+    lv_obj_center(ui_label(b, &lv_font_montserrat_16, C_FG, symbol));
+    return b;
 }
 
 static void close_cb(lv_event_t *e)
@@ -119,6 +143,19 @@ void ui_panel_create(lv_obj_t *scr)
     label_row(panel, "Brightness", &bri_val);
     bri_slider = slider(panel, 10, BM_C_WAIT);
 
+    lv_obj_t *tz = ui_box(panel);
+    lv_obj_set_size(tz, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_set_style_margin_top(tz, 6, 0);
+    lv_obj_set_flex_flow(tz, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(tz, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(tz, 12, 0);
+    lv_obj_set_flex_grow(ui_label(tz, &font_mono_17, C_DIM, "Time zone"), 1);
+    tz_button(tz, LV_SYMBOL_MINUS, -1);
+    tz_val = ui_label(tz, &font_mono_semi_18, C_FG, "");
+    lv_obj_set_width(tz_val, 100);
+    lv_obj_set_style_text_align(tz_val, LV_TEXT_ALIGN_CENTER, 0);
+    tz_button(tz, LV_SYMBOL_PLUS, 1);
+
     lv_obj_t *grab = ui_box(panel);
     lv_obj_set_size(grab, 44, 5);
     lv_obj_set_style_margin_top(grab, 4, 0);
@@ -157,6 +194,10 @@ void ui_panel_update(uint32_t now_ms)
     lv_obj_set_style_bg_color(sound_btn, ui_hex(s->sound ? 0x0f2a20 : 0x161412), 0);
     lv_label_set_text_fmt(vol_val, "%u", s->volume);
     lv_label_set_text_fmt(bri_val, "%u%%", s->brightness);
+    int tz = s->tz_offset_min, h = (tz < 0 ? -tz : tz) / 60, m = (tz < 0 ? -tz : tz) % 60;
+    const char *sign = tz < 0 ? "\xE2\x88\x92" : "+";
+    if (m) lv_label_set_text_fmt(tz_val, "UTC%s%d:%02d", sign, h, m);
+    else lv_label_set_text_fmt(tz_val, "UTC%s%d", sign, h);
     lv_obj_set_style_opa(vol_slider, s->sound ? LV_OPA_COVER : LV_OPA_50, 0);
     if (!lv_slider_is_dragged(vol_slider)) lv_slider_set_value(vol_slider, s->volume, LV_ANIM_OFF);
     if (!lv_slider_is_dragged(bri_slider)) lv_slider_set_value(bri_slider, s->brightness, LV_ANIM_OFF);

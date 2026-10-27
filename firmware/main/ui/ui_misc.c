@@ -66,7 +66,7 @@ void ui_bar_update(uint32_t now_ms)
 {
     char buf[16];
     if (ui.m->clock_known) {
-        bm_fmt_clock(bm_wall_ms(ui.m, now_ms), ui.m->cfg.tz_offset_min, buf, sizeof(buf));
+        bm_fmt_clock(bm_wall_ms(ui.m, now_ms), ui.m->settings.tz_offset_min, buf, sizeof(buf));
         lv_label_set_text(ui.clock, buf);
         lv_label_set_text(ui.sleep_clock, buf);
     }

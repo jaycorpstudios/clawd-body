@@ -57,7 +57,8 @@ void bm__settings_defaults(bm_settings_t *s)
 
 static bool settings_valid(const bm_settings_t *s)
 {
-    return s->volume <= 100 && s->brightness >= 10 && s->brightness <= 100;
+    return s->volume <= 100 && s->brightness >= 10 && s->brightness <= 100 && s->tz_offset_min >= BM_TZ_MIN &&
+           s->tz_offset_min <= BM_TZ_MAX && s->tz_offset_min % BM_TZ_STEP == 0;
 }
 
 void bm_settings_load(bm_model_t *m, const bm_settings_t *s)
@@ -70,9 +71,9 @@ void bm_settings_load(bm_model_t *m, const bm_settings_t *s)
 
 void bm__send_settings(bm_model_t *m, uint8_t hosts, uint32_t now_ms)
 {
-    char data[64];
-    snprintf(data, sizeof(data), "{\"sound\":%s,\"volume\":%u,\"brightness\":%u}", m->settings.sound ? "true" : "false",
-             m->settings.volume, m->settings.brightness);
+    char data[96];
+    snprintf(data, sizeof(data), "{\"sound\":%s,\"volume\":%u,\"brightness\":%u,\"tz_offset_min\":%d}",
+             m->settings.sound ? "true" : "false", m->settings.volume, m->settings.brightness, m->settings.tz_offset_min);
     bm__out(m, hosts, "device.settings", data, now_ms);
 }
 

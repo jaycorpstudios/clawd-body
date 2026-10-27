@@ -172,10 +172,32 @@ struct BuddySettingsCard: View {
             slider("Volume", value: $volume, range: 0...100, unit: "") { model.changeSettings(SettingsChange(volume: $0)) }
                 .opacity(reported?.sound == true ? 1 : 0.5)
             slider("Brightness", value: $brightness, range: 10...100, unit: "%") { model.changeSettings(SettingsChange(brightness: $0)) }
+            timeZone(reported)
         }
         .disabled(reported == nil)
         .onAppear(perform: sync)
         .onChange(of: reported) { sync() }
+    }
+
+    @ViewBuilder private func timeZone(_ reported: DeviceSettings?) -> some View {
+        let mac = TimeZoneOffsets.current()
+        HStack(spacing: 12) {
+            Text("Time zone").frame(width: 84, alignment: .leading)
+            if let tz = reported?.tzOffsetMin {
+                Picker("Time zone", selection: Binding(get: { tz }, set: { model.changeSettings(SettingsChange(tzOffsetMin: $0)) })) {
+                    ForEach(TimeZoneOffsets.choices, id: \.self) { Text(TimeZoneOffsets.label($0)).tag($0) }
+                }
+                .labelsHidden().frame(width: 140)
+                Button("Use this Mac's") { if let mac { model.changeSettings(SettingsChange(tzOffsetMin: mac)) } }
+                    .buttonStyle(SecondaryButtonStyle())
+                    .disabled(mac == nil || mac == tz)
+                Text("No daylight saving: change it by hand when the clocks change.")
+                    .font(.system(size: 12)).foregroundStyle(Theme.muted)
+            } else {
+                Text(reported == nil ? "—" : "Update the buddy's firmware to set its time zone here.")
+                    .foregroundStyle(Theme.muted)
+            }
+        }
     }
 
     private func sync() {

@@ -330,13 +330,15 @@
 
     "volume": { "type": "integer", "minimum": 0, "maximum": 100 },
     "brightness": { "type": "integer", "minimum": 10, "maximum": 100 },
+    "tzOffsetMin": { "type": "integer", "minimum": -720, "maximum": 840, "multipleOf": 15 },
     "settings": {
       "type": "object", "additionalProperties": false,
       "required": ["sound", "volume", "brightness"],
       "properties": {
         "sound": { "type": "boolean" },
         "volume": { "$ref": "#/$defs/volume" },
-        "brightness": { "$ref": "#/$defs/brightness" }
+        "brightness": { "$ref": "#/$defs/brightness" },
+        "tz_offset_min": { "$ref": "#/$defs/tzOffsetMin" }
       }
     },
     "settingsSet": {
@@ -344,7 +346,8 @@
       "properties": {
         "sound": { "type": "boolean" },
         "volume": { "$ref": "#/$defs/volume" },
-        "brightness": { "$ref": "#/$defs/brightness" }
+        "brightness": { "$ref": "#/$defs/brightness" },
+        "tz_offset_min": { "$ref": "#/$defs/tzOffsetMin" }
       }
     },
     "faceHash": { "type": "string", "pattern": "^[0-9a-f]{16}$" },

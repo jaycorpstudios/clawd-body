@@ -144,8 +144,9 @@ public enum Wire {
         case "device.pet_accessory":
             body = .petAccessory(try payload(data, keys: ["acc"]))
         case "device.settings":
-            let p: DeviceSettings = try payload(data, keys: ["sound", "volume", "brightness"])
-            guard DeviceSettings.volumeRange.contains(p.volume), DeviceSettings.brightnessRange.contains(p.brightness) else {
+            let p: DeviceSettings = try payload(data, keys: ["sound", "volume", "brightness", "tz_offset_min"])
+            guard DeviceSettings.volumeRange.contains(p.volume), DeviceSettings.brightnessRange.contains(p.brightness),
+                  p.tzOffsetMin.map(DeviceSettings.validTz) != false else {
                 throw .badPayload("setting out of range")
             }
             body = .settings(p)

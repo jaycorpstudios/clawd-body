@@ -84,7 +84,7 @@ public actor Coordinator {
         case .questionAnswer(let a): result = registry.answer(a, now: clock.now())
         case .settings(let s):
             buddySettings = s
-            log("buddy settings: sound \(s.sound ? "on" : "off"), volume \(s.volume), brightness \(s.brightness)%")
+            log("buddy settings: sound \(s.sound ? "on" : "off"), volume \(s.volume), brightness \(s.brightness)%\(s.tzOffsetMin.map { ", UTC offset \($0) min" } ?? "")")
             return
         case .pomodoro(let p):
             if let mine = pomodoro, p.updatedAt < mine.updatedAt { return await send(.pomodoro(mine)) }

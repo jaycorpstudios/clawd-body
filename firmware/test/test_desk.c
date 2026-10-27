@@ -69,7 +69,46 @@ TEST(settings_default_to_silent_and_follow_settings_set)
     drain(&o);
     const bm_out_t *ack = find_out(&o, "device.settings");
     CHECK(ack && ack->hosts == 0xff);
-    CHECK(strstr(ack->json, "{\"sound\":true,\"volume\":0,\"brightness\":100}"));
+    CHECK(strstr(ack->json, "{\"sound\":true,\"volume\":0,\"brightness\":100,\"tz_offset_min\":0}"));
+}
+
+TEST(time_zone_is_a_fourth_setting_that_moves_the_clock)
+{
+    fresh();
+    CHECK(send("work", "settings.set", "{\"tz_offset_min\":-360}") == BM_OK);
+    CHECK(M.settings.tz_offset_min == -360 && M.settings.volume == 60);
+    outs_t o;
+    drain(&o);
+    CHECK(strstr(find_out(&o, "device.settings")->json, "\"tz_offset_min\":-360"));
+    char buf[16];
+    bm_fmt_clock(6 * 3600 * 1000LL, M.settings.tz_offset_min, buf, sizeof(buf));
+    CHECK(strcmp(buf, "00:00") == 0);
+
+    uint32_t rev = M.settings_rev;
+    CHECK(send("work", "settings.set", "{\"tz_offset_min\":-350}") == BM_E_DATA);
+    CHECK(send("work", "settings.set", "{\"tz_offset_min\":900}") == BM_E_DATA);
+    CHECK(send("work", "settings.set", "{\"tz_offset_min\":-780}") == BM_E_DATA);
+    CHECK(M.settings_rev == rev && M.settings.tz_offset_min == -360);
+
+    bm_settings_t s = M.settings;
+    s.brightness = 50;
+    bm_settings_change(&M, &s, now);
+    CHECK(M.settings.tz_offset_min == -360);
+    s.tz_offset_min = 7;
+    bm_settings_change(&M, &s, now);
+    CHECK(M.settings.tz_offset_min == -360);
+}
+
+TEST(loaded_settings_keep_their_time_zone_and_a_bad_one_is_refused)
+{
+    fresh();
+    bm_settings_t saved = M.settings;
+    saved.volume = 20;
+    bm_settings_load(&M, &saved);
+    CHECK(M.settings.volume == 20 && M.settings.tz_offset_min == 0);
+    saved.tz_offset_min = 1000;
+    bm_settings_load(&M, &saved);
+    CHECK(M.settings.volume == 20);
 }
 
 TEST(settings_set_out_of_range_changes_nothing)

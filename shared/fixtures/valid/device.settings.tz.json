@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "id": "01K8F400000000000000000061",
+  "ts": 1792900000,
+  "type": "device.settings",
+  "data": {
+    "sound": false,
+    "volume": 60,
+    "brightness": 100,
+    "tz_offset_min": 330
+  }
+}

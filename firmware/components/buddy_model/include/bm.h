@@ -44,6 +44,9 @@
 #define BM_ALARM_BURST_GAP_MS 1000
 #define BM_ALARM_REPEAT_MS 5000
 #define BM_ALARM_MIN_VOLUME 60
+#define BM_TZ_MIN -720
+#define BM_TZ_MAX 840
+#define BM_TZ_STEP 15
 
 #define BM_C_WORK 0xff9a52
 #define BM_C_WAIT 0xffc53d
@@ -211,6 +214,7 @@ typedef struct {
     bool sound;
     uint8_t volume;
     uint8_t brightness;
+    int16_t tz_offset_min;
 } bm_settings_t;
 
 typedef enum { BM_POMO_STOPPED, BM_POMO_RUNNING, BM_POMO_PAUSED } bm_pomo_run_t;
