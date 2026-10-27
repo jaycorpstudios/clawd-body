@@ -40,6 +40,7 @@
 #define BM_COVER_MAX 96
 #define BM_COVER_CHUNKS 8
 #define BM_COVER_WAIT_MS 8000
+#define BM_LOOK_ECHO_MS 5000
 #define BM_POMO_WORK_MIN 25
 #define BM_POMO_BREAK_MIN 5
 #define BM_ALARM_MS 30000
@@ -248,6 +249,13 @@ typedef struct {
 } bm_rx_t;
 
 typedef struct {
+    uint8_t host;
+    char session[65];
+    bm_acc_t acc;
+    uint32_t until_ms;
+} bm_look_pick_t;
+
+typedef struct {
     bm_overlay_t type;
     int8_t session;
     uint8_t host;
@@ -286,6 +294,7 @@ typedef struct {
 
     bm_view_t view;
     bm_overlay_state_t ov;
+    bm_look_pick_t look_pick;
     char toast[121];
     uint32_t toast_color;
     uint32_t toast_until_ms;

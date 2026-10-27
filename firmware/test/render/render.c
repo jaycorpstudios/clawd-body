@@ -451,6 +451,35 @@ static void start_with_look(const char *id, const char *task, int hue, const cha
     run(300);
 }
 
+static lv_obj_t *scrolled_child(lv_obj_t *obj)
+{
+    if (!lv_obj_has_flag(obj, LV_OBJ_FLAG_HIDDEN) && lv_obj_get_scroll_bottom(obj) > 0) return obj;
+    for (uint32_t i = 0; i < lv_obj_get_child_count(obj); i++) {
+        lv_obj_t *found = scrolled_child(lv_obj_get_child(obj, (int32_t)i));
+        if (found) return found;
+    }
+    return NULL;
+}
+
+static void echo_older_crown(void)
+{
+    CHECK(send("work", "snapshot",
+               "{\"sessions\":["
+               "{\"session\":\"s1\",\"project\":\"payments-api\",\"task\":\"Webhook refactor\",\"status\":\"working\","
+               "\"since\":%lld,\"look\":{\"hue\":91,\"acc\":\"shades\"}},"
+               "{\"session\":\"s2\",\"project\":\"payments-api\",\"task\":\"Retry tests\",\"status\":\"working\","
+               "\"since\":%lld,\"look\":{\"hue\":105,\"acc\":\"crown\"},\"steps\":["
+               "{\"kind\":\"read\",\"ts\":%lld,\"text\":\"Read retry.ts\"},{\"kind\":\"edit\",\"ts\":%lld,\"text\":\"Edit retry.ts\"},"
+               "{\"kind\":\"run\",\"ts\":%lld,\"text\":\"npm test\"},{\"kind\":\"edit\",\"ts\":%lld,\"text\":\"Edit backoff.ts\"},"
+               "{\"kind\":\"run\",\"ts\":%lld,\"text\":\"npm test -- retry\"}]},"
+               "{\"session\":\"s3\",\"project\":\"payments-api\",\"task\":\"Docs pass\",\"status\":\"done\","
+               "\"since\":%lld,\"summary\":\"Docs updated\",\"look\":{\"hue\":77,\"acc\":\"crown\"}}],"
+               "\"usage\":{\"session_pct\":42,\"weekly_pct\":18,\"reset_in_min\":100},"
+               "\"hilo\":{\"current\":null,\"next\":[],\"agreements_today\":[]}}",
+               (long long)BASE_TS, (long long)BASE_TS, (long long)BASE_TS, (long long)BASE_TS, (long long)BASE_TS,
+               (long long)BASE_TS, (long long)BASE_TS, (long long)BASE_TS) == BM_OK);
+}
+
 static void scene_looks(void)
 {
     linked();
@@ -468,6 +497,23 @@ static void scene_looks(void)
     bm_tap(&M, BM_TAP_SESSION_ACC, 1, now);
     run(600);
     shot("looks-sheet-picked-crown");
+    bm_tap(&M, BM_TAP_SESSION_ACC, 1, now);
+    bm_tap(&M, BM_TAP_SESSION_ACC, 1, now);
+    run(300);
+    echo_older_crown();
+    run(600);
+    shot("looks-sheet-after-mac-echo");
+    lv_obj_t *body = scrolled_child(lv_screen_active());
+    CHECK(body != NULL);
+    if (body) lv_obj_scroll_to_y(body, 40, LV_ANIM_OFF);
+    int32_t scrolled = body ? lv_obj_get_scroll_y(body) : 0;
+    CHECK(scrolled > 0);
+    echo_older_crown();
+    run(600);
+    shot("looks-sheet-scrolled-after-mac-echo");
+    CHECK(M.sheet == BM_SHEET_AGENT && strcmp(M.sessions[M.sheet_session].id, "s2") == 0);
+    CHECK(M.sessions[M.sheet_session].look_acc == M.look_pick.acc && M.look_pick.acc != BM_ACC_CROWN);
+    CHECK(!body || lv_obj_get_scroll_y(body) == scrolled);
     bm_tap(&M, BM_TAP_BACK, 0, now);
     run(600);
 }

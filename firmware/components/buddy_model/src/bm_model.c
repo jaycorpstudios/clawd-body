@@ -192,6 +192,75 @@ void bm__clear_host(bm_model_t *m, int host)
         if (m->sessions[i].used && m->sessions[i].host == host) bm__remove_session(m, &m->sessions[i]);
 }
 
+static void save_id(const bm_model_t *m, int host, int idx, char *out)
+{
+    if (idx >= 0 && m->sessions[idx].used && m->sessions[idx].host == host)
+        bm__copy(out, sizeof(m->sessions[idx].id), m->sessions[idx].id);
+}
+
+static int find_index(bm_model_t *m, int host, const char *id)
+{
+    bm_session_t *s = id[0] ? bm__find_session(m, host, id) : NULL;
+    return s ? index_of(m, s) : -1;
+}
+
+void bm__save_local(const bm_model_t *m, int host, bm__local_t *l)
+{
+    memset(l, 0, sizeof(*l));
+    l->sheet = m->sheet;
+    save_id(m, host, m->sheet_session, l->sheet_id);
+    save_id(m, host, m->attn, l->attn_id);
+    if (l->attn_id[0]) bm__copy(l->attn_request, sizeof(l->attn_request), m->sessions[m->attn].req.request_id);
+    save_id(m, host, m->ov.session, l->ov_id);
+    int n = 0;
+    for (int i = 0; i < BM_MAX_SESSIONS && n < BM_SESSIONS_PER_HOST; i++) {
+        const bm_session_t *s = &m->sessions[i];
+        if (!s->used || s->host != host || !s->has_request || !(s->req.snoozed || s->req.acked)) continue;
+        bm__copy(l->req[n].request_id, sizeof(l->req[n].request_id), s->req.request_id);
+        l->req[n].snoozed = s->req.snoozed;
+        l->req[n++].acked = s->req.acked;
+    }
+}
+
+static void keep_look_pick(bm_model_t *m, int host, uint32_t now_ms)
+{
+    bm_look_pick_t *p = &m->look_pick;
+    if (!p->until_ms || p->host != host) return;
+    bm_session_t *s = bm__find_session(m, host, p->session);
+    if (!s || due(now_ms, p->until_ms) || (s->has_look && s->look_acc == p->acc)) {
+        p->until_ms = 0;
+        return;
+    }
+    uint16_t hue;
+    bm_acc_t acc;
+    bm_session_look(s, &hue, &acc);
+    s->has_look = true;
+    s->look_hue = hue;
+    s->look_acc = p->acc;
+}
+
+/* A snapshot rebuilds the host's sessions; what only the buddy knows follows them by id. */
+void bm__restore_local(bm_model_t *m, int host, const bm__local_t *l, uint32_t now_ms)
+{
+    int sheet = find_index(m, host, l->sheet_id);
+    if (sheet >= 0 && (l->sheet != BM_SHEET_PERM || m->sessions[sheet].has_request)) {
+        m->sheet = l->sheet;
+        m->sheet_session = (int8_t)sheet;
+    }
+    int attn = find_index(m, host, l->attn_id);
+    if (attn >= 0 && m->sessions[attn].has_request && strcmp(m->sessions[attn].req.request_id, l->attn_request) == 0)
+        m->attn = (int8_t)attn;
+    int ov = find_index(m, host, l->ov_id);
+    if (ov >= 0) m->ov.session = (int8_t)ov;
+    for (int i = 0; i < BM_SESSIONS_PER_HOST && l->req[i].request_id[0]; i++) {
+        bm_session_t *s = bm__find_request(m, host, l->req[i].request_id);
+        if (!s) continue;
+        s->req.snoozed = l->req[i].snoozed;
+        s->req.acked = l->req[i].acked;
+    }
+    keep_look_pick(m, host, now_ms);
+}
+
 void bm__push_step(bm_session_t *s, int64_t ts, bm_step_kind_t kind, const char *text)
 {
     if (s->n_steps == BM_MAX_STEPS) {
@@ -462,7 +531,7 @@ static void decide(bm_model_t *m, bool approve, int choice, uint32_t now_ms)
     bm__touch(m);
 }
 
-/* The buddy shows its pick at once; the Mac stores it and echoes it in the next snapshot. */
+/* The buddy shows its pick at once; snapshots echoing an older pick are ignored until the Mac catches up. */
 static void session_acc(bm_model_t *m, int dir, uint32_t now_ms)
 {
     if (m->sheet != BM_SHEET_AGENT || m->sheet_session < 0) return;
@@ -478,6 +547,10 @@ static void session_acc(bm_model_t *m, int dir, uint32_t now_ms)
     bm__json_escape(s->id, id, sizeof(id));
     snprintf(data, sizeof(data), "{\"session\":\"%s\",\"acc\":\"%s\"}", id, bm_acc_name(s->look_acc));
     bm__out(m, (uint8_t)(1u << s->host), "device.session_look", data, now_ms);
+    m->look_pick.host = s->host;
+    bm__copy(m->look_pick.session, sizeof(m->look_pick.session), s->id);
+    m->look_pick.acc = s->look_acc;
+    m->look_pick.until_ms = deadline(now_ms, BM_LOOK_ECHO_MS);
     bm__touch(m);
 }
 

@@ -519,6 +519,75 @@ TEST(sessions_wear_the_look_their_mac_picked_and_the_buddy_can_change_it)
     CHECK(M.sessions[d].has_look && M.sessions[d].look_hue == 212 && M.sessions[d].look_acc == BM_ACC_CROWN);
 }
 
+static bm_err_t look_snapshot(const char *acc)
+{
+    return send("work", "snapshot",
+                "{\"sessions\":[{\"session\":\"x\",\"project\":\"p\",\"task\":\"\",\"status\":\"idle\",\"since\":1792899000},"
+                "{\"session\":\"d\",\"project\":\"p\",\"task\":\"\",\"status\":\"working\",\"since\":1792899000,"
+                "\"look\":{\"hue\":212,\"acc\":\"%s\"}}],"
+                "\"usage\":{\"session_pct\":10,\"weekly_pct\":5,\"reset_in_min\":100},"
+                "\"hilo\":{\"current\":null,\"next\":[],\"agreements_today\":[]}}",
+                acc);
+}
+
+TEST(agent_sheet_stays_open_on_its_session_while_the_mac_echoes_pet_picks)
+{
+    fresh();
+    CHECK(send("work", "session.start",
+               "{\"session\":\"d\",\"project\":\"p\",\"task\":\"\",\"look\":{\"hue\":212,\"acc\":\"crown\"}}") == BM_OK);
+    bm_tap(&M, BM_TAP_AGENT, session_index("work", "d"), now);
+    bm_tap(&M, BM_TAP_SESSION_ACC, 1, now);
+    bm_tap(&M, BM_TAP_SESSION_ACC, 1, now);
+    bm_tap(&M, BM_TAP_SESSION_ACC, 1, now);
+    bm_acc_t picked = M.sessions[session_index("work", "d")].look_acc;
+    CHECK(picked != BM_ACC_CROWN);
+
+    advance(200);
+    CHECK(look_snapshot(bm_acc_name((bm_acc_t)((picked + BM_ACC_COUNT - 2) % BM_ACC_COUNT))) == BM_OK);
+    int d = session_index("work", "d");
+    CHECK(d != -1 && M.sheet == BM_SHEET_AGENT && M.sheet_session == d);
+    CHECK(M.sessions[d].look_acc == picked && M.sessions[d].look_hue == 212);
+
+    CHECK(look_snapshot(bm_acc_name(picked)) == BM_OK);
+    CHECK(M.sheet == BM_SHEET_AGENT && M.sheet_session == session_index("work", "d"));
+    CHECK(M.look_pick.until_ms == 0);
+    bm_tap(&M, BM_TAP_SESSION_ACC, 1, now);
+    CHECK(M.sessions[session_index("work", "d")].look_acc == (bm_acc_t)((picked + 1) % BM_ACC_COUNT));
+
+    advance(BM_LOOK_ECHO_MS);
+    CHECK(look_snapshot("shades") == BM_OK);
+    CHECK(M.sessions[session_index("work", "d")].look_acc == BM_ACC_SHADES);
+
+    CHECK(snapshot("work", "") == BM_OK);
+    CHECK(M.sheet == BM_SHEET_NONE && M.sheet_session == -1);
+}
+
+TEST(snapshot_keeps_the_open_request_and_a_snooze)
+{
+    fresh();
+    ask_permission("work", "a", "01K8F600000000000000000RQ1", "low", true);
+    CHECK(M.attn == session_index("work", "a"));
+    bm_button(&M, true, now);
+    bm_button(&M, false, now);
+    CHECK(M.attn == -1 && M.sessions[session_index("work", "a")].req.snoozed);
+    ask_permission("work", "b", "01K8F600000000000000000RQ2", "low", true);
+    CHECK(M.attn == session_index("work", "b"));
+    CHECK(send("work", "snapshot",
+               "{\"sessions\":[{\"session\":\"b\",\"project\":\"beta\",\"task\":\"\",\"status\":\"waiting\",\"since\":1792899000,"
+               "\"pending_permission\":{\"request_id\":\"01K8F600000000000000000RQ2\",\"session\":\"b\",\"project\":\"beta\","
+               "\"tool\":\"Bash\",\"detail\":\"ls\",\"cwd\":\"~/p\",\"risk\":\"low\",\"remote_allowed\":true,\"expires_at\":%lld}},"
+               "{\"session\":\"a\",\"project\":\"alpha\",\"task\":\"\",\"status\":\"waiting\",\"since\":1792899000,"
+               "\"pending_permission\":{\"request_id\":\"01K8F600000000000000000RQ1\",\"session\":\"a\",\"project\":\"alpha\","
+               "\"tool\":\"Bash\",\"detail\":\"ls\",\"cwd\":\"~/p\",\"risk\":\"low\",\"remote_allowed\":true,\"expires_at\":%lld}}],"
+               "\"usage\":{\"session_pct\":10,\"weekly_pct\":5,\"reset_in_min\":100},"
+               "\"hilo\":{\"current\":null,\"next\":[],\"agreements_today\":[]}}",
+               (long long)BASE_TS + 600, (long long)BASE_TS + 600) == BM_OK);
+    CHECK(M.attn == session_index("work", "b"));
+    CHECK(M.sessions[session_index("work", "a")].req.snoozed);
+    advance(BM_NEXT_ATTN_MS + 10);
+    CHECK(M.attn == session_index("work", "b"));
+}
+
 TEST(base64_decoder_rejects_bad_input)
 {
     uint8_t out[8];

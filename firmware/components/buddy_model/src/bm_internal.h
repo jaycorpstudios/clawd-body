@@ -11,6 +11,20 @@ bm_session_t *bm__find_request(bm_model_t *m, int host, const char *request_id);
 bm_session_t *bm__new_session(bm_model_t *m, int host, const char *id);
 void bm__remove_session(bm_model_t *m, bm_session_t *s);
 void bm__clear_host(bm_model_t *m, int host);
+
+typedef struct {
+    bm_sheet_t sheet;
+    char sheet_id[65];
+    char attn_id[65], attn_request[27];
+    char ov_id[65];
+    struct {
+        char request_id[27];
+        bool snoozed, acked;
+    } req[BM_SESSIONS_PER_HOST];
+} bm__local_t;
+
+void bm__save_local(const bm_model_t *m, int host, bm__local_t *l);
+void bm__restore_local(bm_model_t *m, int host, const bm__local_t *l, uint32_t now_ms);
 void bm__push_step(bm_session_t *s, int64_t ts, bm_step_kind_t kind, const char *text);
 void bm__observe_ts(bm_model_t *m, int64_t ts, bool exact, uint32_t now_ms);
 

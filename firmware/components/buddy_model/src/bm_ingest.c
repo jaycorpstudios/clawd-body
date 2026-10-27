@@ -421,12 +421,15 @@ static bm_err_t apply_snapshot(bm_model_t *m, int host, const cJSON *d, uint32_t
         if (!parse_session_state(it, &m->scratch)) return BM_E_DATA;
     }
 
+    static bm__local_t local; /* off the 3.5 KB main-task stack */
+    bm__save_local(m, host, &local);
     bm__clear_host(m, host);
     cJSON_ArrayForEach(it, sessions)
     {
         bm_session_t *s = bm__new_session(m, host, "");
         parse_session_state(it, s);
     }
+    bm__restore_local(m, host, &local, now_ms);
     bm_host_t *h = &m->hosts[host];
     bool warned = h->usage.warned;
     h->usage = usage;
