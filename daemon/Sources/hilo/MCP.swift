@@ -1,15 +1,17 @@
 import Foundation
+import HiloRuntime
 import HiloStore
 
 /// MCP server over stdio (newline-delimited JSON-RPC). Claude can read Hilo and propose agreements; it never confirms them.
 struct MCPServer {
     let store: HiloStore
     let onChange: () -> Void
+    var defaultProject = GitRepo.project(of: FileManager.default.currentDirectoryPath)
 
     static var tools: [[String: Any]] { [
         tool("hilo_current_task", "The Hilo task in progress on this Mac, if any.", [:]),
         tool("hilo_resume", "Where the user left off in a project: last session and its steps, open tasks, recent agreements.",
-             ["project": ["type": "string", "description": "Project name (the repo directory name)"]], required: ["project"]),
+             ["project": ["type": "string", "description": "Project name (the repo directory name); defaults to the repo Claude Code runs in"]]),
         tool("hilo_add_task", "Add a task to the user's Hilo list.",
              ["title": ["type": "string"], "project": ["type": "string"], "start": ["type": "boolean", "description": "Mark it in progress"]],
              required: ["title"]),
@@ -77,16 +79,16 @@ struct MCPServer {
             guard let t = try store.currentTask() else { return "No task in progress." }
             return "#\(t.id) \(t.title)" + (t.project.map { " (project \($0.name))" } ?? "") + (t.notes.isEmpty ? "" : "\nNotes: \(t.notes)")
         case "hilo_resume":
-            guard let project = string("project") else { throw MCPError.invalid("project is required") }
+            guard let project = string("project") ?? defaultProject else { throw MCPError.invalid("project is required outside a git repo") }
             return try store.resumeMarkdown(project: project, now: now)
         case "hilo_add_task":
             guard let title = string("title") else { throw MCPError.invalid("title is required") }
-            let t = try store.addTask(title, project: string("project"), status: args["start"] as? Bool == true ? .doing : .todo, now: now)
+            let t = try store.addTask(title, project: string("project") ?? defaultProject, status: args["start"] as? Bool == true ? .doing : .todo, now: now)
             onChange()
             return "Added task #\(t.id): \(t.title)"
         case "hilo_log_agreement":
             guard let text = string("text") else { throw MCPError.invalid("text is required") }
-            try store.addAgreement(text, project: string("project"), context: string("context") ?? "", origin: .session, status: .pending, now: now)
+            try store.addAgreement(text, project: string("project") ?? defaultProject, context: string("context") ?? "", origin: .session, status: .pending, now: now)
             return "Proposed. The user confirms or discards it in Hilo › Agreements."
         case "hilo_week_summary":
             return try store.weekReport(start: HiloStore.startOfWeek(), now: now).markdown

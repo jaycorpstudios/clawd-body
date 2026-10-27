@@ -39,6 +39,15 @@ import HiloStore
         #expect(commits.count == 1 && commits[0].branch == "feature/x" && commits[0].project?.name == "api")
     }
 
+    @Test func theProjectOfADirectoryIsItsRepoName() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "hilo-repo-\(UUID().uuidString)/payments-api")
+        let nested = root.appending(path: "src/ledger")
+        try FileManager.default.createDirectory(at: root.appending(path: ".git"), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
+        #expect(GitRepo.project(of: nested.path(percentEncoded: false)) == "payments-api")
+        #expect(GitRepo.project(of: FileManager.default.temporaryDirectory.path(percentEncoded: false)) == nil)
+    }
+
     @Test func aRepoThatIsNotGitYieldsNothing() {
         let capture = GitCapture(store: store, git: { _, _ in nil })
         #expect(capture.commits(in: "/nowhere", since: 0).isEmpty)

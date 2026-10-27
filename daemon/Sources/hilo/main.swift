@@ -6,6 +6,7 @@ import HiloStore
 let arguments = Array(CommandLine.arguments.dropFirst())
 let socketPath = LocalSocket.defaultPath
 let now = Int(Date().timeIntervalSince1970)
+let cwd = FileManager.default.currentDirectoryPath
 
 func fail(_ message: String, code: Int32 = 1) -> Never {
     FileHandle.standardError.write(Data("hilo: \(message)\n".utf8))
@@ -21,6 +22,11 @@ func option(_ name: String, in args: [String]) -> (value: String?, rest: [String
 
 func openStore() -> HiloStore {
     do { return try HiloStore() } catch { fail("cannot open the Hilo store: \(error)") }
+}
+
+/// `-p ""` keeps the task or agreement out of any project.
+func projectOption(_ given: String?) -> String? {
+    given.map { $0.isEmpty ? nil : $0 } ?? GitRepo.project(of: cwd)
 }
 
 /// Lets the buddy show the change right away; quietly skipped when hilod is not running.
@@ -78,7 +84,7 @@ case "add":
     let (project, rest) = option("-p", in: Array(arguments.dropFirst()))
     let title = rest.filter { $0 != "--start" }.joined(separator: " ").trimmingCharacters(in: .whitespaces)
     guard !title.isEmpty else { fail("usage: hilo add \"title\" [-p project] [--start]", code: 2) }
-    let task = try openStore().addTask(title, project: project, status: rest.contains("--start") ? .doing : .todo, now: now)
+    let task = try openStore().addTask(title, project: projectOption(project), status: rest.contains("--start") ? .doing : .todo, now: now)
     print(line(task))
     notifyDaemon()
 case "start", "done", "todo":
@@ -99,7 +105,7 @@ case "agree":
     let (project, rest) = option("-p", in: Array(arguments.dropFirst()))
     let text = rest.joined(separator: " ").trimmingCharacters(in: .whitespaces)
     guard !text.isEmpty else { fail("usage: hilo agree \"text\" [-p project]", code: 2) }
-    try openStore().addAgreement(text, project: project, now: now)
+    try openStore().addAgreement(text, project: projectOption(project), now: now)
     print("agreement logged")
     notifyDaemon()
 case "sessions":
@@ -109,7 +115,6 @@ case "sessions":
         print("\(s.id.prefix(8))  \(s.status.rawValue.padding(toLength: 7, withPad: " ", startingAt: 0))  \(s.project?.name ?? "-")\(task)  \(s.lastAction)")
     }
 case "resume":
-    let cwd = FileManager.default.currentDirectoryPath
     let project = arguments.count > 1 ? arguments[1] : URL(filePath: GitRepo.root(of: cwd) ?? cwd).lastPathComponent
     print(try openStore().resumeMarkdown(project: project, now: now))
 case "week":
@@ -141,9 +146,9 @@ default:
     FileHandle.standardError.write(Data("""
     usage:
       hilo today                       tasks in progress, next, and done today
-      hilo add "title" [-p project] [--start]
+      hilo add "title" [-p project] [--start]   project defaults to this directory's repo; -p "" for none
       hilo start|done|todo <id>        change a task's status
-      hilo agree "text" [-p project]   log an agreement
+      hilo agree "text" [-p project]   log an agreement (same project default)
       hilo sessions                    today's Claude Code sessions
       hilo link <session> <task id>    attach a session to a task
       hilo resume [project]            where you left off (default: this directory's repo)
