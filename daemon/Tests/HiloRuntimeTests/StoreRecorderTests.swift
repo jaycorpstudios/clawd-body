@@ -86,6 +86,13 @@ private func makeStore() throws -> HiloStore {
     let raw = try #require(await link.lastSnapshot())
     guard case .snapshot(let snap) = try Wire.decodeOutbound(raw).body else { Issue.record("no snapshot"); return }
     #expect(snap.sessions.first { $0.session == "s2" }?.look == SessionLook(hue: s2.hue, acc: .crown))
+    #expect(try store.sessions(since: 0).first { $0.id == "s2" }?.look == SessionLook(hue: s2.hue, acc: .crown))
+
+    let live = try JSONEncoder().encode(SessionLookChange(session: "s2", acc: .band))
+    #expect(await ops.handle(op: "session-look", body: live).map { String(decoding: $0, as: UTF8.self).hasPrefix("rejected") } == false)
+    let echoed = try #require(await link.lastSnapshot())
+    guard case .snapshot(let next) = try Wire.decodeOutbound(echoed).body else { Issue.record("no snapshot"); return }
+    #expect(next.sessions.first { $0.session == "s2" }?.look == SessionLook(hue: s2.hue, acc: .band))
 
     _ = await coordinator.handleHook(try HookInput.decode(Data(#"{"hook_event_name":"SessionEnd","session_id":"s1","cwd":"/home/dev/code/api"}"#.utf8)))
     let body = try JSONEncoder().encode(SessionLookChange(session: "s1", acc: .heart))
