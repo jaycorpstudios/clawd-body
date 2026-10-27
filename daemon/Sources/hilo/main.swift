@@ -4,7 +4,7 @@ import HiloRuntime
 import HiloStore
 
 let arguments = Array(CommandLine.arguments.dropFirst())
-let socketPath = ProcessInfo.processInfo.environment["HILO_SOCKET"] ?? LocalSocket.defaultPath
+let socketPath = LocalSocket.defaultPath
 let now = Int(Date().timeIntervalSince1970)
 
 func fail(_ message: String, code: Int32 = 1) -> Never {

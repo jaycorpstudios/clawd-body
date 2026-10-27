@@ -19,7 +19,8 @@ open .build/Hilo.app
 | `HILO_DB` | Store path instead of `~/Library/Application Support/Hilo/hilo.sqlite` (scratch data) |
 | `HILO_CONFIG` | Settings file instead of `~/Library/Application Support/Hilo/config.json` |
 | `HILO_HILOD` | `hilod` to start instead of the copy bundled in the app |
-| `HILO_SNAPSHOT` | Directory: save a PNG of every section and quit (checks the layout without screen recording) |
+| `HILO_SOCKET` | `hilod` socket instead of `~/Library/Application Support/Hilo/hilod.sock` (a scratch `hilod --socket`; keep it a short relative path) |
+| `HILO_SNAPSHOT` | Directory: save a PNG of every section and quit (checks the layout without screen recording); a section taller than the window also gets `<section>-full.png` with its whole scroll content |
 
 ## What it shows
 

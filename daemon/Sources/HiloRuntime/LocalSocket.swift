@@ -5,7 +5,9 @@ import Foundation
 public enum LocalSocket {
     public static let maxBody = 1 << 20
 
+    /// `HILO_SOCKET` points the app, the CLI and `hilod` at a scratch daemon during development.
     public static var defaultPath: String {
+        if let path = ProcessInfo.processInfo.environment["HILO_SOCKET"] { return path }
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return base.appending(path: "Hilo/hilod.sock").path(percentEncoded: false)
     }
