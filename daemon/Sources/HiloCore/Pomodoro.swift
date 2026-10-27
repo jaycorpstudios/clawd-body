@@ -18,15 +18,30 @@ extension PomodoroState {
         }
     }
 
-    /// Flips every phase that ended by `now`; each finished work phase adds a cycle.
-    public mutating func advance(to now: Int) {
-        var flips = 0
+    /// Flips every phase that ended by `now`; each finished work phase adds a cycle. Without auto-continue the next
+    /// phase waits, paused at its full length. Returns when the last phase ended, nil when none did.
+    @discardableResult
+    public mutating func advance(to now: Int) -> Int? {
+        var flips = 0, ended: Int?
         while state == .running, let end = endsAt, now >= end, flips < 1000 {
             if phase == .work, cycle < 999 { cycle += 1 }
             phase = phase == .work ? .rest : .work
-            endsAt = end + phaseSeconds
+            ended = end
             flips += 1
+            guard autoContinue == true else {
+                state = .paused
+                leftS = phaseSeconds
+                endsAt = nil
+                break
+            }
+            endsAt = end + phaseSeconds
         }
+        return ended
+    }
+
+    public mutating func setAutoContinue(_ on: Bool, now: Int) {
+        autoContinue = on
+        updatedAt = now
     }
 
     public mutating func toggle(now: Int) {
@@ -43,7 +58,9 @@ extension PomodoroState {
     }
 
     public mutating func reset(now: Int) {
+        let auto = autoContinue
         self = .stopped(workMin: workMin, breakMin: breakMin, now: now)
+        autoContinue = auto
     }
 
     /// Durations change only while stopped, like on the buddy.
@@ -57,7 +74,7 @@ extension PomodoroState {
 }
 
 public enum PomodoroCommand: Equatable, Sendable {
-    case toggle, reset, durations(work: Int?, rest: Int?)
+    case toggle, reset, durations(work: Int?, rest: Int?), autoContinue(Bool)
 }
 
 /// Announces each phase end once, from the states `hilod` reports; a change made by hand (new `updatedAt`) is never announced.
@@ -69,19 +86,18 @@ public struct PhaseAlarm: Sendable {
 
     /// The phase that just began, when one began since the last call and less than `staleAfter` seconds ago.
     public mutating func check(_ state: PomodoroState?, now: Int) -> PomodoroState? {
-        guard let state, state.state == .running else {
+        guard let state else {
             watched = nil
             return nil
         }
-        guard var seen = watched, seen.updatedAt == state.updatedAt, let end = seen.endsAt else {
+        guard var seen = watched, seen.updatedAt == state.updatedAt, seen.state == .running else {
             var fresh = state
             fresh.advance(to: now)
             watched = fresh
             return nil
         }
-        seen.advance(to: now)
+        guard let ended = seen.advance(to: now) else { return nil }
         watched = seen
-        guard let next = seen.endsAt, next != end else { return nil }
-        return now - (next - seen.phaseSeconds) < Self.staleAfter ? seen : nil
+        return now - ended < Self.staleAfter ? seen : nil
     }
 }

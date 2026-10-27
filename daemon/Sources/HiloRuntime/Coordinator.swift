@@ -300,6 +300,7 @@ public actor Coordinator {
         case .toggle: p.toggle(now: now)
         case .reset: p.reset(now: now)
         case .durations(let work, let rest): guard p.setDurations(work: work, rest: rest, now: now) else { return false }
+        case .autoContinue(let on): p.setAutoContinue(on, now: now)
         }
         adopt(p)
         await send(.pomodoro(p))

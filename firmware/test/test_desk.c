@@ -314,6 +314,7 @@ TEST(pomodoro_counts_alone_and_rings_at_each_phase_end)
     bm_link(&M, "work", false, now);
     bm_link(&M, "home", false, now);
     M.view = BM_VIEW_POMODORO;
+    bm_tap(&M, BM_TAP_POMO_AUTO, 0, now);
     bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
     CHECK(M.pomo.state == BM_POMO_RUNNING);
     int64_t first_end = M.pomo.ends_at;
@@ -353,6 +354,7 @@ TEST(pomodoro_pet_works_rests_and_idles)
     fresh();
     CHECK(snapshot("work", "") == BM_OK);
     CHECK(bm_pomo_pet(&M) == BM_PET_IDLE);
+    bm_tap(&M, BM_TAP_POMO_AUTO, 0, now);
     bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
     CHECK(bm_pomo_pet(&M) == BM_PET_WORKING);
     advance(25 * 60000);
@@ -394,11 +396,22 @@ TEST(pomodoro_running_through_a_long_gap_catches_up)
     fresh();
     CHECK(snapshot("work", "") == BM_OK);
     char fmt[256];
-    snprintf(fmt, sizeof(fmt), "{%s}", POMO_25);
+    snprintf(fmt, sizeof(fmt), "{%s,\"auto_continue\":true}", POMO_25);
     int64_t t = wall_now();
     CHECK(send("work", "pomodoro.state", fmt, t - 3500, t) == BM_OK);
     CHECK(M.pomo.cycle == 2 && !M.pomo.on_break);
     CHECK(M.pomo.ends_at == t + 100);
+}
+
+TEST(pomodoro_without_auto_continue_stops_after_a_long_gap_at_the_first_end)
+{
+    fresh();
+    CHECK(snapshot("work", "") == BM_OK);
+    char fmt[256];
+    snprintf(fmt, sizeof(fmt), "{%s}", POMO_25);
+    int64_t t = wall_now();
+    CHECK(send("work", "pomodoro.state", fmt, t - 3500, t) == BM_OK);
+    CHECK(M.pomo.cycle == 1 && M.pomo.on_break && M.pomo.state == BM_POMO_PAUSED && M.pomo.left_s == 5 * 60);
 }
 
 TEST(pomodoro_invalid_shapes_are_rejected)
@@ -640,7 +653,7 @@ TEST(pomodoro_flips_exactly_at_ends_at)
     advance(9000);
     CHECK(!M.pomo.on_break && bm_pomo_left_s(&M, now) == 1);
     advance(1000);
-    CHECK(M.pomo.on_break && M.pomo.cycle == 1 && M.pomo.ends_at == t + 10 + 5 * 60);
+    CHECK(M.pomo.on_break && M.pomo.cycle == 1 && M.pomo.state == BM_POMO_PAUSED);
     CHECK(bm_pomo_left_s(&M, now) == 5 * 60);
     CHECK(heard(BM_SND_DONE));
 }
@@ -677,6 +690,7 @@ TEST(pomodoro_counted_alone_is_handed_back_to_a_mac_that_reconnects_stale)
 {
     fresh();
     CHECK(snapshot("work", "") == BM_OK);
+    bm_tap(&M, BM_TAP_POMO_AUTO, 0, now);
     bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
     int64_t started = M.pomo.updated_at, first_end = M.pomo.ends_at;
     bm_link(&M, "work", false, now);
@@ -772,7 +786,7 @@ TEST(a_tap_or_the_button_silences_the_alarm_and_does_nothing_else)
     advance(100);
     CHECK(bm_alarm_ringing(&M) && heard(BM_SND_DONE));
     bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
-    CHECK(!bm_alarm_ringing(&M) && M.pomo.state == BM_POMO_RUNNING);
+    CHECK(!bm_alarm_ringing(&M) && M.pomo.state == BM_POMO_PAUSED && M.pomo.on_break);
     CHECK(count_cues(10000) == 0);
 
     run_to_phase_end();
@@ -807,4 +821,51 @@ TEST(a_phase_that_ended_long_ago_flips_without_ringing)
     M.clock_known = true;
     advance(100);
     CHECK(M.pomo.on_break && !bm_alarm_ringing(&M));
+}
+
+TEST(without_auto_continue_the_next_span_waits_paused_until_play)
+{
+    run_to_phase_end();
+    advance(100);
+    CHECK(M.pomo.state == BM_POMO_PAUSED && M.pomo.on_break && M.pomo.cycle == 1 && M.pomo.left_s == 5 * 60);
+    bm_alarm_stop(&M, now);
+    advance(10 * 60 * 1000);
+    CHECK(M.pomo.state == BM_POMO_PAUSED && bm_pomo_left_s(&M, now) == 5 * 60 && M.pomo.cycle == 1);
+    bm_touch_wake(&M, now);
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    CHECK(M.pomo.state == BM_POMO_RUNNING && M.pomo.ends_at == wall_now() + 5 * 60);
+}
+
+TEST(auto_continue_starts_the_next_span_and_rings_one_burst)
+{
+    fresh();
+    CHECK(snapshot("work", "") == BM_OK);
+    bm_tap(&M, BM_TAP_POMO_AUTO, 0, now);
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    advance(25 * 60 * 1000 - 100);
+    heard(BM_SND_DONE);
+    advance(100);
+    CHECK(M.pomo.state == BM_POMO_RUNNING && M.pomo.on_break && M.view == BM_VIEW_POMODORO && bm_alarm_ringing(&M));
+    CHECK(heard(BM_SND_DONE));
+    CHECK(count_cues(2000) == 2);
+    CHECK(count_cues(1000) == 0 && !bm_alarm_ringing(&M));
+    CHECK(count_cues(30000) == 0);
+}
+
+TEST(auto_continue_toggles_in_any_state_and_goes_to_the_macs)
+{
+    fresh();
+    CHECK(snapshot("work", "") == BM_OK);
+    outs_t o;
+    drain(&o);
+    bm_tap(&M, BM_TAP_POMO_AUTO, 0, now);
+    CHECK(M.pomo.auto_continue && M.pomo.state == BM_POMO_STOPPED && M.pomo.updated_at == wall_now());
+    drain(&o);
+    const bm_out_t *b = find_out(&o, "device.pomodoro");
+    CHECK(b && strstr(b->json, "\"auto_continue\":true"));
+    bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
+    bm_tap(&M, BM_TAP_POMO_AUTO, 0, now);
+    CHECK(!M.pomo.auto_continue && M.pomo.state == BM_POMO_RUNNING);
+    bm_tap(&M, BM_TAP_POMO_RESET, 0, now);
+    CHECK(!M.pomo.auto_continue);
 }

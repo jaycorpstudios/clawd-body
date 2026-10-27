@@ -77,7 +77,7 @@ typedef struct {
 
     ui_pet_t *pomo_pet;
     lv_obj_t *pomo_cycle, *pomo_time, *pomo_phase, *pomo_bar, *pomo_steps, *pomo_work, *pomo_break, *pomo_play;
-    lv_obj_t *pomo_ring, *pomo_reset, *alarm_catch;
+    lv_obj_t *pomo_ring, *pomo_reset, *pomo_auto, *alarm_catch;
     int pomo_tint;
     lv_image_dsc_t cover_dsc;
     uint16_t *cover_px;

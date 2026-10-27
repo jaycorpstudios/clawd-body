@@ -69,7 +69,7 @@ void bm__pomo_defaults(bm_pomo_t *p);
 void bm__on_pomodoro(bm_model_t *m, int host, const bm_pomo_t *p, bool from_snapshot, bool present, uint32_t now_ms);
 void bm__pomo_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms);
 void bm__pomo_tick(bm_model_t *m, uint32_t now_ms);
-void bm__alarm_start(bm_model_t *m, uint32_t now_ms);
+void bm__alarm_start(bm_model_t *m, bool once, uint32_t now_ms);
 bool bm__alarm_ack(bm_model_t *m, uint32_t now_ms);
 void bm__settings_tick(bm_model_t *m, uint32_t now_ms);
 void bm__sleep_card_tick(bm_model_t *m, uint32_t now_ms);

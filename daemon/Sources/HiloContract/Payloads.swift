@@ -343,11 +343,14 @@ public struct PomodoroState: Codable, Equatable, Sendable {
     public var breakMin: Int
     public var cycle: Int
     public var updatedAt: Int
+    /// Absent means off: the next phase then waits, paused at its full length.
+    public var autoContinue: Bool?
 
     public init(state: PomodoroRun, phase: PomodoroPhase, endsAt: Int? = nil, leftS: Int? = nil, workMin: Int, breakMin: Int,
-                cycle: Int, updatedAt: Int) {
+                cycle: Int, updatedAt: Int, autoContinue: Bool? = nil) {
         self.state = state; self.phase = phase; self.endsAt = endsAt; self.leftS = leftS
         self.workMin = workMin; self.breakMin = breakMin; self.cycle = cycle; self.updatedAt = updatedAt
+        self.autoContinue = autoContinue
     }
 
     public var isValid: Bool {

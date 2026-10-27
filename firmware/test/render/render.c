@@ -328,6 +328,10 @@ static void scene_focus(void)
     go_view(BM_VIEW_POMODORO);
     shot("focus-stopped");
 
+    bm_tap(&M, BM_TAP_POMO_AUTO, 0, now);
+    focus_shot("focus-auto-continue-on");
+    bm_tap(&M, BM_TAP_POMO_AUTO, 0, now);
+
     bm_tap(&M, BM_TAP_POMO_TOGGLE, 0, now);
     run(41000);
     focus_shot("focus-running-work");
@@ -362,7 +366,7 @@ static void scene_focus(void)
     run(50 * 1000);
     bm_touch_wake(&M, now);
     run(41 * 1000);
-    CHECK(bm_alarm_ringing(&M));
+    CHECK(bm_alarm_ringing(&M) && M.pomo.state == BM_POMO_PAUSED);
     shot("focus-alarm-after-break-alone");
     run(550);
     shot("focus-alarm-pulse");

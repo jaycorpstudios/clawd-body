@@ -396,6 +396,7 @@ static void create_pomodoro(lv_obj_t *v)
     lv_obj_set_style_pad_column(ctl, 28, 0);
     ui.pomo_reset = lv_obj_get_parent(round_button(ctl, 52, &lv_font_montserrat_24, LV_SYMBOL_REFRESH, BM_TAP_POMO_RESET, 0));
     ui.pomo_play = round_button(ctl, 68, &lv_font_montserrat_32, LV_SYMBOL_PLAY, BM_TAP_POMO_TOGGLE, 0);
+    ui.pomo_auto = round_button(ctl, 52, &lv_font_montserrat_24, LV_SYMBOL_LOOP, BM_TAP_POMO_AUTO, 0);
 }
 
 static void alarm_catch_cb(lv_event_t *e)
@@ -749,8 +750,8 @@ static void paint_pomodoro(int tint)
     lv_obj_set_style_bg_opa(v, tint ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
     lv_obj_set_style_text_color(ui.pomo_cycle, ui_hex(t->dim), 0);
     lv_obj_set_style_bg_color(ui.pomo_bar, ui_hex(tint ? t->well : C_TRACK), 0);
-    lv_obj_t *buttons[] = {ui.pomo_reset, lv_obj_get_parent(ui.pomo_play)};
-    for (int i = 0; i < 2; i++) {
+    lv_obj_t *buttons[] = {ui.pomo_reset, lv_obj_get_parent(ui.pomo_play), lv_obj_get_parent(ui.pomo_auto)};
+    for (int i = 0; i < 3; i++) {
         lv_obj_set_style_bg_color(buttons[i], ui_hex(tint ? t->well : 0x161412), 0);
         lv_obj_set_style_border_color(buttons[i], ui_hex(t->edge), 0);
     }
@@ -774,6 +775,7 @@ static void update_pomodoro(void)
     lv_label_set_text_fmt(ui.pomo_break, "%u", p->break_min);
     lv_label_set_text(ui.pomo_play, p->state == BM_POMO_RUNNING ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
     lv_obj_set_style_opa(lv_obj_get_parent(ui.pomo_play), ui.m->clock_known ? LV_OPA_COVER : LV_OPA_40, 0);
+    lv_obj_set_style_text_color(ui.pomo_auto, ui_hex(p->auto_continue ? BM_C_DONE : C_DIM), 0);
     bool ringing = bm_alarm_ringing(ui.m);
     ui_show(ui.alarm_catch, ringing);
     if (ringing != !lv_obj_has_flag(ui.pomo_ring, LV_OBJ_FLAG_HIDDEN)) {

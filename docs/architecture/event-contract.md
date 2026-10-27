@@ -127,9 +127,10 @@ One timer per buddy, mirrored by each connected Mac.
 | `left_s` | Seconds left in the phase (only when `paused`) |
 | `work_min` / `break_min` | Durations, 1–90 and 1–60 min |
 | `cycle` | Work phases completed since the last reset |
-| `updated_at` | When a person last changed it (start, pause, reset, durations); not touched by phase changes |
+| `updated_at` | When a person last changed it (start, pause, reset, durations, auto-continue); not touched by phase changes |
+| `auto_continue` | Optional (2026-10-27, #37), absent means `false`. `true`: the next phase starts on its own when one ends. `false`: it waits, `paused` with its full length in `left_s` |
 
-Phase changes need no message: while `running` and `ends_at` has passed, both sides flip `phase` and add the new phase's duration to `ends_at` (a finished `work` adds one to `cycle`), so they agree after any time apart. A copy with a newer `updated_at` wins: the buddy adopts a newer `pomodoro.state` or snapshot `pomodoro` and broadcasts it as `device.pomodoro`; when its own copy is newer than a snapshot's, it answers that Mac with `device.pomodoro`. The buddy keeps counting while every link is down.
+Phase changes need no message: while `running` and `ends_at` has passed, both sides flip `phase` (a finished `work` adds one to `cycle`) and, with `auto_continue`, add the new phase's duration to `ends_at`; without it they stop at the first end, `paused` with the new phase's full length, so they agree after any time apart. A copy with a newer `updated_at` wins: the buddy adopts a newer `pomodoro.state` or snapshot `pomodoro` and broadcasts it as `device.pomodoro`; when its own copy is newer than a snapshot's, it answers that Mac with `device.pomodoro`. The buddy keeps counting while every link is down.
 
 ## Compatibility of the additions
 

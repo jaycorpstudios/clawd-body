@@ -10,6 +10,7 @@
     "work_min": 25,
     "break_min": 5,
     "cycle": 3,
-    "updated_at": 1792900000
+    "updated_at": 1792900000,
+    "auto_continue": true
   }
 }

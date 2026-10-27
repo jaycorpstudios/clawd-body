@@ -203,6 +203,7 @@ final class DeskClock: Clock, @unchecked Sendable {
     }
 
     @Test func aRestartMidCycleNeitherLosesNorRepeatsCycles() async throws {
+        _ = await coordinator.changePomodoro(.autoContinue(true))
         _ = await coordinator.changePomodoro(.toggle)
         clock.set(10_000 + 25 * 60 + 1)
         await coordinator.tickPomodoro()
@@ -250,6 +251,8 @@ final class DeskClock: Clock, @unchecked Sendable {
         #expect(ControlOps.pomodoroCommand(Data(#"{"action":"toggle"}"#.utf8)) == .toggle)
         #expect(ControlOps.pomodoroCommand(Data(#"{"action":"durations","work_min":50}"#.utf8)) == .durations(work: 50, rest: nil))
         #expect(ControlOps.pomodoroCommand(Data(#"{"action":"durations"}"#.utf8)) == nil)
+        #expect(ControlOps.pomodoroCommand(Data(#"{"action":"auto_continue","on":true}"#.utf8)) == .autoContinue(true))
+        #expect(ControlOps.pomodoroCommand(Data(#"{"action":"auto_continue"}"#.utf8)) == nil)
         #expect(ControlOps.pomodoroCommand(Data(#"{"action":"skip"}"#.utf8)) == nil)
         let ops = ControlOps(coordinator: coordinator, buddy: nil, configPath: "/nonexistent/config.json", tokensFromTranscripts: false)
         let reply = try #require(await ops.handle(op: "pomodoro", body: Data(#"{"action":"toggle"}"#.utf8)))

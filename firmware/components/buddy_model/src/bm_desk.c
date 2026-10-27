@@ -326,15 +326,22 @@ static int64_t phase_s(const bm_pomo_t *p)
     return (int64_t)(p->on_break ? p->break_min : p->work_min) * 60;
 }
 
-/* Returns how many phases ended; both sides run the same rule, so no message is needed. */
+/* Returns how many phases ended; both sides run the same rule, so no message is needed.
+ * Without auto-continue the next phase waits, paused at its full length. */
 static int pomo_advance(bm_pomo_t *p, int64_t now_s)
 {
     int flips = 0;
     while (p->state == BM_POMO_RUNNING && now_s >= p->ends_at && flips < 1000) {
         if (!p->on_break && p->cycle < 999) p->cycle++;
         p->on_break = !p->on_break;
-        p->ends_at += phase_s(p);
         flips++;
+        if (!p->auto_continue) {
+            p->state = BM_POMO_PAUSED;
+            p->left_s = (int32_t)phase_s(p);
+            p->ends_at = 0;
+            break;
+        }
+        p->ends_at += phase_s(p);
     }
     return flips;
 }
@@ -346,11 +353,11 @@ static void send_pomodoro(bm_model_t *m, uint8_t hosts, uint32_t now_ms)
     char extra[40] = "";
     if (p->state == BM_POMO_RUNNING) snprintf(extra, sizeof(extra), "\"ends_at\":%lld,", (long long)p->ends_at);
     else if (p->state == BM_POMO_PAUSED) snprintf(extra, sizeof(extra), "\"left_s\":%ld,", (long)p->left_s);
-    char data[200];
+    char data[240];
     snprintf(data, sizeof(data),
-             "{\"state\":\"%s\",\"phase\":\"%s\",%s\"work_min\":%u,\"break_min\":%u,\"cycle\":%u,\"updated_at\":%lld}",
+             "{\"state\":\"%s\",\"phase\":\"%s\",%s\"work_min\":%u,\"break_min\":%u,\"cycle\":%u,\"updated_at\":%lld,\"auto_continue\":%s}",
              states[p->state], p->on_break ? "break" : "work", extra, p->work_min, p->break_min, p->cycle,
-             (long long)p->updated_at);
+             (long long)p->updated_at, p->auto_continue ? "true" : "false");
     bm__out(m, hosts, "device.pomodoro", data, now_ms);
 }
 
@@ -427,6 +434,7 @@ void bm__pomo_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms)
         p->ends_at = 0;
         p->left_s = 0;
         break;
+    case BM_TAP_POMO_AUTO: p->auto_continue = !p->auto_continue; break;
     case BM_TAP_POMO_WORK:
     case BM_TAP_POMO_BREAK: {
         if (p->state != BM_POMO_STOPPED) return;
@@ -453,7 +461,7 @@ void bm__pomo_tick(bm_model_t *m, uint32_t now_ms)
     pomo_advance(&m->pomo, now_s);
     bool on_break = m->pomo.on_break;
     bm__toast(m, on_break ? "Break time" : "Back to work", on_break ? BM_C_DONE : BM_C_WORK, now_ms);
-    if (now_s - ended_at < BM_ALARM_MS / 1000) bm__alarm_start(m, now_ms);
+    if (now_s - ended_at < BM_ALARM_MS / 1000) bm__alarm_start(m, m->pomo.auto_continue, now_ms);
     bm__touch(m);
 }
 

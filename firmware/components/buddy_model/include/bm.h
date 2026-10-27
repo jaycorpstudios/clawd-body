@@ -46,6 +46,7 @@
 #define BM_POMO_WORK_MIN 25
 #define BM_POMO_BREAK_MIN 5
 #define BM_ALARM_MS 30000
+#define BM_ALARM_ONCE_MS ((BM_ALARM_BURSTS - 1) * BM_ALARM_BURST_GAP_MS + 500)
 #define BM_ALARM_BURSTS 3
 #define BM_ALARM_BURST_GAP_MS 1000
 #define BM_ALARM_REPEAT_MS 5000
@@ -240,6 +241,7 @@ typedef struct {
     uint8_t break_min;
     uint16_t cycle;
     int64_t updated_at;
+    bool auto_continue;
 } bm_pomo_t;
 
 typedef struct {
@@ -381,6 +383,7 @@ typedef enum {
     BM_TAP_POMO_RESET,
     BM_TAP_POMO_WORK,
     BM_TAP_POMO_BREAK,
+    BM_TAP_POMO_AUTO,
 } bm_tap_t;
 
 typedef enum { BM_MEDIA_PLAY_PAUSE, BM_MEDIA_NEXT, BM_MEDIA_PREVIOUS } bm_media_action_t;

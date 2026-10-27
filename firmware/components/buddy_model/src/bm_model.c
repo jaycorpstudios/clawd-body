@@ -316,14 +316,14 @@ void bm__wake(bm_model_t *m, bool silent, bm_by_t by, uint32_t now_ms)
     m->last_act_ms = now_ms;
 }
 
-void bm__alarm_start(bm_model_t *m, uint32_t now_ms)
+void bm__alarm_start(bm_model_t *m, bool once, uint32_t now_ms)
 {
     bm__wake(m, true, BM_BY_TOUCH, now_ms);
     m->panel = false;
     m->sheet = BM_SHEET_NONE;
     m->sheet_session = -1;
     m->view = BM_VIEW_POMODORO;
-    m->alarm_until_ms = deadline(now_ms, BM_ALARM_MS);
+    m->alarm_until_ms = deadline(now_ms, once ? BM_ALARM_ONCE_MS : BM_ALARM_MS);
     m->alarm_next_ms = now_ms;
     m->alarm_burst = 0;
     bm__touch(m);
@@ -612,7 +612,8 @@ void bm_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms)
     case BM_TAP_POMO_TOGGLE:
     case BM_TAP_POMO_RESET:
     case BM_TAP_POMO_WORK:
-    case BM_TAP_POMO_BREAK: bm__pomo_tap(m, target, arg, now_ms); break;
+    case BM_TAP_POMO_BREAK:
+    case BM_TAP_POMO_AUTO: bm__pomo_tap(m, target, arg, now_ms); break;
     case BM_TAP_NONE: break;
     }
 }

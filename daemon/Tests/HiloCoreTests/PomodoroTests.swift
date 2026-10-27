@@ -16,11 +16,38 @@ import HiloContract
 
     @Test func phasesFlipLikeTheBuddyAndCountFinishedWork() {
         var p = PomodoroState.stopped(now: 0)
+        p.setAutoContinue(true, now: 0)
         p.toggle(now: 0)
         p.advance(to: 25 * 60)
         #expect(p.phase == .rest && p.cycle == 1 && p.endsAt == 30 * 60)
         p.advance(to: 3 * 30 * 60 + 10)
         #expect(p.phase == .work && p.cycle == 3 && p.endsAt == 3 * 30 * 60 + 25 * 60)
+    }
+
+    @Test func withoutAutoContinueTheNextPhaseWaitsPausedAtItsFullLength() {
+        var p = PomodoroState.stopped(now: 0)
+        p.toggle(now: 0)
+        #expect(p.advance(to: 25 * 60 - 1) == nil)
+        #expect(p.advance(to: 3 * 30 * 60) == 25 * 60)
+        #expect(p.state == .paused && p.phase == .rest && p.cycle == 1 && p.leftS == 5 * 60 && p.endsAt == nil && p.isValid)
+        #expect(p.advance(to: 10 * 30 * 60) == nil && p.left(now: 10 * 30 * 60) == 5 * 60)
+        p.reset(now: 0)
+        p.setAutoContinue(true, now: 1)
+        p.reset(now: 2)
+        #expect(p.autoContinue == true && p.updatedAt == 2)
+    }
+
+    @Test func phaseAlarmAnnouncesAPhaseThatWaitsPaused() {
+        var alarm = PhaseAlarm()
+        var p = PomodoroState.stopped(now: 0)
+        p.toggle(now: 10)
+        #expect(alarm.check(p, now: 12) == nil)
+        let rest = alarm.check(p, now: 10 + 25 * 60 + 1)
+        #expect(rest?.phase == .rest && rest?.state == .paused)
+        #expect(alarm.check(p, now: 10 + 25 * 60 + 3) == nil)
+        var paused = p
+        paused.advance(to: 10 + 25 * 60 + 4)
+        #expect(alarm.check(paused, now: 10 + 25 * 60 + 5) == nil)
     }
 
     @Test func durationsOnlyWhileStoppedAndInRange() {
@@ -38,6 +65,7 @@ import HiloContract
     @Test func phaseAlarmAnnouncesEachEndOnceAndNeverAHandChange() {
         var alarm = PhaseAlarm()
         var p = PomodoroState.stopped(now: 0)
+        p.setAutoContinue(true, now: 0)
         #expect(alarm.check(p, now: 0) == nil)
         p.toggle(now: 10)
         #expect(alarm.check(p, now: 12) == nil)

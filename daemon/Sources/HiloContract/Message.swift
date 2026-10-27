@@ -160,7 +160,7 @@ public enum Wire {
             guard p.hash.range(of: "^[0-9a-f]{16}$", options: .regularExpression) != nil else { throw .badPayload("bad cover hash") }
             body = .coverRequest(p)
         case "device.pomodoro":
-            let p: PomodoroState = try payload(data, keys: ["state", "phase", "ends_at", "left_s", "work_min", "break_min", "cycle", "updated_at"])
+            let p: PomodoroState = try payload(data, keys: ["state", "phase", "ends_at", "left_s", "work_min", "break_min", "cycle", "updated_at", "auto_continue"])
             guard p.isValid else { throw .badPayload("pomodoro out of range") }
             body = .pomodoro(p)
         case "media.control":

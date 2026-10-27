@@ -409,7 +409,8 @@
         "work_min": { "type": "integer", "minimum": 1, "maximum": 90 },
         "break_min": { "type": "integer", "minimum": 1, "maximum": 60 },
         "cycle": { "type": "integer", "minimum": 0, "maximum": 999 },
-        "updated_at": { "$ref": "#/$defs/unix" }
+        "updated_at": { "$ref": "#/$defs/unix" },
+        "auto_continue": { "type": "boolean" }
       },
       "allOf": [
         { "if": { "properties": { "state": { "const": "running" } } }, "then": { "required": ["ends_at"], "not": { "required": ["left_s"] } } },

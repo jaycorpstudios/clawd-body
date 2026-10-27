@@ -312,7 +312,8 @@ static bool parse_pomodoro(const cJSON *o, bm_pomo_t *p)
         !req_int(o, "updated_at", 0, INT64_MAX, &updated))
         return false;
     field_t has_ends = get_int(o, "ends_at", 0, INT64_MAX, &ends), has_left = get_int(o, "left_s", 0, 5400, &left);
-    if (has_ends == BAD || has_left == BAD) return false;
+    bool auto_continue = false;
+    if (has_ends == BAD || has_left == BAD || get_bool(o, "auto_continue", &auto_continue) == BAD) return false;
     if ((has_ends == PRESENT) != (state == BM_POMO_RUNNING) || (has_left == PRESENT) != (state == BM_POMO_PAUSED))
         return false;
     p->state = (bm_pomo_run_t)state;
@@ -323,6 +324,7 @@ static bool parse_pomodoro(const cJSON *o, bm_pomo_t *p)
     p->break_min = (uint8_t)brk;
     p->cycle = (uint16_t)cycle;
     p->updated_at = updated;
+    p->auto_continue = auto_continue;
     return true;
 }
 

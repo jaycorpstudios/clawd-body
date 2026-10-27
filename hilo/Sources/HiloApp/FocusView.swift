@@ -62,6 +62,13 @@ struct FocusView: View {
                 if focus.state != .stopped {
                     Text("Reset to change them.").font(.system(size: 12)).foregroundStyle(Theme.secondary)
                 }
+                Toggle(isOn: Binding(get: { focus.autoContinue == true }, set: { model.pomodoro(["action": "auto_continue", "on": $0]) })) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Auto-continue")
+                        Text("Start the next span when one ends; the alarm then rings once.").font(.system(size: 12)).foregroundStyle(Theme.secondary)
+                    }
+                }
+                .toggleStyle(.switch).disabled(!enabled)
             }
             VStack(alignment: .leading, spacing: 6) {
                 SectionLabel(text: "Today")
