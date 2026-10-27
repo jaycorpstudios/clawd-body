@@ -12,7 +12,7 @@ Single source: [`shared/events.schema.json`](../../shared/events.schema.json) (J
 | :--- | :--- |
 | `v` | Contract version. Receivers reject unknown major versions. |
 | `id` | Unique ULID per message. Receivers drop duplicates. |
-| `ts` | Unix seconds at the sender. |
+| `ts` | Unix seconds at the sender. `hilod` drops a buddy message whose `ts` is more than 120 s from the Mac clock, and any `id` it has seen in the last 10 min (the buddy's clock follows the Mac's `ts` and its RTC, so honest skew stays at a few seconds). |
 | `host` | Short name of the sending Mac (`^[a-z0-9-]{1,16}$`, e.g. `work`, `home`). **Required** on every Mac → buddy message; absent from buddy → Mac. |
 | `type` / `data` | One of the types below and its payload. |
 

@@ -93,6 +93,7 @@ public enum ContractError: Error, Equatable {
     case badEnvelope(String)
     case unknownType(String)
     case badPayload(String)
+    case replayed(String)
 }
 
 public enum Wire {

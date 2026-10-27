@@ -76,7 +76,12 @@ case "statusline":
     process.waitUntilExit()
     exit(process.terminationStatus)
 case "buddy" where arguments.count == 2:
-    guard let reply = LocalSocket.request(path: socketPath, op: "buddy", body: Data(arguments[1].utf8), timeoutSeconds: 5) else {
+    var body = Data(arguments[1].utf8)
+    if var json = try? JSONSerialization.jsonObject(with: body) as? [String: Any], (json["ts"] as? Int ?? 0) == 0 {
+        json["ts"] = Int(Date().timeIntervalSince1970)
+        body = (try? JSONSerialization.data(withJSONObject: json)) ?? body
+    }
+    guard let reply = LocalSocket.request(path: socketPath, op: "buddy", body: body, timeoutSeconds: 5) else {
         fail("hilod is not running")
     }
     FileHandle.standardOutput.write(reply)
@@ -160,7 +165,7 @@ default:
       hilo uninstall                   stop hilod and remove the LaunchAgent
       hilo hook                        read a Claude Code hook payload on stdin (configured in settings.json)
       hilo statusline [-- command…]    status line command: sends rate_limits to hilod, then runs the wrapped command
-      hilo buddy '<json>'              send a buddy -> Mac message to hilod (development)
+      hilo buddy '<json>'              send a buddy -> Mac message to hilod (development); ts 0 or absent becomes now
 
     """.utf8))
     exit(2)

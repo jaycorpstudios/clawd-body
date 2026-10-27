@@ -45,6 +45,9 @@ public actor Coordinator {
     private var shownOnBuddy: [String: Int] = [:]
     static let shownWithin = 30, handBackAfter = 10
     static let activeWithin: Double = 3
+    /// Buddy messages more than this far from the Mac clock are dropped; ids outlive the ±window, so a replay inside it is caught.
+    static let replayWindow = 120, seenFor = 600
+    private var seenIds: [String: Int] = [:]
     private var buddySettings: DeviceSettings?
     private var face: RGB565Image?
     private var pomodoro: PomodoroState?
@@ -89,6 +92,12 @@ public actor Coordinator {
 
     public func handleBuddy(_ bytes: Data) async throws(ContractError) {
         let envelope = try Wire.decodeInbound(bytes)
+        let now = clock.now()
+        guard abs(envelope.ts - now) <= Self.replayWindow else {
+            throw .replayed("ts \(envelope.ts) is \(envelope.ts - now) s from the Mac clock")
+        }
+        seenIds = seenIds.filter { now - $0.value < Self.seenFor }
+        guard seenIds.updateValue(now, forKey: envelope.id) == nil else { throw .replayed("id \(envelope.id) already seen") }
         let result: DecisionResult
         switch envelope.body {
         case .permissionDecision(let d): result = registry.decide(d, now: clock.now())

@@ -15,8 +15,8 @@ actor DeskLink: BuddyLink {
 
 struct DeskAway: PresenceProbe { func userIsPresent() -> Bool { false } }
 
-func buddyMessage(_ type: String, _ data: String) -> Data {
-    Data(#"{"v":1,"id":"\#(ULID.make())","ts":1000,"type":"\#(type)","data":\#(data)}"#.utf8)
+func buddyMessage(_ type: String, _ data: String, ts: Int = Int(Date().timeIntervalSince1970)) -> Data {
+    Data(#"{"v":1,"id":"\#(ULID.make())","ts":\#(ts),"type":"\#(type)","data":\#(data)}"#.utf8)
 }
 
 @Suite struct SettingsFlowTests {
@@ -188,11 +188,11 @@ final class DeskClock: Clock, @unchecked Sendable {
 
     @Test func newerBuddyStateWinsAndOlderGetsTheMacsBack() async throws {
         let newer = #"{"state":"paused","phase":"work","left_s":600,"work_min":30,"break_min":5,"cycle":2,"updated_at":10500}"#
-        try await coordinator.handleBuddy(buddyMessage("device.pomodoro", newer))
+        try await coordinator.handleBuddy(buddyMessage("device.pomodoro", newer, ts: clock.now()))
         #expect(await coordinator.focus?.leftS == 600)
         #expect(await link.raw.isEmpty)
         let older = #"{"state":"stopped","phase":"work","work_min":25,"break_min":5,"cycle":0,"updated_at":9000}"#
-        try await coordinator.handleBuddy(buddyMessage("device.pomodoro", older))
+        try await coordinator.handleBuddy(buddyMessage("device.pomodoro", older, ts: clock.now()))
         guard case .pomodoro(let back) = await link.decoded().last else { Issue.record("no reply"); return }
         #expect(back.updatedAt == 10500 && back.cycle == 2)
     }
@@ -235,7 +235,7 @@ final class DeskClock: Clock, @unchecked Sendable {
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
         let echo = String(decoding: try encoder.encode(mine), as: UTF8.self)
-        try await second.handleBuddy(buddyMessage("device.pomodoro", echo))
+        try await second.handleBuddy(buddyMessage("device.pomodoro", echo, ts: clock.now()))
         #expect(await second.focus == mine)
         #expect(try store.focusCycles(since: 0).count == 1)
     }
@@ -309,8 +309,8 @@ final class FakePlayer: MediaPlayer, @unchecked Sendable {
     @Test func buddyControlsReachThePlayer() async throws {
         let player = FakePlayer()
         await coordinator.setPlayer(player)
-        try await coordinator.handleBuddy(buddyMessage("media.control", #"{"action":"next"}"#))
-        try await coordinator.handleBuddy(buddyMessage("media.control", #"{"action":"play_pause"}"#))
+        try await coordinator.handleBuddy(buddyMessage("media.control", #"{"action":"next"}"#, ts: clock.now()))
+        try await coordinator.handleBuddy(buddyMessage("media.control", #"{"action":"play_pause"}"#, ts: clock.now()))
         try await until { player.received.count == 2 }
         #expect(player.received == [.next, .playPause])
     }
@@ -461,7 +461,7 @@ final class ScriptedApps: @unchecked Sendable {
         gate.signal()
         await poll.value
         #expect(!blocked)
-        try await coordinator.handleBuddy(buddyMessage("media.control", #"{"action":"next"}"#))
+        try await coordinator.handleBuddy(buddyMessage("media.control", #"{"action":"next"}"#, ts: 10_000))
     }
 }
 

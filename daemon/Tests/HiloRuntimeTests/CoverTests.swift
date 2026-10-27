@@ -70,10 +70,10 @@ private let song = Media(title: "Low Tide", artist: "The Pixels", lengthS: 214, 
         #expect(await coordinator.coverHash == hash)
         #expect(!(await link.types()).contains("media.cover"))
 
-        try await coordinator.handleBuddy(buddyMessage("device.cover_request", #"{"hash":"\#(hash)"}"#))
+        try await coordinator.handleBuddy(buddyMessage("device.cover_request", #"{"hash":"\#(hash)"}"#, ts: clock.now()))
         let chunks = await link.decoded().compactMap { if case .cover(let c) = $0 { c } else { nil } }
         #expect(chunks.count == 5 && chunks.allSatisfy { $0.hash == hash })
-        try await coordinator.handleBuddy(buddyMessage("device.cover_request", #"{"hash":"0123456789abcdef"}"#))
+        try await coordinator.handleBuddy(buddyMessage("device.cover_request", #"{"hash":"0123456789abcdef"}"#, ts: clock.now()))
         #expect(await link.types().filter { $0 == "media.cover" }.count == 5)
 
         await coordinator.sendSnapshot()
@@ -88,7 +88,7 @@ private let song = Media(title: "Low Tide", artist: "The Pixels", lengthS: 214, 
         await coordinator.updateMedia(Media(title: "Fan Noise", artist: "Tabstop", lengthS: 180, positionS: 0, playing: true))
         #expect(await nowPlaying().last?.cover == nil)
         #expect(await coordinator.coverHash == nil)
-        try await coordinator.handleBuddy(buddyMessage("device.cover_request", #"{"hash":"\#(hash)"}"#))
+        try await coordinator.handleBuddy(buddyMessage("device.cover_request", #"{"hash":"\#(hash)"}"#, ts: clock.now()))
         #expect(await link.types().filter { $0 == "media.cover" }.count == 5)
     }
 

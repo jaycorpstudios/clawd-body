@@ -81,7 +81,7 @@ private func makeStore() throws -> HiloStore {
     }
     #expect(started == [s1, s2])
 
-    try await coordinator.handleBuddy(Data(#"{"v":1,"id":"\#(ULID.make())","ts":1000,"type":"device.session_look","data":{"session":"s2","acc":"crown"}}"#.utf8))
+    try await coordinator.handleBuddy(Data(#"{"v":1,"id":"\#(ULID.make())","ts":\#(Int(Date().timeIntervalSince1970)),"type":"device.session_look","data":{"session":"s2","acc":"crown"}}"#.utf8))
     #expect(try store.look(session: "s2") == SessionLook(hue: s2.hue, acc: .crown))
     let raw = try #require(await link.lastSnapshot())
     guard case .snapshot(let snap) = try Wire.decodeOutbound(raw).body else { Issue.record("no snapshot"); return }

@@ -65,14 +65,14 @@ private struct Harness {
     }
 
     func ack(_ id: String) async throws {
-        let msg = #"{"v":1,"id":"\#(ULID.make())","ts":1000,"type":"device.ack","data":{"request_id":"\#(id)","seen":true}}"#
+        let msg = #"{"v":1,"id":"\#(ULID.make())","ts":\#(clock.now()),"type":"device.ack","data":{"request_id":"\#(id)","seen":true}}"#
         try await coordinator.handleBuddy(Data(msg.utf8))
     }
 
     func settle() async { for _ in 0..<2000 { await Task.yield() } }
 
     func buddy(_ id: String, _ decision: String) async throws {
-        let msg = #"{"v":1,"id":"\#(ULID.make())","ts":1000,"type":"permission.decision","data":{"request_id":"\#(id)","decision":"\#(decision)"}}"#
+        let msg = #"{"v":1,"id":"\#(ULID.make())","ts":\#(clock.now()),"type":"permission.decision","data":{"request_id":"\#(id)","decision":"\#(decision)"}}"#
         try await coordinator.handleBuddy(Data(msg.utf8))
     }
 }
@@ -229,7 +229,7 @@ private func behavior(_ reply: Data) -> String? {
     }
 
     private func answer(_ h: Harness, _ id: String, index: Int, choice: String) async throws {
-        let msg = #"{"v":1,"id":"\#(ULID.make())","ts":1000,"type":"question.answer","data":{"request_id":"\#(id)","choice_index":\#(index),"choice":"\#(choice)"}}"#
+        let msg = #"{"v":1,"id":"\#(ULID.make())","ts":\#(h.clock.now()),"type":"question.answer","data":{"request_id":"\#(id)","choice_index":\#(index),"choice":"\#(choice)"}}"#
         try await h.coordinator.handleBuddy(Data(msg.utf8))
     }
 
@@ -316,4 +316,18 @@ private func behavior(_ reply: Data) -> String? {
     await h.coordinator.tickSessions()
     let snap = try JSONSerialization.jsonObject(with: try #require(await h.link.lastData("snapshot"))) as? [String: Any]
     #expect(((snap?["sessions"] as? [[String: Any]])?.first?["status"] as? String) == "idle")
+}
+
+@Test func buddyMessagesOutsideThe120sWindowOrSeenBeforeAreDropped() async throws {
+    let h = Harness()
+    func battery(_ id: String, ts: Int) -> Data {
+        Data(#"{"v":1,"id":"\#(id)","ts":\#(ts),"type":"device.battery","data":{"pct":50,"charging":false}}"#.utf8)
+    }
+    try await h.coordinator.handleBuddy(battery(ULID.make(), ts: 1_000 - 120))
+    try await h.coordinator.handleBuddy(battery(ULID.make(), ts: 1_000 + 120))
+    await #expect(throws: ContractError.self) { try await h.coordinator.handleBuddy(battery(ULID.make(), ts: 1_000 - 121)) }
+    await #expect(throws: ContractError.self) { try await h.coordinator.handleBuddy(battery(ULID.make(), ts: 1_000 + 121)) }
+    let id = ULID.make()
+    try await h.coordinator.handleBuddy(battery(id, ts: 1_000))
+    await #expect(throws: ContractError.replayed("id \(id) already seen")) { try await h.coordinator.handleBuddy(battery(id, ts: 1_000)) }
 }
