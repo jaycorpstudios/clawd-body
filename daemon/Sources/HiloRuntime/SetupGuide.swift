@@ -1,24 +1,5 @@
 import Foundation
 
-/// How the Hilo app runs `hilod`: a per-user launchd job, so macOS ties the Bluetooth permission to `hilod` itself.
-public struct LaunchAgent: Sendable {
-    public static let label = "dev.hilo.hilod"
-
-    public let logPath: String
-
-    public static var defaultLogPath: String {
-        FileManager.default.homeDirectoryForCurrentUser.appending(path: "Library/Logs/Hilo/hilod.log").path(percentEncoded: false)
-    }
-
-    public init(logPath: String = LaunchAgent.defaultLogPath) { self.logPath = logPath }
-
-    public func submitArguments(hilod: String) -> [String] {
-        ["submit", "-l", Self.label, "-o", logPath, "-e", logPath, "--", hilod]
-    }
-
-    public var removeArguments: [String] { ["remove", Self.label] }
-}
-
 public struct PairingGuide: Equatable, Sendable {
     public var title: String
     public var detail: String

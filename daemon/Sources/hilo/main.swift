@@ -108,6 +108,18 @@ case "sessions":
         let task = s.taskTitle.map { " → \($0)" } ?? ""
         print("\(s.id.prefix(8))  \(s.status.rawValue.padding(toLength: 7, withPad: " ", startingAt: 0))  \(s.project?.name ?? "-")\(task)  \(s.lastAction)")
     }
+case "install":
+    let (explicit, _) = option("--hilod", in: Array(arguments.dropFirst()))
+    guard let hilod = explicit ?? LaunchAgent.bundledHilod() else {
+        fail("no hilod found in Hilo.app or next to hilo; pass --hilod <path>", code: 2)
+    }
+    let agent = LaunchAgent()
+    do { try agent.install(hilod: hilod) } catch { fail("\(error)") }
+    print("installed \(agent.plistPath) → \(hilod); log in \(agent.logPath)")
+case "uninstall":
+    let agent = LaunchAgent()
+    do { try agent.uninstall() } catch { fail("\(error)") }
+    print("hilod stopped; removed \(agent.plistPath)")
 case "mcp":
     MCPServer(store: openStore(), onChange: notifyDaemon).run()
 case "link" where arguments.count == 3:
@@ -128,6 +140,8 @@ default:
       hilo sessions                    today's Claude Code sessions
       hilo link <session> <task id>    attach a session to a task
       hilo mcp                         MCP server on stdio, for Claude Code
+      hilo install [--hilod path]      run hilod at login as a LaunchAgent (default: the hilod in Hilo.app)
+      hilo uninstall                   stop hilod and remove the LaunchAgent
       hilo hook                        read a Claude Code hook payload on stdin (configured in settings.json)
       hilo statusline [-- command…]    status line command: sends rate_limits to hilod, then runs the wrapped command
       hilo buddy '<json>'              send a buddy -> Mac message to hilod (development)

@@ -61,7 +61,7 @@ struct SetupView: View {
                         .disabled(model.hilodPath == nil)
                 }
             }
-            Text(model.hilodPath.map { "Start and Restart run \($0) as the launchd job \(LaunchAgent.label); log in ~/Library/Logs/Hilo." }
+            Text(model.hilodPath.map { "Start installs the LaunchAgent \(LaunchAgent.label) for \($0): it runs now and at every login. Stop removes it. Log in ~/Library/Logs/Hilo." }
                  ?? "hilod was not found next to Hilo. Build it with scripts/build-hilod.sh, then rebuild the app.")
                 .font(.system(size: 12.5)).foregroundStyle(Theme.secondary)
             if let error = model.daemonError {

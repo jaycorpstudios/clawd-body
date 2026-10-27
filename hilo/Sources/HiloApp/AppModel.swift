@@ -208,26 +208,17 @@ final class AppModel {
         config = HiloConfig.load()
     }
 
+    /// Installs the LaunchAgent, so hilod also starts at every login; replaces a job started with `launchctl submit`.
     func startDaemon() {
         guard let hilodPath else { return }
-        try? FileManager.default.createDirectory(at: URL(filePath: LaunchAgent.defaultLogPath).deletingLastPathComponent(),
-                                                 withIntermediateDirectories: true)
-        launchctl(LaunchAgent().submitArguments(hilod: hilodPath))
-        refreshSoon()
+        launchAgent { try $0.install(hilod: hilodPath) }
     }
 
     func stopDaemon() {
-        launchctl(LaunchAgent().removeArguments)
-        refreshSoon()
+        launchAgent { try $0.uninstall() }
     }
 
-    func restartDaemon() {
-        launchctl(LaunchAgent().removeArguments)
-        Task {
-            try? await Task.sleep(for: .seconds(1))
-            startDaemon()
-        }
-    }
+    func restartDaemon() { startDaemon() }
 
     func startPairing() { control("pair") }
     func cancelPairing() { control("pair-cancel") }
@@ -237,20 +228,14 @@ final class AppModel {
         if let status = reply.flatMap({ try? JSONDecoder().decode(DaemonStatus.self, from: $0) }) { daemonStatus = status }
     }
 
-    private func launchctl(_ arguments: [String]) {
-        let process = Process()
-        process.executableURL = URL(filePath: "/bin/launchctl")
-        process.arguments = arguments
-        let errors = Pipe()
-        process.standardError = errors
+    private func launchAgent(_ action: (LaunchAgent) throws -> Void) {
         do {
-            try process.run()
-            process.waitUntilExit()
-            let message = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-            daemonError = process.terminationStatus == 0 ? nil : "launchctl \(arguments[0]) failed: \(message)"
+            try action(LaunchAgent())
+            daemonError = nil
         } catch {
-            daemonError = "Cannot run launchctl: \(error)"
+            daemonError = "\(error)"
         }
+        refreshSoon()
     }
 
     private func refreshSoon() {

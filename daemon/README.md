@@ -9,7 +9,7 @@
 | `HiloRuntime` | `Coordinator` (presence-based hold), `BuddySession` (framing, ordered writes, snapshot on link up), `BLECentral` (CoreBluetooth), trusted buddies, macOS presence probe, Unix socket, stdout link, config file, transcript token counter |
 | `hilod` | Daemon executable |
 | `HiloStore` | SQLite store shared with the Hilo app: projects, tasks, sessions and steps, agreements |
-| `hilo` | CLI: `hilo hook` (called by Claude Code), tasks and agreements (`hilo today`, `add`, `start`, `done`, `agree`, `sessions`, `link`), `hilo mcp` (MCP server for Claude Code), `hilo statusline` (usage from the status line), `hilo buddy '<json>'` (development) |
+| `hilo` | CLI: `hilo hook` (called by Claude Code), tasks and agreements (`hilo today`, `add`, `start`, `done`, `agree`, `sessions`, `link`), `hilo mcp` (MCP server for Claude Code), `hilo statusline` (usage from the status line), `hilo install` / `uninstall` (LaunchAgent), `hilo buddy '<json>'` (development) |
 
 No third-party packages.
 
@@ -23,7 +23,7 @@ swift build                 # from daemon/
 
 macOS ties the Bluetooth permission to the code signature. An ad-hoc signature changes on every build, so `build-hilod.sh` signs with a self-signed "Hilo Local Signing" identity in the login keychain. The first time, macOS asks for the keychain password so `codesign` can use the key.
 
-Run `hilod` under launchd; started from a terminal, macOS aborts it on first Bluetooth use:
+Run `hilod` under launchd; started from a terminal, macOS aborts it on first Bluetooth use. `hilo install` writes the LaunchAgent `~/Library/LaunchAgents/dev.hilo.hilod.plist` (`RunAtLoad`, `KeepAlive`, log in `~/Library/Logs/Hilo/hilod.log`) for the `hilod` inside `Hilo.app` (or `--hilod <path>`) and bootstraps it, replacing a job started with `launchctl submit`; it then starts at every login. `hilo uninstall` stops it and removes the plist. Hilo › Setup uses the same code. For a quick run of a dev build without installing anything:
 
 ```sh
 launchctl submit -l dev.hilo.hilod -o ~/Library/Logs/Hilo/hilod.log -e ~/Library/Logs/Hilo/hilod.log -- "$PWD/.build/release/hilod"
