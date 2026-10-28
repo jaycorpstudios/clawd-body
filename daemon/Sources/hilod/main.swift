@@ -38,9 +38,12 @@ do {
 }
 let recorder = store.map { StoreRecorder(store: $0, log: log) }
 
+let policy = RiskPolicy.load(path: HiloConfig.policyPath())
+if let error = policy.error { log("risk policy file ignored, defaults apply: \(error)") } else if policy.policy.file != nil { log("risk policy file loaded") }
+
 let coordinator = Coordinator(
     host: host,
-    mapper: HookMapper(repoRoot: GitRepo.root(of:)),
+    mapper: HookMapper(policy: policy.policy, repoRoot: GitRepo.root(of:)),
     link: session ?? StdoutLink() as BuddyLink,
     presence: forceAway ? AlwaysAway() : SystemPresence(idleThresholdSeconds: idle) as PresenceProbe,
     presenceGrace: grace,
@@ -102,7 +105,7 @@ if tokensFromTranscripts {
 
 if let face = RGB565Image.load(URL(filePath: HiloConfig.facePath())) { Task { await coordinator.setFace(face) } }
 
-let control = ControlOps(coordinator: coordinator, buddy: central, tokensFromTranscripts: tokensFromTranscripts)
+let control = ControlOps(coordinator: coordinator, buddy: central, tokensFromTranscripts: tokensFromTranscripts, policyError: policy.error)
 
 do {
     try LocalSocket.serve(path: socketPath) { op, body in

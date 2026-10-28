@@ -20,7 +20,7 @@ flowchart TD
 - When in doubt: **high**.
 - The policy is an editable, versioned file with an allowlist per tool and command pattern, configurable per project.
 
-## Built-in defaults (until the policy file exists)
+## Built-in defaults
 
 Implemented in `daemon/Sources/HiloCore/RiskPolicy.swift`. Anything that does not match a rule is **high**.
 
@@ -32,6 +32,24 @@ Implemented in `daemon/Sources/HiloCore/RiskPolicy.swift`. Anything that does no
 
 `Write` is not allowlisted. Unknown repo root (not a git repo) means high.
 
-## Pending to define
+## Policy file
 
-See [open questions › daemon](../plans/open-questions.md#daemon): file location and format (e.g. `~/.config/hilo/policy.toml`), rule syntax, how "inside the repo" is determined (cwd vs. resolved paths), and what counts as a "new" network host.
+`~/Library/Application Support/Hilo/policy.json`, next to `config.json` and never inside a repo. It can **only tighten** the defaults: nothing in it turns a high call into low, and WebFetch hosts are not configurable there. Read when `hilod` starts (restart it after editing).
+
+```json
+{
+  "high_commands": [["npm", "install"]],
+  "projects": {
+    "payments-api": { "high_tools": ["Edit"] },
+    "infra": { "remote_approval": false }
+  }
+}
+```
+
+| Key | Effect, at the top level (every project) or under `projects.<name>` (the repo directory name) |
+| :--- | :--- |
+| `remote_approval` | `false`: every request is high, so the buddy can only deny |
+| `high_tools` | These tools are always high |
+| `high_commands` | A Bash command whose words start with one of these lists is high |
+
+An unknown key, a wrong type or invalid JSON makes `hilod` ignore the whole file and use the defaults; the error goes to its log and Hilo › Setup shows it under the daemon card. A missing file is the defaults.

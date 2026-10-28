@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import HiloContract
 @testable import HiloCore
@@ -77,4 +78,31 @@ func editIsLowOnlyInsideRepo(path: String, expected: Risk) {
     let high = RiskPolicy.default.classify(ToolCall(tool: "Bash", input: ["command": "terraform apply"], cwd: repo, repoRoot: repo))
     #expect(low == Classification(risk: .low, remoteAllowed: true))
     #expect(high == Classification(risk: .high, remoteAllowed: false))
+}
+
+@Test func thePolicyFileOnlyTightensAndPerProjectRulesApplyToThatProject() throws {
+    let file = try PolicyFile.parse(Data(#"""
+    {"high_commands":[["npm","install"]],"projects":{"payments":{"high_tools":["Edit"]},"locked":{"remote_approval":false}}}
+    """#.utf8))
+    let policy = RiskPolicy(rules: RiskPolicy.default.rules, file: file)
+    func risk(_ tool: String, _ input: [String: String], project: String) -> Risk {
+        policy.classify(ToolCall(tool: tool, input: input, cwd: repo, repoRoot: repo, project: project)).risk
+    }
+    #expect(risk("Bash", ["command": "npm install left-pad@1.3.0"], project: "web") == .high)
+    #expect(risk("Bash", ["command": "npm test"], project: "web") == .low)
+    #expect(risk("Edit", ["file_path": "\(repo)/a.ts"], project: "payments") == .high)
+    #expect(risk("Edit", ["file_path": "\(repo)/a.ts"], project: "web") == .low)
+    #expect(risk("Read", ["file_path": "\(repo)/a.ts"], project: "locked") == .high)
+    #expect(risk("Bash", ["command": "terraform apply"], project: "web") == .high)
+}
+
+@Test func aBrokenPolicyFileFallsBackToTheDefaultsWithTheError() throws {
+    #expect(throws: PolicyError.self) { try PolicyFile.parse(Data(#"{"high_tool":["Edit"]}"#.utf8)) }
+    #expect(throws: PolicyError.self) { try PolicyFile.parse(Data(#"{"remote_approval":"no"}"#.utf8)) }
+    #expect(throws: PolicyError.self) { try PolicyFile.parse(Data(#"{"projects":{"api":{"low_tools":["Bash"]}}}"#.utf8)) }
+    let path = FileManager.default.temporaryDirectory.appending(path: "policy-\(UUID().uuidString).json").path(percentEncoded: false)
+    try Data("{".utf8).write(to: URL(filePath: path))
+    let loaded = RiskPolicy.load(path: path)
+    #expect(loaded.policy.file == nil && loaded.error != nil)
+    #expect(RiskPolicy.load(path: path + ".missing").error == nil)
 }

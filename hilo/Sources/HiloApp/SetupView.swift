@@ -68,6 +68,10 @@ struct SetupView: View {
             Text(model.hilodPath.map { "Start installs the LaunchAgent \(LaunchAgent.label) for \($0): it runs now and at every login. Stop removes it. Log in ~/Library/Logs/Hilo." }
                  ?? "hilod was not found next to Hilo. Build it with scripts/build-hilod.sh, then rebuild the app.")
                 .font(.system(size: 12.5)).foregroundStyle(Theme.secondary)
+            if let error = model.daemonStatus?.policyError {
+                Label("Risk policy file ignored, the defaults apply. \(error)", systemImage: "exclamationmark.triangle")
+                    .font(.system(size: 12.5)).foregroundStyle(Theme.needsYou)
+            }
             if let error = model.daemonError {
                 Text(error).font(.system(size: 12.5)).foregroundStyle(Color(hex: "#ff9a9d"))
             }

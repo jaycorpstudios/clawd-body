@@ -30,6 +30,11 @@ public struct HiloConfig: Codable, Equatable, Sendable {
         URL(filePath: configPath).deletingLastPathComponent().appending(path: "face.png").path(percentEncoded: false)
     }
 
+    /// The risk policy file sits next to `config.json`, never in a repo (a cloned repo could not loosen it anyway).
+    public static func policyPath(configPath: String = defaultPath) -> String {
+        URL(filePath: configPath).deletingLastPathComponent().appending(path: "policy.json").path(percentEncoded: false)
+    }
+
     public static func load(path: String = defaultPath) -> HiloConfig {
         guard let data = FileManager.default.contents(atPath: path),
               let config = try? JSONDecoder().decode(HiloConfig.self, from: data) else { return HiloConfig() }

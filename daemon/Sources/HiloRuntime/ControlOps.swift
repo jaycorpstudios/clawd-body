@@ -17,12 +17,14 @@ public struct ControlOps: Sendable {
     private let buddy: BuddyControl?
     private let configPath: String
     private let tokensFromTranscripts: Bool
+    private let policyError: String?
     private let access: @Sendable (String) -> AutomationAccess
 
     public init(coordinator: Coordinator, buddy: BuddyControl?, configPath: String = HiloConfig.defaultPath,
-                tokensFromTranscripts: Bool, access: @escaping @Sendable (String) -> AutomationAccess = AutomationAccess.check) {
+                tokensFromTranscripts: Bool, policyError: String? = nil, access: @escaping @Sendable (String) -> AutomationAccess = AutomationAccess.check) {
         self.coordinator = coordinator; self.buddy = buddy
-        self.configPath = configPath; self.tokensFromTranscripts = tokensFromTranscripts; self.access = access
+        self.configPath = configPath; self.tokensFromTranscripts = tokensFromTranscripts
+        self.policyError = policyError; self.access = access
     }
 
     /// nil for an op this handler does not own.
@@ -74,7 +76,7 @@ public struct ControlOps: Sendable {
                                   buddy: buddy?.status() ?? BuddyStatus(link: .noBluetooth),
                                   tokensFromTranscripts: tokensFromTranscripts,
                                   settings: await coordinator.settings, face: await coordinator.faceHash,
-                                  pomodoro: await coordinator.focus, music: music)
+                                  pomodoro: await coordinator.focus, music: music, policyError: policyError)
         return (try? JSONEncoder().encode(status)) ?? Data()
     }
 

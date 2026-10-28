@@ -62,7 +62,7 @@ public struct HookMapper: Sendable {
         case "StopFailure":
             return .emit([.agentError(AgentError(session: session, detail: Text.clip(Redactor.redact(hook.error ?? "Turn failed"), 300)))])
         case "PermissionRequest":
-            let call = ToolCall(tool: tool, input: Self.flatStrings(input), cwd: hook.cwd, repoRoot: root)
+            let call = ToolCall(tool: tool, input: Self.flatStrings(input), cwd: hook.cwd, repoRoot: root, project: project)
             let c = policy.classify(call)
             return .awaitPermission(PermissionRequest(
                 requestId: requestId, session: session, project: project, tool: Text.clip(tool.isEmpty ? "Tool" : tool, 32),

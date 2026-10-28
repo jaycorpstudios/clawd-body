@@ -28,12 +28,15 @@ public struct DaemonStatus: Codable, Equatable, Sendable {
     public var pomodoro: PomodoroState?
     /// Only in the reply to `music`, which asks macOS for `hilod`'s Automation state.
     public var music: MusicStatus?
+    /// Why `policy.json` was ignored; the defaults apply.
+    public var policyError: String?
 
     public init(host: String, buddy: BuddyStatus, tokensFromTranscripts: Bool, settings: DeviceSettings? = nil, face: String? = nil,
-                pomodoro: PomodoroState? = nil, music: MusicStatus? = nil) {
+                pomodoro: PomodoroState? = nil, music: MusicStatus? = nil, policyError: String? = nil) {
         self.host = host; self.buddy = buddy; self.tokensFromTranscripts = tokensFromTranscripts
         self.settings = settings; self.face = face; self.pomodoro = pomodoro; self.music = music
+        self.policyError = policyError
     }
 
-    enum CodingKeys: String, CodingKey { case host, buddy, tokensFromTranscripts = "tokens_from_transcripts", settings, face, pomodoro, music }
+    enum CodingKeys: String, CodingKey { case host, buddy, tokensFromTranscripts = "tokens_from_transcripts", settings, face, pomodoro, music, policyError = "policy_error" }
 }
