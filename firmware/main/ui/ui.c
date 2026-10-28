@@ -49,8 +49,12 @@ static void frame_cb(lv_timer_t *t)
         if (ui.m->pairing) ui_pair_update(now_ms);
     }
 
-    ui_views_frame();
-    ui_overlay_frame();
+    // Pets animating under a full-screen card add invalid areas nobody sees; past 32 LVGL redraws everything (#35).
+    bool covered = bm_attn_shown(ui.m) && !bm_attn_leaving(ui.m, now_ms) && bm_attn_slide(ui.m, now_ms) == 0;
+    if (!covered) {
+        ui_views_frame();
+        ui_overlay_frame();
+    }
     ui_attn_frame(now_ms);
     ui_sheet_frame();
     ui_misc_frame(now_ms);
