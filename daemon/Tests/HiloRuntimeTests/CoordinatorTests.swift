@@ -22,7 +22,8 @@ private struct FakeClock: Clock {
 
 private struct FakePresence: PresenceProbe {
     let present = Box(false)
-    func userIsPresent() -> Bool { present.get() }
+    let polls = Box(0)
+    func userIsPresent() -> Bool { polls.set(polls.get() + 1); return present.get() }
 }
 
 private actor RecordingLink: BuddyLink {
@@ -69,7 +70,11 @@ private struct Harness {
         try await coordinator.handleBuddy(Data(msg.utf8))
     }
 
-    func settle() async { for _ in 0..<2000 { await Task.yield() } }
+    /// Waits until the watch loop has checked presence twice more.
+    func settle() async {
+        let target = presence.polls.get() + 2
+        for _ in 0..<1_000_000 where presence.polls.get() < target { await Task.yield() }
+    }
 
     func buddy(_ id: String, _ decision: String) async throws {
         let msg = #"{"v":1,"id":"\#(ULID.make())","ts":\#(clock.now()),"type":"permission.decision","data":{"request_id":"\#(id)","decision":"\#(decision)"}}"#
