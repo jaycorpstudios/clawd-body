@@ -55,6 +55,17 @@ private func seeded() throws -> HiloStore {
         #expect(HiloStore.stepDigest([]).isEmpty)
     }
 
+    @Test func resumeAddsTheFilesOfTheSessionsCommitsAfterItsOwnEdits() throws {
+        let store = try seeded()
+        try store.endSession("s1", now: 1_600)
+        try store.addCommits([CommitRecord(repo: "/r/api", hash: "9a9a9a9a9a", branch: "main", message: "shell fix", ts: 1_550,
+                                           files: ["src/retry.ts", "scripts/fix.sh"]),
+                              CommitRecord(repo: "/r/api", hash: "8b8b8b8b8b", branch: "main", message: "later", ts: 1_900, files: ["late.md"])],
+                             project: "api")
+        let text = try store.resumeMarkdown(project: "api", now: 2_000)
+        #expect(text.contains("Edited: src/retry.ts, scripts/fix.sh\n"))
+    }
+
     @Test func resumeShowsTheLastSessionOpenTasksCommitsAndAgreements() throws {
         let text = try seeded().resumeMarkdown(project: "api", now: 2_000)
         #expect(text.hasPrefix("# api\n## Last session (done)\nTask: Webhook retries\nRetries back off exponentially.\nEdited: src/retry.ts\nActivity: 1 edit\nResume with: claude --resume s1"))

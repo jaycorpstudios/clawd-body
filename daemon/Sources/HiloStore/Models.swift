@@ -71,9 +71,11 @@ public struct CommitRecord: Equatable, Sendable, Identifiable {
     public var ts: Int
     public var project: Project?
     public var taskId: Int?
+    public var files: [String]
 
-    public init(repo: String, hash: String, branch: String, message: String, ts: Int, project: Project? = nil, taskId: Int? = nil) {
+    public init(repo: String, hash: String, branch: String, message: String, ts: Int, project: Project? = nil, taskId: Int? = nil,
+                files: [String] = []) {
         self.repo = repo; self.hash = hash; self.branch = branch; self.message = message; self.ts = ts
-        self.project = project; self.taskId = taskId
+        self.project = project; self.taskId = taskId; self.files = files
     }
 }

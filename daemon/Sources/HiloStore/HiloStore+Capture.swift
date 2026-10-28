@@ -84,8 +84,8 @@ extension HiloStore {
             for c in commits {
                 guard try db.rows("SELECT 1 FROM git_commit WHERE repo = ? AND hash = ?", [c.repo, c.hash]).first == nil else { continue }
                 try db.run("""
-                    INSERT INTO git_commit (repo, hash, branch, message, ts, project_id, task_id) VALUES (?, ?, ?, ?, ?, ?, ?)
-                    """, [c.repo, c.hash, c.branch, c.message, c.ts, p?.id, taskId])
+                    INSERT INTO git_commit (repo, hash, branch, message, ts, project_id, task_id, files) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """, [c.repo, c.hash, c.branch, c.message, c.ts, p?.id, taskId, c.files.joined(separator: "\n")])
                 if let p { try extendActivity(projectId: p.id, now: c.ts) }
                 added += 1
             }
@@ -106,14 +106,15 @@ extension HiloStore {
     }
 
     private static let commitSelect = """
-        SELECT c.repo, c.hash, c.branch, c.message, c.ts, c.task_id, p.id, p.name, p.color, p.jira_key
+        SELECT c.repo, c.hash, c.branch, c.message, c.ts, c.task_id, p.id, p.name, p.color, p.jira_key, c.files
         FROM git_commit c LEFT JOIN project p ON p.id = c.project_id
         """
 
     private static func commit(_ r: Row) -> CommitRecord {
         let project = r.int(6).map { Project(id: $0, name: r.text(7) ?? "", color: r.text(8) ?? projectPalette[0], jiraKey: r.text(9)) }
         return CommitRecord(repo: r.text(0) ?? "", hash: r.text(1) ?? "", branch: r.text(2) ?? "", message: r.text(3) ?? "",
-                            ts: r.int(4) ?? 0, project: project, taskId: r.int(5))
+                            ts: r.int(4) ?? 0, project: project, taskId: r.int(5),
+                            files: (r.text(10) ?? "").split(separator: "\n").map(String.init))
     }
 }
 

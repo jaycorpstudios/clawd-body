@@ -12,9 +12,10 @@ import HiloStore
     }
 
     @Test func parsesTheLogFormatAndSkipsJunk() {
-        let out = "abcdef1234\u{1f}1792900000\u{1f}Fix: a\u{1f}b\nshort\u{1f}1\u{1f}x\n\nfedcba98765\u{1f}notanumber\u{1f}y\n"
+        let out = "\u{1e}abcdef1234\u{1f}1792900000\u{1f}Fix: a\u{1f}b\n\nsrc/a.swift\ndocs/b.md\n\u{1e}short\u{1f}1\u{1f}x\n\n\u{1e}fedcba98765\u{1f}notanumber\u{1f}y\n"
         let commits = GitCapture.parse(out, repo: "/r", branch: "main")
-        #expect(commits == [CommitRecord(repo: "/r", hash: "abcdef1234", branch: "main", message: "Fix: a\u{1f}b", ts: 1_792_900_000)])
+        #expect(commits == [CommitRecord(repo: "/r", hash: "abcdef1234", branch: "main", message: "Fix: a\u{1f}b", ts: 1_792_900_000,
+                                         files: ["src/a.swift", "docs/b.md"])])
     }
 
     @Test func scanAsksGitForThisUsersRecentCommitsInSessionRepos() throws {
@@ -28,7 +29,7 @@ import HiloStore
             switch args[0] {
             case "rev-parse": return "feature/x\n"
             case "config": return "dev@example.com\n"
-            default: return "1111111aaaa\u{1f}1000100\u{1f}Add thing\n"
+            default: return "\u{1e}1111111aaaa\u{1f}1000100\u{1f}Add thing\n\nREADME.md\n"
             }
         })
         capture.scan(now: 1_000_200)

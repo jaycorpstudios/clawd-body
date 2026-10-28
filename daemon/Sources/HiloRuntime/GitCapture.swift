@@ -33,17 +33,21 @@ public struct GitCapture: Sendable {
         guard let branch = git(repo, ["rev-parse", "--abbrev-ref", "HEAD"])?.trimmingCharacters(in: .whitespacesAndNewlines),
               !branch.isEmpty else { return [] }
         let email = git(repo, ["config", "user.email"])?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        var arguments = ["log", "--max-age=\(since)", "--format=%H\(Self.separator)%ct\(Self.separator)%s"]
+        var arguments = ["log", "--max-age=\(since)", "--name-only", "--format=%x1e%H\(Self.separator)%ct\(Self.separator)%s"]
         if !email.isEmpty { arguments.append("--author=\(email)") }
         guard let output = git(repo, arguments) else { return [] }
         return Self.parse(output, repo: repo, branch: branch)
     }
 
+    /// Each commit starts with U+001E; the lines after its header are the files it changed.
     static func parse(_ output: String, repo: String, branch: String) -> [CommitRecord] {
-        output.split(separator: "\n").compactMap { line in
+        output.split(separator: "\u{1e}").compactMap { record in
+            let lines = record.split(separator: "\n")
+            guard let line = lines.first else { return nil }
             let fields = line.split(separator: Character(separator), maxSplits: 2, omittingEmptySubsequences: false)
             guard fields.count == 3, fields[0].count >= 7, let ts = Int(fields[1]) else { return nil }
-            return CommitRecord(repo: repo, hash: String(fields[0]), branch: branch, message: String(fields[2].prefix(200)), ts: ts)
+            return CommitRecord(repo: repo, hash: String(fields[0]), branch: branch, message: String(fields[2].prefix(200)), ts: ts,
+                                files: lines.dropFirst().map(String.init))
         }
     }
 

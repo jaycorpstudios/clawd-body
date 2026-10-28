@@ -105,7 +105,8 @@ extension HiloStore {
             out.append("## Last session (\(last.status.rawValue))")
             if let task = last.taskTitle { out.append("Task: \(task)") }
             if let summary = last.summary { out.append(summary) }
-            out.append(contentsOf: Self.stepDigest(try steps(session: last.id, limit: 5_000)))
+            let committed = try self.commits(project: project, limit: 50).filter { $0.ts >= last.startedAt && $0.ts <= (last.endedAt ?? now) }
+            out.append(contentsOf: Self.stepDigest(try steps(session: last.id, limit: 5_000), committed: committed.flatMap(\.files)))
             out.append("Resume with: claude --resume \(last.id)")
         } else {
             out.append("No sessions in the last 7 days.")
@@ -119,13 +120,12 @@ extension HiloStore {
         return out.joined(separator: "\n")
     }
 
-    /// Files edited, most recent first, and how much happened; commands are counted, not listed.
-    static func stepDigest(_ steps: [StepRecord]) -> [String] {
+    /// Files edited, most recent first, then those only the session's commits changed (shell edits leave no Edit step);
+    /// commands are counted, not listed.
+    static func stepDigest(_ steps: [StepRecord], committed: [String] = []) -> [String] {
         var edited: [String] = []
-        for s in steps.reversed() where s.kind == .edit {
-            let file = s.text.hasPrefix("Edited ") ? String(s.text.dropFirst(7)) : s.text
-            if !edited.contains(file) { edited.append(file) }
-        }
+        let fromSteps = steps.reversed().filter { $0.kind == .edit }.map { $0.text.hasPrefix("Edited ") ? String($0.text.dropFirst(7)) : $0.text }
+        for file in fromSteps + committed where !edited.contains(file) { edited.append(file) }
         var out: [String] = []
         if !edited.isEmpty {
             out.append("Edited: " + edited.prefix(8).joined(separator: ", ") + (edited.count > 8 ? " and \(edited.count - 8) more" : ""))

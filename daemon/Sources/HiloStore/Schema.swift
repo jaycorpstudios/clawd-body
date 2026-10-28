@@ -58,6 +58,9 @@ enum Schema {
           week_start TEXT NOT NULL, project_id INTEGER NOT NULL REFERENCES project(id) ON DELETE CASCADE,
           text TEXT NOT NULL, drafted_at INTEGER NOT NULL, edited_at INTEGER, PRIMARY KEY (week_start, project_id));
         """,
+        """
+        ALTER TABLE git_commit ADD COLUMN files TEXT NOT NULL DEFAULT '';
+        """,
     ]
 
     static func migrate(_ db: Database) throws {
