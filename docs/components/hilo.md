@@ -8,7 +8,7 @@ Visual reference approved as direction: `prototypes/hilo/`. Dark theme only, wit
 - **Window** UI (no menu-bar extra for now).
 - **`hilo` CLI** and **MCP server** so Claude Code can read and write.
 - **SQLite** as source of truth, with **Markdown export**.
-- **Jira optional**, configured per project.
+- **Jira: out of scope** (decided 2026-10-27). A ticket key can be noted on a project or task by hand; there is no sync and Hilo stores no Jira credentials.
 - Automatic capture: Claude Code sessions (via `hilod`), git (commits and branch) and active time (pauses after 5 min without activity).
 
 ## Stack (implemented)

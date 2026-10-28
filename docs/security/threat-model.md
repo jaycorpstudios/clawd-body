@@ -9,7 +9,7 @@
 | Ability to approve Claude Code actions | `hilod` (decides), buddy (requests) |
 | Hilo history (tasks, sessions, agreements, commits) | SQLite on each Mac |
 | BLE bonding keys | Buddy NVS and macOS Bluetooth stack |
-| Jira credentials (optional) | Mac only — storage pending to define |
+| Jira credentials | None: Jira sync is out of scope (2026-10-27) |
 
 ## Adversaries
 

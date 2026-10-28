@@ -5,7 +5,6 @@ flowchart LR
     subgraph Mac["Mac (work or home)"]
         CC["Claude Code sessions<br/>(Warp)"] -- hooks --> D
         Git[git repos] -- watcher --> D
-        Jira["Jira (optional)"] -- sync --> D
         D["hilod daemon<br/>· hook ingestion<br/>· risk policy<br/>· SQLite (this Mac only)<br/>· MCP server + CLI backend<br/>· BLE central"]
         App[Hilo.app] <--> D
         CLI[hilo CLI] <--> D
