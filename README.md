@@ -22,6 +22,16 @@ A desk companion that shows what your Claude Code sessions are doing, plus **Hil
 
 Open `prototypes/buddy-sim.html` in a browser. The console on the right fires the events a Mac would send over BLE; the screen and sounds react the way the firmware should.
 
+## Weekly summary with Claude Code
+
+Hilo stores no API keys. With the Hilo MCP server registered (`claude mcp add hilo -- <repo>/daemon/.build/release/hilo mcp`), ask Claude Code to "draft my Hilo week", or add this as `~/.claude/commands/hilo-week.md` and run `/hilo-week`:
+
+```markdown
+Read hilo_week_summary. For each project with activity, write one plain paragraph (what moved, what closed, what is next; no lists, under 120 words) and save it with hilo_save_week_summary using the week_start it printed. Then tell me which projects you drafted.
+```
+
+The drafts show in Hilo › Week, editable, and go into Export .md.
+
 ## Security model in one paragraph
 
 The Mac pushes events; the buddy only displays them and returns decisions. The buddy never stores credentials. BLE requires authenticated pairing (LE Secure Connections with passkey). High-risk actions can only be approved on the Mac, and every decision coming from the buddy is validated by the daemon. Details: [`docs/security/`](docs/security/README.md).

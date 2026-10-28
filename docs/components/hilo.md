@@ -62,9 +62,12 @@ Shared chrome: top bar with ⌘K search, buddy status with its pet, and the Mac'
 | `hilo_log_agreement(text, project?, context?)` | Always stored as `pending`; Claude only proposes, the user confirms in the app |
 | `hilo_current_task()` | |
 | `hilo_link(task, session?, project?)` | Links a session to a task; without `session`, the open session of the project with the latest step (normally the caller, since Claude Code does not tell MCP servers its session id) |
-| `hilo_week_summary()` | Sessions, closed tasks and confirmed agreements per project |
+| `hilo_week_summary()` | Active time, sessions, closed tasks and confirmed agreements per project, after a `week_start: YYYY-MM-DD` line |
+| `hilo_save_week_summary(text, project?, week_start?)` | One paragraph per project and week (table `week_summary`), up to 2000 characters, an existing project, not a future week; shown in Week as "Drafted by Claude", editable in place ("Edited"), and in Export .md under the project heading. A paragraph the user edited is never overwritten |
 
 Register it with Claude Code: `claude mcp add hilo -- <repo>/daemon/.build/release/hilo mcp`.
+
+To draft the week: the slash command in the [README](../../README.md#weekly-summary-with-claude-code) (Hilo writes nothing to `~/.claude`).
 
 ## Pending to define
 

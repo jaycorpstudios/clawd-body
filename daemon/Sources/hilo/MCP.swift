@@ -23,7 +23,12 @@ struct MCPServer {
               "session": ["type": "string", "description": "Session id or its prefix; optional"],
               "project": ["type": "string", "description": "Defaults to the repo Claude Code runs in"]],
              required: ["task"]),
-        tool("hilo_week_summary", "This week's sessions, closed tasks and confirmed agreements per project, as Markdown.", [:]),
+        tool("hilo_week_summary", "This week's active time, sessions, closed tasks and confirmed agreements per project, as Markdown, after a week_start line.", [:]),
+        tool("hilo_save_week_summary", "Save a one-paragraph summary of a project's week, drafted from hilo_week_summary, for the user to review and edit in Hilo › Week. A paragraph the user edited is kept.",
+             ["project": ["type": "string", "description": "Defaults to the repo Claude Code runs in"],
+              "text": ["type": "string", "description": "Plain text, up to 2000 characters"],
+              "week_start": ["type": "string", "description": "YYYY-MM-DD from hilo_week_summary; defaults to this week"]],
+             required: ["text"]),
     ] }
 
     private static func tool(_ name: String, _ description: String, _ properties: [String: Any], required: [String] = []) -> [String: Any] {
@@ -111,7 +116,17 @@ struct MCPServer {
             onChange()
             return "Linked session \(session.id.prefix(8)) (last: \(session.lastAction)) to #\(task.id) \(task.title)"
         case "hilo_week_summary":
-            return try store.weekReport(start: HiloStore.startOfWeek(), now: now).markdown
+            return "week_start: \(HiloStore.weekKey(HiloStore.startOfWeek()))\n\n" + (try store.weekReport(start: HiloStore.startOfWeek(), now: now).markdown)
+        case "hilo_save_week_summary":
+            guard let project = string("project") ?? defaultProject, let text = string("text") else { throw MCPError.invalid("project and text are required") }
+            let week = string("week_start") ?? HiloStore.weekKey(HiloStore.startOfWeek())
+            do {
+                guard try store.saveDraft(week: week, project: project, text: text, now: now) else {
+                    return "Kept: the user edited the \(project) summary for \(week) in Hilo, so the draft was not saved."
+                }
+            } catch let error as SummaryError { throw MCPError.invalid(error.description) }
+            onChange()
+            return "Saved the \(project) summary for the week of \(week). The user can edit it in Hilo › Week."
         default:
             throw MCPError.invalid("unknown tool \(name)")
         }

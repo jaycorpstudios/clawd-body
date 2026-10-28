@@ -63,3 +63,33 @@ private func seeded() throws -> HiloStore {
         #expect(text.hasSuffix("## Recent agreements\n- Ship on Friday"))
     }
 }
+
+@Suite struct WeekSummaryTests {
+    let utc: Calendar = { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: "UTC")!; c.firstWeekday = 2; return c }()
+
+    @Test func draftsAreValidatedAndAnEditedParagraphIsKept() throws {
+        let store = try seeded()
+        let now = 1_793_102_400
+        let week = HiloStore.weekKey(HiloStore.startOfWeek(Date(timeIntervalSince1970: TimeInterval(now)), calendar: utc), calendar: utc)
+        #expect(week == "2026-10-26")
+        #expect(throws: SummaryError.self) { try store.saveDraft(week: week, project: "nope", text: "x", now: now, calendar: utc) }
+        #expect(throws: SummaryError.self) { try store.saveDraft(week: "2026-10-27", project: "api", text: "x", now: now, calendar: utc) }
+        #expect(throws: SummaryError.self) { try store.saveDraft(week: "2026-11-02", project: "api", text: "x", now: now, calendar: utc) }
+        #expect(throws: SummaryError.self) {
+            try store.saveDraft(week: week, project: "api", text: String(repeating: "a", count: 2001), now: now, calendar: utc)
+        }
+        #expect(try store.saveDraft(week: week, project: "api", text: "Retries shipped.", now: now, calendar: utc))
+        #expect(try store.summaries(week: week)["api"] == WeekSummary(text: "Retries shipped.", edited: false))
+        let api = try #require(try store.projects().first { $0.name == "api" })
+        try store.editSummary(week: week, projectId: api.id, text: "Retries shipped Friday.", now: now)
+        #expect(try store.saveDraft(week: week, project: "api", text: "Overwrite", now: now, calendar: utc) == false)
+        #expect(try store.summaries(week: week)["api"] == WeekSummary(text: "Retries shipped Friday.", edited: true))
+    }
+
+    @Test func theMarkdownPutsTheParagraphUnderItsProject() throws {
+        let report = try seeded().weekReport(start: 0, now: 1_900)
+        let with = WeekReport(start: 0, now: 1_900, sessions: [], active: ["api": 500], commits: [], tasks: [], agreements: [],
+                              projects: report.projects.compactMap(\.project), summaries: ["api": WeekSummary(text: "Retries shipped.", edited: false)])
+        #expect(with.markdown.contains("## api\n8 min active · 0 Claude Code sessions · 0 commits\n\nRetries shipped."))
+    }
+}

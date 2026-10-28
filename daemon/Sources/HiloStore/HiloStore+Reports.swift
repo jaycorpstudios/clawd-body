@@ -11,6 +11,7 @@ public struct WeekReport: Sendable {
         public var active = 0
         public var commits = 0
         public var closed: [HiloTaskRecord] = []
+        public var summary: WeekSummary?
     }
 
     public static let noProject = "No project"
@@ -25,7 +26,8 @@ public struct WeekReport: Sendable {
     public var activeSeconds: Int { projects.reduce(0) { $0 + $1.active } }
     /// `end` bounds a past week; records from later weeks are left out.
     public init(start: Int, end: Int = Int.max, now: Int, sessions all: [SessionRecord], active: [String: Int],
-                commits allCommits: [CommitRecord], tasks: [HiloTaskRecord], agreements: [Agreement], projects known: [Project]) {
+                commits allCommits: [CommitRecord], tasks: [HiloTaskRecord], agreements: [Agreement], projects known: [Project],
+                summaries: [String: WeekSummary] = [:]) {
         let now = min(now, end)
         let sessions = all.filter { $0.startedAt < end }, commits = allCommits.filter { $0.ts < end }
         let closed = tasks.filter { $0.status == .done && ($0.doneAt ?? 0) >= start && ($0.doneAt ?? 0) < end }
@@ -39,6 +41,7 @@ public struct WeekReport: Sendable {
         for (name, seconds) in active { rows[row(known.first { $0.name == name }, named: name)]!.active = seconds }
         for c in commits { rows[row(c.project)]!.commits += 1 }
         for t in closed { rows[row(t.project)]!.closed.append(t) }
+        for (name, s) in summaries { rows[row(known.first { $0.name == name }, named: name)]!.summary = s }
         self.start = start
         self.projects = rows.values.sorted { ($0.active, $0.sessions, $1.name) > ($1.active, $1.sessions, $0.name) }
         self.closed = closed
@@ -66,6 +69,7 @@ public struct WeekReport: Sendable {
         for p in projects {
             out.append("## \(p.name)")
             out.append("\(Self.duration(p.active)) active · \(Self.plural(p.sessions, "Claude Code session")) · \(Self.plural(p.commits, "commit"))")
+            if let s = p.summary { out.append(contentsOf: ["", s.text] + (p.closed.isEmpty ? [] : [""])) }
             out.append(contentsOf: p.closed.map { "- [x] \($0.title)" })
             out.append("")
         }
@@ -87,7 +91,7 @@ extension HiloStore {
         WeekReport(start: start, end: end, now: now, sessions: try sessions(since: start),
                    active: try activeSeconds(since: start, until: end),
                    commits: try commits(since: start), tasks: try tasks(doneSince: start), agreements: try agreements(),
-                   projects: try projects())
+                   projects: try projects(), summaries: try summaries(week: Self.weekKey(start)))
     }
 
     /// Where the user left off in a project: last session and its steps, open tasks, recent commits and agreements.

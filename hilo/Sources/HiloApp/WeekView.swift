@@ -18,7 +18,7 @@ struct WeekView: View {
     private var data: (report: WeekReport, perDay: [Int: Int]) {
         if offset < 0, let past = model.week(start: start, end: end) { return past }
         return (WeekReport(start: AppModel.startOfWeek, now: AppModel.now, sessions: model.weekSessions, active: model.activeWeek,
-                           commits: model.weekCommits, tasks: model.weekTasks, agreements: model.agreements, projects: model.projects),
+                           commits: model.weekCommits, tasks: model.weekTasks, agreements: model.agreements, projects: model.projects, summaries: model.weekSummaries),
                 model.activePerDay)
     }
 
@@ -71,6 +71,7 @@ struct WeekView: View {
                                 .frame(width: max(4, g.size.width * CGFloat(p.active) / CGFloat(longest)))
                         }
                         .frame(height: 6)
+                        if let id = p.project?.id { SummaryEditor(summary: p.summary) { model.editSummary(weekStart: start, project: id, text: $0) } }
                     }
                     .padding(14).background(Theme.card, in: RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
@@ -156,5 +157,35 @@ struct WeekView: View {
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.card, in: RoundedRectangle(cornerRadius: 12)).overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line))
+    }
+}
+
+private struct SummaryEditor: View {
+    let summary: WeekSummary?
+    let save: (String) -> Void
+    @State private var draft: String?
+
+    var body: some View {
+        if let text = draft {
+            VStack(alignment: .trailing, spacing: 6) {
+                TextEditor(text: Binding(get: { text }, set: { draft = String($0.prefix(HiloStore.summaryLimit)) }))
+                    .font(.system(size: 13)).scrollContentBackground(.hidden).frame(minHeight: 70)
+                    .padding(6).background(Theme.softPanel, in: RoundedRectangle(cornerRadius: 8))
+                HStack {
+                    Button("Cancel") { draft = nil }.buttonStyle(SecondaryButtonStyle())
+                    Button("Save") { save(text); draft = nil }.buttonStyle(PrimaryButtonStyle())
+                }
+            }
+        } else if let summary {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(summary.text).font(.system(size: 13)).textSelection(.enabled)
+                HStack(spacing: 8) {
+                    Text(summary.edited ? "Edited" : "Drafted by Claude").font(.system(size: 11.5)).foregroundStyle(Theme.muted)
+                    Button("Edit") { draft = summary.text }.buttonStyle(.link).font(.system(size: 11.5))
+                }
+            }
+        } else {
+            Button("Add a summary") { draft = "" }.buttonStyle(.link).font(.system(size: 11.5))
+        }
     }
 }

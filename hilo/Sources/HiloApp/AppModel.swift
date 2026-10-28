@@ -40,6 +40,7 @@ final class AppModel {
     var activePerDay: [Int: Int] = [:]
     var focusToday: (count: Int, minutes: Int) = (0, 0)
     var weekCommits: [CommitRecord] = []
+    var weekSummaries: [String: WeekSummary] = [:]
     var projects: [Project] = []
     var daemonRunning = false
     var buddyConnected = false
@@ -93,6 +94,8 @@ final class AppModel {
             if capture.2 != weekCommits { weekCommits = capture.2 }
             let perDay = try store.activeSecondsPerDay(since: Self.startOfWeek)
             if perDay != activePerDay { activePerDay = perDay }
+            let summaries = try store.summaries(week: HiloStore.weekKey(Self.startOfWeek))
+            if summaries != weekSummaries { weekSummaries = summaries }
             let focus = try store.focusCycles(since: Self.startOfToday)
             if focus != focusToday { focusToday = focus }
             let state = try store.daemonState()
@@ -147,6 +150,11 @@ final class AppModel {
             let t = try store.addTask(title, project: project, status: start ? .doing : .todo, now: Self.now)
             selectedTask = t.id
         }
+        changed()
+    }
+
+    func editSummary(weekStart: Int, project: Int, text: String) {
+        attempt { try store?.editSummary(week: HiloStore.weekKey(weekStart), projectId: project, text: text, now: Self.now) }
         changed()
     }
 

@@ -53,6 +53,11 @@ enum Schema {
         ALTER TABLE session ADD COLUMN look_hue INTEGER;
         ALTER TABLE session ADD COLUMN look_acc TEXT;
         """,
+        """
+        CREATE TABLE week_summary (
+          week_start TEXT NOT NULL, project_id INTEGER NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+          text TEXT NOT NULL, drafted_at INTEGER NOT NULL, edited_at INTEGER, PRIMARY KEY (week_start, project_id));
+        """,
     ]
 
     static func migrate(_ db: Database) throws {
