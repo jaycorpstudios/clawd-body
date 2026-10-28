@@ -440,8 +440,9 @@ static bm_err_t apply_snapshot(bm_model_t *m, int host, const cJSON *d, uint32_t
     h->usage.received_ms = now_ms;
     h->hilo = hilo;
     h->hilo.updated_ms = now_ms;
+    med.playing = media != NULL;
+    med.started_ms = bm__media_started(&h->media, &med) ? now_ms : h->media.started_ms;
     h->media = med;
-    h->media.playing = media != NULL;
     h->media.received_ms = now_ms;
     h->music_off = cJSON_IsFalse(media_on);
     if (!bm_view_shown(m, m->view)) m->view = BM_VIEW_POMODORO;

@@ -619,6 +619,12 @@ void bm_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms)
     case BM_TAP_ANSWER: decide(m, true, arg, now_ms); break;
     case BM_TAP_SESSION_ACC: session_acc(m, arg, now_ms); break;
     case BM_TAP_MEDIA: bm__media_tap(m, arg, now_ms); break;
+    case BM_TAP_MEDIA_SWITCH:
+        if (bm_media_other(m) >= 0) {
+            m->media_pick = (int8_t)(bm_media_other(m) + 1);
+            bm__sound(m, BM_SND_CLICK);
+        }
+        break;
     case BM_TAP_POMO_TOGGLE:
     case BM_TAP_POMO_RESET:
     case BM_TAP_POMO_WORK:
@@ -1039,17 +1045,24 @@ void bm__on_hilo_task(bm_model_t *m, int host, const bm_hilo_item_t *item, int64
     bm__sound(m, BM_SND_START);
 }
 
+bool bm__media_started(const bm_media_t *old, const bm_media_t *next)
+{
+    return next->playing && !next->paused &&
+           (!old->playing || old->paused || strcmp(old->title, next->title) != 0 || strcmp(old->artist, next->artist) != 0);
+}
+
 void bm__on_media(bm_model_t *m, int host, const bm_media_t *media, uint32_t now_ms)
 {
     bm_media_t *dst = &m->hosts[host].media;
-    bool news = !media->paused && (!dst->playing || dst->paused || strcmp(dst->title, media->title) != 0 ||
-                                   strcmp(dst->artist, media->artist) != 0);
-    *dst = *media;
-    dst->playing = true;
+    bm_media_t next = *media;
+    next.playing = true;
+    bool news = bm__media_started(dst, &next);
+    next.started_ms = news ? now_ms : dst->started_ms;
+    *dst = next;
     dst->received_ms = now_ms;
     bm__touch(m);
     bm__want_cover(m, host, now_ms);
-    if (!news) return;
+    if (!news || bm_media_merged(m)) return;
     bm__wake(m, true, BM_BY_TOUCH, now_ms);
     char text[180];
     snprintf(text, sizeof(text), "\xE2\x99\xAA %s \xC2\xB7 %s", media->title, media->artist);

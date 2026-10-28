@@ -459,6 +459,41 @@ TEST(paused_music_stays_put_and_controls_go_to_the_playing_mac)
     CHECK(count_out(&o, "media.control") == 0);
 }
 
+TEST(two_macs_on_the_same_track_merge_and_different_tracks_get_a_switch)
+{
+    fresh();
+    outs_t o;
+#define SONG "{\"title\":\"Song\",\"artist\":\"A\",\"length_s\":200,\"position_s\":20,\"playing\":true}"
+    CHECK(send("home", "media.now_playing", SONG) == BM_OK);
+    CHECK(heard(BM_SND_MEDIA));
+    advance(1000);
+    CHECK(send("work", "media.now_playing", SONG) == BM_OK);
+    CHECK(!heard(BM_SND_MEDIA));
+    int home = bm__host_slot(&M, "home", false), work = bm__host_slot(&M, "work", false);
+    CHECK(bm_media_merged(&M) && bm_media_other(&M) < 0);
+    CHECK(bm_media_host(&M) == work);
+    drain(&o);
+    bm_tap(&M, BM_TAP_MEDIA, BM_MEDIA_NEXT, now);
+    drain(&o);
+    CHECK(find_out(&o, "media.control")->hosts == 1u << work);
+
+    advance(1000);
+    CHECK(send("home", "media.now_playing",
+               "{\"title\":\"Other\",\"artist\":\"B\",\"length_s\":180,\"position_s\":0,\"playing\":true}") == BM_OK);
+    CHECK(!bm_media_merged(&M));
+    CHECK(bm_media_host(&M) == home && bm_media_other(&M) == work);
+    advance(1000);
+    CHECK(send("work", "media.now_playing", "{\"title\":\"Song\",\"artist\":\"A\",\"length_s\":200,\"position_s\":23,\"playing\":true}") == BM_OK);
+    CHECK(bm_media_host(&M) == home);
+    bm_tap(&M, BM_TAP_MEDIA_SWITCH, 0, now);
+    CHECK(bm_media_host(&M) == work && bm_media_other(&M) == home);
+    drain(&o);
+    bm_tap(&M, BM_TAP_MEDIA, BM_MEDIA_PLAY_PAUSE, now);
+    drain(&o);
+    CHECK(find_out(&o, "media.control")->hosts == 1u << work);
+}
+#undef SONG
+
 TEST(music_view_hides_only_when_every_mac_follows_no_music)
 {
     fresh();

@@ -194,6 +194,7 @@ typedef struct {
     int32_t length_s;
     int32_t position_s;
     uint32_t received_ms;
+    uint32_t started_ms;
     char cover[17];
 } bm_media_t;
 
@@ -349,6 +350,7 @@ typedef struct {
     uint8_t face_rx_px[BM_FACE_MAX * BM_FACE_MAX * 2];
     bool has_cover;
     bm_cover_t cover;
+    int8_t media_pick; /* host + 1 chosen on the switch pill, 0 = automatic */
     uint32_t covers_rev;
     bm_rx_t cover_rx;
     uint8_t cover_rx_px[BM_COVER_MAX * BM_COVER_MAX * 2];
@@ -380,6 +382,7 @@ typedef enum {
     BM_TAP_ANSWER,
     BM_TAP_SESSION_ACC,
     BM_TAP_MEDIA,
+    BM_TAP_MEDIA_SWITCH,
     BM_TAP_POMO_TOGGLE,
     BM_TAP_POMO_RESET,
     BM_TAP_POMO_WORK,
@@ -477,6 +480,10 @@ uint32_t bm_usage_color(int pct);
 int32_t bm_usage_reset_s(const bm_usage_t *u, uint32_t now_ms);
 int bm_hilo_host(const bm_model_t *m);
 int bm_media_host(const bm_model_t *m);
+/* Both Macs report the same track (Spotify Connect mirrors the one that plays). */
+bool bm_media_merged(const bm_model_t *m);
+/* The other Mac with a different track, for the switch pill; -1 if none. */
+int bm_media_other(const bm_model_t *m);
 bool bm_view_shown(const bm_model_t *m, bm_view_t view);
 const bm_cover_t *bm_media_cover(const bm_model_t *m);
 bool bm_cover_waiting(const bm_model_t *m, uint32_t now_ms);

@@ -126,9 +126,44 @@ int bm_hilo_host(const bm_model_t *m)
     return latest_host(m, has_hilo, hilo_stamp);
 }
 
+static bool same_track(const bm_media_t *a, const bm_media_t *b)
+{
+    return strcmp(a->title, b->title) == 0 && strcmp(a->artist, b->artist) == 0 && a->length_s == b->length_s;
+}
+
+bool bm_media_merged(const bm_model_t *m)
+{
+    const bm_host_t *a = &m->hosts[0], *b = &m->hosts[1];
+    return a->used && b->used && has_media(a) && has_media(b) && same_track(&a->media, &b->media);
+}
+
+/* Merged: the Mac that reported last gets the controls. Otherwise the pill's pick, else connected, playing over paused, then the latest start. */
 int bm_media_host(const bm_model_t *m)
 {
-    return latest_host(m, has_media, media_stamp);
+    if (bm_media_merged(m)) return latest_host(m, has_media, media_stamp);
+    int pick = m->media_pick - 1;
+    if (pick >= 0 && pick < BM_MAX_HOSTS && m->hosts[pick].used && has_media(&m->hosts[pick])) return pick;
+    int best = -1;
+    for (int i = 0; i < BM_MAX_HOSTS; i++) {
+        const bm_host_t *h = &m->hosts[i];
+        if (!h->used || !has_media(h)) continue;
+        if (best < 0) { best = i; continue; }
+        const bm_media_t *x = &h->media, *y = &m->hosts[best].media;
+        bool newer = h->connected != m->hosts[best].connected ? h->connected
+                     : x->paused != y->paused                 ? !x->paused
+                                                              : (int32_t)(x->started_ms - y->started_ms) > 0;
+        if (newer) best = i;
+    }
+    return best;
+}
+
+int bm_media_other(const bm_model_t *m)
+{
+    if (bm_media_merged(m)) return -1;
+    int shown = bm_media_host(m);
+    for (int i = 0; i < BM_MAX_HOSTS; i++)
+        if (i != shown && m->hosts[i].used && has_media(&m->hosts[i])) return i;
+    return -1;
 }
 
 int32_t bm_media_position_s(const bm_media_t *media, uint32_t now_ms)

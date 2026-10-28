@@ -471,6 +471,20 @@ static void scene_music(void)
     bm_swipe(&M, -1, now);
     run(600);
     shot("music-off-hilo-next-to-focus");
+
+    linked();
+    go_view(BM_VIEW_MUSIC);
+    now_playing(true, NULL);
+    CHECK(send("home", "media.now_playing",
+               "{\"title\":\"Night Build\",\"artist\":\"Tabstop\",\"length_s\":247,\"position_s\":73,\"playing\":true}") == BM_OK);
+    run(4000);
+    CHECK(bm_media_merged(&M));
+    shot("music-two-macs-merged");
+    CHECK(send("home", "media.now_playing",
+               "{\"title\":\"Quiet Hours\",\"artist\":\"Low Tide\",\"length_s\":201,\"position_s\":5,\"playing\":true}") == BM_OK);
+    run(4000);
+    CHECK(bm_media_other(&M) >= 0);
+    shot("music-two-macs-switch");
 }
 
 static void scene_panel(void)

@@ -300,6 +300,18 @@ static void create_music(lv_obj_t *v)
     lv_obj_set_size(ui.cover, COVER_SIDE, COVER_SIDE);
     lv_obj_set_style_radius(ui.cover, 16, 0);
     lv_obj_set_style_clip_corner(ui.cover, true, 0);
+    ui.song_src = ui_box(ui.cover);
+    lv_obj_set_size(ui.song_src, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_align(ui.song_src, LV_ALIGN_BOTTOM_MID, 0, -10);
+    lv_obj_set_style_pad_hor(ui.song_src, 14, 0);
+    lv_obj_set_style_pad_ver(ui.song_src, 7, 0);
+    lv_obj_set_style_radius(ui.song_src, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_bg_color(ui.song_src, ui_hex(C_BG), 0);
+    lv_obj_set_style_bg_opa(ui.song_src, LV_OPA_80, 0);
+    lv_obj_set_style_border_color(ui.song_src, ui_hex(C_DIM), 0);
+    ui.song_src_lbl = ui_label(ui.song_src, &font_mono_15, C_FG, "");
+    lv_obj_set_style_text_letter_space(ui.song_src_lbl, 1, 0);
+    ui_on_tap(ui.song_src, BM_TAP_MEDIA_SWITCH, 0);
 
     ui.song = ui_label(v, F_TITLE, C_FG, "");
     lv_obj_set_width(ui.song, LV_PCT(100));
@@ -708,6 +720,21 @@ static void cover_frame(uint32_t now_ms)
     }
 }
 
+/* Merged: both Macs as a chip. Different tracks: a bordered pill that switches to the other Mac. */
+static void update_media_source(int mh)
+{
+    int other = bm_media_other(ui.m);
+    bool merged = bm_media_merged(ui.m);
+    ui_show(ui.song_src, merged || other >= 0);
+    if (!merged && other < 0) return;
+    char raw[48], text[48];
+    if (merged) snprintf(raw, sizeof(raw), "%s \xC2\xB7 %s", ui.m->hosts[0].name, ui.m->hosts[1].name);
+    else snprintf(raw, sizeof(raw), "%s \xE2\x80\xBA %s", ui.m->hosts[mh].name, ui.m->hosts[other].name);
+    ui_upper(text, sizeof(text), raw);
+    lv_label_set_text(ui.song_src_lbl, text);
+    lv_obj_set_style_border_width(ui.song_src, merged ? 0 : 2, 0);
+}
+
 static void update_music(uint32_t now_ms)
 {
     int mh = bm_media_host(ui.m);
@@ -724,6 +751,7 @@ static void update_music(uint32_t now_ms)
         else pixel_cover(title);
         lv_obj_invalidate(ui.cover);
     }
+    update_media_source(mh);
     lv_label_set_text(ui.song_play, media && media->paused ? LV_SYMBOL_PLAY : LV_SYMBOL_PAUSE);
     lv_obj_set_style_opa(ui.song_ctl, media && ui.m->hosts[mh].connected ? LV_OPA_COVER : LV_OPA_40, 0);
     int32_t len = media ? media->length_s : 0;

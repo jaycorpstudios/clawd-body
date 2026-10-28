@@ -74,3 +74,4 @@ bool bm__alarm_ack(bm_model_t *m, uint32_t now_ms);
 void bm__settings_tick(bm_model_t *m, uint32_t now_ms);
 void bm__sleep_card_tick(bm_model_t *m, uint32_t now_ms);
 void bm__media_tap(bm_model_t *m, int action, uint32_t now_ms);
+bool bm__media_started(const bm_media_t *old, const bm_media_t *next);
