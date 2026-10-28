@@ -31,7 +31,7 @@ open .build/Hilo.app
 | Week | Session time, sessions and closed tasks per project; copy as Markdown |
 | Agreements | Log by day and the "To confirm" column |
 | Resume context | Per project: last session, its steps, open tasks, resume commands, recent agreements |
-| Setup | Name this Mac, start/stop `hilod`, guided buddy pairing, usage settings ([spec](../docs/components/hilo.md#screens)) |
+| Setup | Name this Mac, start/stop `hilod`, Claude Code hooks, guided buddy pairing, usage settings ([spec](../docs/components/hilo.md#screens)) |
 
 The window polls the store every 2 s. After a change it asks `hilod` (socket op `hilo`) to send the buddy a fresh snapshot, so the buddy's Hilo card follows.
 

@@ -28,7 +28,18 @@ Correct means: nothing high-risk is ever approved off the Mac, and the device ne
 5. Open decisions live in `docs/plans/open-questions.md`: present options with trade-offs, never decide silently.
 6. Repo content is English; keep docs and indexes in sync when adding files.
 
-Validate with `pnpm test` (contract, `shared/`) and `scripts/swift-test.sh` (daemon), `scripts/firmware-test.sh` (firmware model, host) and `scripts/idf.sh build` (firmware); `scripts/firmware-render.sh` draws buddy screens to PNG on the Mac for a layout check. `scripts/build-hilod.sh` and `scripts/build-hilo-app.sh` make the signed Mac builds. Node version: `.nvmrc`.
+Validate with `pnpm test` (contract, `shared/`) and `scripts/swift-test.sh` (daemon), `scripts/firmware-test.sh` (firmware model, host) and `scripts/idf.sh build` (firmware); `scripts/firmware-render.sh` draws buddy screens to PNG on the Mac for a layout check. `scripts/build-hilod.sh` and `scripts/build-hilo-app.sh` make the signed Mac builds; `scripts/doctor.sh` checks a Mac for them. Node version: `.nvmrc`.
+
+## Set up a new Mac
+
+When asked to get Hilo running on this Mac:
+
+1. Run `scripts/doctor.sh` and report what is missing. It installs nothing.
+2. For a MISS, tell the user the fix and wait; never install anything (Xcode, Command Line Tools, Node, ESP-IDF) without their OK.
+3. Build with `scripts/build-hilod.sh` then `scripts/build-hilo-app.sh`. The first one may ask for the login keychain password; let the user answer.
+4. Ask whether they want a Desktop shortcut while the app has no installer; if yes, `scripts/desktop-shortcut.sh`.
+5. Run `open hilo/.build/Hilo.app` and hand over to Hilo › Setup (README, "Set up a Mac"). Do not edit `~/.claude/settings.json`, install the LaunchAgent or pair from the terminal: Setup does those, with the user watching.
+6. Run `scripts/doctor.sh` again and summarize.
 
 ## Start here
 

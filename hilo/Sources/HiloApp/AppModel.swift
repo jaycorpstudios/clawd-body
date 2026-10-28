@@ -49,6 +49,7 @@ final class AppModel {
     var musicStatus: MusicStatus?
     var musicHere: [String: AutomationAccess] = [:]
     var statusLine = StatusLineSetup.State.noStatusLine
+    var hooks = HooksSetup.State.installed
     var daemonError: String?
     var config = HiloConfig.load()
     var selectedTask: Int?
@@ -106,6 +107,8 @@ final class AppModel {
             if status != daemonStatus { daemonStatus = status }
             let line = StatusLineSetup.detect()
             if line != statusLine { statusLine = line }
+            let hooksNow = HooksSetup.detect()
+            if hooksNow != hooks { hooks = hooksNow }
             if let begun = phaseAlarm.check(status?.pomodoro, now: Self.now) { PhaseNotifier.announce(begun) }
             let connected = running && (status.map { $0.buddy.link == .connected } ?? (state?.buddyConnected == true))
             if connected != buddyConnected { buddyConnected = connected }

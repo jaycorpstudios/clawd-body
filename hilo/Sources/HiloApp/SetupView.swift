@@ -15,11 +15,12 @@ struct SetupView: View {
             }
             step(1, "Name this Mac", done: model.config.host != nil) { nameCard }
             step(2, "Run hilod", done: model.daemonRunning) { daemonCard }
-            step(3, "Pair the buddy", done: model.daemonStatus?.buddy.link == .connected) { buddyCard }
-            step(4, "Usage on the buddy", done: model.statusLine == .wrapped, optional: true) { usageCard }
-            step(5, "Buddy settings", done: false, optional: true) { BuddySettingsCard() }
-            step(6, "Picture for this Mac", done: model.daemonStatus?.face != nil, optional: true) { ProfileCard() }
-            step(7, "Music", done: false, optional: true) { MusicCard() }
+            step(3, "Claude Code hooks", done: model.hooks == .installed) { hooksCard }
+            step(4, "Pair the buddy", done: model.daemonStatus?.buddy.link == .connected) { buddyCard }
+            step(5, "Usage on the buddy", done: model.statusLine == .wrapped, optional: true) { usageCard }
+            step(6, "Buddy settings", done: false, optional: true) { BuddySettingsCard() }
+            step(7, "Picture for this Mac", done: model.daemonStatus?.face != nil, optional: true) { ProfileCard() }
+            step(8, "Music", done: false, optional: true) { MusicCard() }
         }
         .onAppear {
             guard !nameLoaded else { return }
@@ -104,6 +105,31 @@ struct SetupView: View {
                     instruction(3, "macOS shows a pairing dialog: type the 6-digit code the buddy displays.")
                 }
             }
+        }
+    }
+
+    private var hooksCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Claude Code tells hilod what each session is doing through hooks in ~/.claude/settings.json. Without them the buddy and Hilo › Sessions stay empty.")
+                .foregroundStyle(Theme.secondary)
+            HStack(spacing: 12) {
+                Circle().fill(model.hooks == .installed ? Theme.selected : Theme.muted).frame(width: 8, height: 8)
+                Text(hooksState).font(.system(size: 12.5)).foregroundStyle(Theme.secondary)
+                Spacer()
+                CopyButton("Copy prompt for Claude Code") { model.hiloPath.map { HooksSetup.prompt(hilo: $0) } }
+                .buttonStyle(SecondaryButtonStyle())
+                .disabled(model.hiloPath == nil || model.hooks == .installed)
+                .help(model.hiloPath == nil ? "No hilo next to hilod: run scripts/build-hilod.sh, then rebuild the app."
+                      : "Paste it into a Claude Code session: it backs up settings.json, shows the diff and waits for your OK.")
+            }
+        }
+    }
+
+    private var hooksState: String {
+        switch model.hooks {
+        case .installed: "Every hook goes to hilo hook. New Claude Code sessions show up here and on the buddy."
+        case .missing(let events): "Not sent to hilo hook yet: \(events.joined(separator: ", "))."
+        case .unreadable: "Claude Code's settings.json is not valid JSON; Hilo cannot tell."
         }
     }
 

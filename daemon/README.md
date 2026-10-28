@@ -112,4 +112,4 @@ Answer a held request as the buddy would:
 
 ## Claude Code hooks
 
-[`hooks.example.json`](hooks.example.json) wires every hook to `hilo hook` (put `hilo` on `PATH`). The blocking hooks use a 660 s timeout so `hilod` always expires a request (600 s) before Claude Code kills the hook. If `hilod` is down, `hilo hook` prints nothing and exits 0, so Claude Code behaves as if no hook existed.
+[`hooks.example.json`](hooks.example.json) wires every hook to `hilo hook` (put `hilo` on `PATH`). Hilo › Setup › Claude Code hooks checks `~/.claude/settings.json` for them and copies a prompt that adds them with the full path of the bundled `hilo`. The blocking hooks use a 660 s timeout so `hilod` always expires a request (600 s) before Claude Code kills the hook. If `hilod` is down, `hilo hook` prints nothing and exits 0, so Claude Code behaves as if no hook existed.
