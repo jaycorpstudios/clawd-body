@@ -347,11 +347,6 @@ final class AppModel {
         do { try Data(markdown.utf8).write(to: url, options: .atomic) } catch { errorMessage = "Cannot save \(url.lastPathComponent): \(error)" }
     }
 
-    func copy(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-    }
-
     /// Refreshes the window and lets `hilod` push the new Hilo state to the buddy.
     private func changed() {
         refresh()

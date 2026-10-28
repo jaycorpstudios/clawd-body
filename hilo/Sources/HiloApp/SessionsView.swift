@@ -168,7 +168,7 @@ struct SessionDetail: View {
                 let command = "claude --resume \(session.id)"
                 Text(command).font(Theme.mono).textSelection(.enabled).lineLimit(1)
                 Spacer()
-                Button("Copy command") { model.copy(command) }.buttonStyle(SecondaryButtonStyle())
+                CopyButton("Copy command") { command }.buttonStyle(SecondaryButtonStyle())
             }
             .padding(10).background(Theme.softPanel, in: RoundedRectangle(cornerRadius: 10))
         }

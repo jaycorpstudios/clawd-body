@@ -37,7 +37,7 @@ struct WeekView: View {
                     Button { offset += 1 } label: { Image(systemName: "chevron.right") }
                         .buttonStyle(SecondaryButtonStyle()).help("Next week").keyboardShortcut("]", modifiers: .command).disabled(offset == 0)
                     if offset != 0 { Button("This week") { offset = 0 }.buttonStyle(SecondaryButtonStyle()) }
-                    Button("Copy") { model.copy(report.markdown) }.buttonStyle(SecondaryButtonStyle()).help("Copy as Markdown")
+                    CopyButton("Copy") { report.markdown }.buttonStyle(SecondaryButtonStyle()).help("Copy as Markdown")
                     Button("Export .md") { model.export(report.markdown, name: "week-\(Self.fileDay(start)).md") }
                         .buttonStyle(PrimaryButtonStyle()).help("Export to Markdown")
                 }

@@ -25,7 +25,7 @@ import Testing
         let text = StatusLineSetup.prompt(hilo: "/Applications/Hilo.app/Contents/MacOS/hilo")
         #expect(text.contains("`/Applications/Hilo.app/Contents/MacOS/hilo statusline -- <current command>`"))
         #expect(text.contains(#""command": "/Applications/Hilo.app/Contents/MacOS/hilo statusline""#))
-        for step in ["settings.json.bak-hilo", "Never wrap it twice", "diff", "wait for my OK", "usage ring"] {
+        for step in ["settings.json.bak-hilo", "Never wrap it twice", "diff", "wait for my OK", "nothing is saved yet", "usage ring"] {
             #expect(text.contains(step))
         }
         #expect(StatusLineSetup.prompt(hilo: "/Users/a b/hilo").contains("`'/Users/a b/hilo' statusline -- <current command>`"))

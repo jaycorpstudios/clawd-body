@@ -66,7 +66,7 @@ struct ResumeView: View {
                         HStack {
                             Text(command).font(Theme.mono).lineLimit(1).textSelection(.enabled)
                             Spacer()
-                            Button("Copy") { model.copy(command) }.buttonStyle(.plain).foregroundStyle(Theme.link)
+                            CopyButton("Copy") { command }.buttonStyle(.plain).foregroundStyle(Theme.link)
                         }
                     }
                 }

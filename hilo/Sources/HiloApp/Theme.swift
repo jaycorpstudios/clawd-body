@@ -120,3 +120,40 @@ struct SecondaryButtonStyle: ButtonStyle {
             .foregroundStyle(Theme.text)
     }
 }
+
+/// Copies `text` to the pasteboard and reads "Copied" for a moment, at the width of the wider label.
+struct CopyButton: View {
+    private let title: String
+    private let text: () -> String?
+    @State private var copied = false
+
+    init(_ title: String, text: @escaping () -> String?) {
+        self.title = title
+        self.text = text
+    }
+
+    var body: some View {
+        Button {
+            guard let value = text() else { return }
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(value, forType: .string)
+            copied = true
+        } label: {
+            ZStack {
+                Text(title).hidden()
+                copiedLabel.hidden()
+                if copied { copiedLabel.transition(.opacity) } else { Text(title).transition(.opacity) }
+            }
+            .animation(.easeOut(duration: 0.15), value: copied)
+        }
+        .task(id: copied) {
+            guard copied else { return }
+            try? await Task.sleep(for: .seconds(1.5))
+            copied = false
+        }
+    }
+
+    private var copiedLabel: some View {
+        Label("Copied", systemImage: "checkmark")
+    }
+}

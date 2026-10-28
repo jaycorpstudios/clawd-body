@@ -115,16 +115,14 @@ struct SetupView: View {
             HStack {
                 Text(AppModel.statusLineCommand).font(Theme.mono).textSelection(.enabled)
                 Spacer()
-                Button("Copy") { model.copy(AppModel.statusLineCommand) }.buttonStyle(SecondaryButtonStyle())
+                CopyButton("Copy") { AppModel.statusLineCommand }.buttonStyle(SecondaryButtonStyle())
             }
             .padding(10).background(Theme.softPanel, in: RoundedRectangle(cornerRadius: 8))
             HStack(spacing: 12) {
                 Circle().fill(model.statusLine == .wrapped ? Theme.selected : Theme.muted).frame(width: 8, height: 8)
                 Text(statusLineState).font(.system(size: 12.5)).foregroundStyle(Theme.secondary)
                 Spacer()
-                Button("Copy prompt for Claude Code") {
-                    if let hilo = model.hiloPath { model.copy(StatusLineSetup.prompt(hilo: hilo)) }
-                }
+                CopyButton("Copy prompt for Claude Code") { model.hiloPath.map { StatusLineSetup.prompt(hilo: $0) } }
                 .buttonStyle(SecondaryButtonStyle())
                 .disabled(model.hiloPath == nil || model.statusLine == .wrapped)
                 .help(model.hiloPath == nil ? "No hilo next to hilod: run scripts/build-hilod.sh, then rebuild the app."

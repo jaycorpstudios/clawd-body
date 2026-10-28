@@ -41,8 +41,8 @@ public enum StatusLineSetup {
            - If there is a command, replace it with `\(exe) statusline -- <current command>`, keeping the current command exactly as it is. If it uses shell syntax (pipes, &&, ;, redirections, $(...)), wrap it as `\(exe) statusline -- sh -c '<current command>'`, escaping single quotes.
            - If there is no statusLine, add "statusLine": {"type": "command", "command": "\(exe) statusline"}.
            Keep every other setting, and the rest of statusLine (type, padding), as it is. Never wrap it twice.
-        3. Show me the diff and wait for my OK before saving.
-        4. Then tell me how to check it: after my next message in Claude Code the status line refreshes, the buddy's usage ring moves within a few seconds, and Hilo › Setup › Usage says the status line goes through hilo statusline.
+        3. Show me the diff and wait for my OK before saving. End that reply by saying nothing is saved yet and asking me to answer "ok" to save it.
+        4. Once it is saved, tell me how to check it: after my next message in Claude Code the status line refreshes, the buddy's usage ring moves within a few seconds, and Hilo › Setup › Usage says the status line goes through hilo statusline.
         """
     }
 
