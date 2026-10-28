@@ -145,6 +145,7 @@ private func behavior(_ reply: Data) -> String? {
     h.presence.present.set(false)
     await h.settle()
     h.clock.time.set(1_000 + Coordinator.handBackAfter + 1)
+    await h.settle()
     h.presence.present.set(true)
     await h.settle()
     #expect(await h.link.field("agent.request_resolved", "request_id") == nil)
