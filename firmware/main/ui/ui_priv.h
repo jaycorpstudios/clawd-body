@@ -93,8 +93,8 @@ typedef struct {
     ui_confetti_t confetti[CONFETTI_MAX];
     int n_confetti;
 
-    lv_obj_t *attn, *ap_k, *ap_p, *ap_h, *ap_cmd, *ap_why, *ap_actions, *ap_deny, *ap_ok, *ap_ok_fill, *ap_locked,
-        *ap_locked_lbl, *ap_opts, *ap_opt[BM_MAX_OPTIONS], *ap_opt_lbl[BM_MAX_OPTIONS];
+    lv_obj_t *attn, *ap_k, *ap_p, *ap_h, *ap_body, *ap_cmd, *ap_why, *ap_actions, *ap_deny, *ap_ok, *ap_ok_lbl, *ap_ok_fill,
+        *ap_locked, *ap_locked_lbl, *ap_opts, *ap_opt[BM_MAX_OPTIONS], *ap_opt_lbl[BM_MAX_OPTIONS];
 
     lv_obj_t *sheet, *sh_title, *sh_body;
     ui_pet_t *sh_pet;

@@ -23,7 +23,7 @@ Spare parts available: PAM8403 amplifiers and 8 Ω 0.5 W speakers, in case the o
 3. **Full-screen alerts**: task done (confetti), error, usage warning at 80 %, limit at 100 %, connect and disconnect, low battery.
 4. **Permission or question screen**: shows project, Mac, tool, command and reason.
    - Normal permission: **Deny** and **Hold to approve** (hold ~0.9 s).
-   - High risk: **Deny** only, with the caption "High risk: Mac only".
+   - High risk: **Hold 3 s to approve**, then **Tap to confirm** within 4 s (since 2026-10-29). A Mac-only request (`remote_allowed:false`): **Deny** only, with the caption "Approve on the Mac".
    - Question: options as buttons.
    - **Later**: keeps it pending without losing it.
    - **View details**: opens a sheet with full information (diff, directory, risk).

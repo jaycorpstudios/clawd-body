@@ -136,7 +136,6 @@ static bool parse_permission(const cJSON *o, bm_request_t *r, char *session, cha
     if (risk < 0 || !cJSON_IsBool(remote)) return false;
     r->high_risk = risk == 1;
     r->remote_allowed = cJSON_IsTrue(remote);
-    if (r->high_risk && r->remote_allowed) return false;
 
     bool ok = ULID_OK(o, "request_id", r->request_id) && req_str(o, "session", 1, 64, session, 65) &&
               req_str(o, "project", 1, 64, project, 65) && req_str(o, "tool", 1, 32, r->tool, sizeof(r->tool)) &&

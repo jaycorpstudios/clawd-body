@@ -57,7 +57,7 @@ export const SCENARIOS: Record<string, Scenario> = {
     },
   },
   'permission-high': {
-    description: 'High-risk permission: the buddy can only deny',
+    description: 'Mac-only permission (policy.json or a command too long to show): the buddy can only deny',
     build: (nowS) => {
       const request_id = ulid();
       return [

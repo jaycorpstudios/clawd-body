@@ -50,9 +50,8 @@ printf '%s' "{\"hook_event_name\":\"PermissionRequest\",\"session_id\":\"e2e\",\
 HOOK=$!
 high=$(newest_request agent.needs_permission "$low") || { echo "FAIL no high-risk request"; exit 1; }
 buddy 01K8F400000000000000000103 permission.decision "{\"request_id\":\"$high\",\"decision\":\"approve\"}"
-buddy 01K8F400000000000000000104 permission.decision "{\"request_id\":\"$high\",\"decision\":\"deny\"}"
 wait $HOOK
-check "high-risk approve is ignored, deny is honored" '"behavior":"deny"' high.out
+check "high-risk approve from the buddy reaches the hook" '"behavior":"allow"' high.out
 grep -q "abc123" out.jsonl && { echo "FAIL token reached the buddy"; FAILED=1; } || echo "ok   Authorization value redacted"
 
 kill $DAEMON; wait $DAEMON 2>/dev/null

@@ -6,7 +6,7 @@
 ## Mission
 
 A desk buddy (ESP32-S3 AMOLED) and **Hilo**, a local macOS app + daemon, that show Claude Code session state and let the user answer low-risk prompts from the device.
-Correct means: nothing high-risk is ever approved off the Mac, and the device never holds a secret.
+Correct means: the buddy approves only what it shows whole, high-risk only with an extra confirmation, and the device never holds a secret.
 
 ## Structure
 
@@ -63,7 +63,7 @@ When asked to get Hilo running on this Mac:
 
 - The buddy never stores credentials, tokens or API keys; only BLE bonding keys managed by the stack.
 - BLE uses LE Secure Connections with passkey; unbonded connections are always rejected.
-- High-risk actions are approved only on the Mac; the daemon owns the remote-approval allowlist.
+- The daemon decides what the buddy may approve (`remote_allowed`): a command cut to fit the screen is Mac-only, high-risk needs a 3 s hold plus a confirming tap, and `policy.json` can keep high-risk (or everything) on the Mac. Decided 2026-10-29.
 - Every decision from the buddy is validated by the daemon: pending `request_id`, not expired, single use.
 - Hilo data stays on the Mac that produced it; no sync between machines.
 - This repo is public: no personal data, absolute paths, hostnames or real work project names.

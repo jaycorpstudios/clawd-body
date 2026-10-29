@@ -517,6 +517,7 @@ static void decide(bm_model_t *m, bool approve, int choice, uint32_t now_ms)
 
     m->attn = -1;
     m->hold_active = false;
+    m->confirm_until_ms = 0;
     s->has_request = false;
     s->status = BM_WORKING;
     s->since = wall_s(m, now_ms);
@@ -617,6 +618,9 @@ void bm_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms)
     case BM_TAP_LATER: later(m, now_ms); break;
     case BM_TAP_DENY: decide(m, false, -1, now_ms); break;
     case BM_TAP_ANSWER: decide(m, true, arg, now_ms); break;
+    case BM_TAP_CONFIRM:
+        if (bm_confirm_armed(m, now_ms) && m->confirm_pressed) decide(m, true, -1, now_ms);
+        break;
     case BM_TAP_SESSION_ACC: session_acc(m, arg, now_ms); break;
     case BM_TAP_MEDIA: bm__media_tap(m, arg, now_ms); break;
     case BM_TAP_MEDIA_SWITCH:
@@ -724,6 +728,10 @@ void bm_button(bm_model_t *m, bool pressed, uint32_t now_ms)
 bool bm_hold_begin(bm_model_t *m, uint32_t now_ms)
 {
     const bm_session_t *s = bm_attn_session(m);
+    if (bm_confirm_armed(m, now_ms)) {
+        m->confirm_pressed = true;
+        return false;
+    }
     if (m->sleeping || !s || !s->has_request || s->req.is_question || !bm_request_approvable(&s->req)) return false;
     m->hold_active = true;
     m->hold_start_ms = now_ms;
@@ -743,8 +751,37 @@ void bm_hold_cancel(bm_model_t *m)
 float bm_hold_progress(const bm_model_t *m, uint32_t now_ms)
 {
     if (!m->hold_active) return 0.0f;
-    float p = (float)(now_ms - m->hold_start_ms) / BM_HOLD_MS;
+    const bm_session_t *s = bm_attn_session(m);
+    if (!s) return 0.0f;
+    float p = (float)(now_ms - m->hold_start_ms) / bm_hold_ms(&s->req);
     return p > 1.0f ? 1.0f : p;
+}
+
+bool bm_confirm_armed(const bm_model_t *m, uint32_t now_ms)
+{
+    const bm_session_t *s = bm_attn_session(m);
+    return s && m->confirm_until_ms && !due(now_ms, m->confirm_until_ms) &&
+           strcmp(m->confirm_id, s->req.request_id) == 0;
+}
+
+// High risk: the hold only arms; a later press and release confirms (the hold's own release is a click in LVGL).
+static void hold_tick(bm_model_t *m, uint32_t now_ms)
+{
+    if (m->confirm_until_ms && due(now_ms, m->confirm_until_ms)) {
+        m->confirm_until_ms = 0;
+        bm__touch(m);
+    }
+    const bm_session_t *s = bm_attn_session(m);
+    if (!m->hold_active || !s || now_ms - m->hold_start_ms < bm_hold_ms(&s->req)) return;
+    if (!s->req.high_risk) {
+        decide(m, true, -1, now_ms);
+        return;
+    }
+    m->hold_active = false;
+    snprintf(m->confirm_id, sizeof(m->confirm_id), "%s", s->req.request_id);
+    m->confirm_until_ms = now_ms + BM_CONFIRM_MS;
+    m->confirm_pressed = false;
+    bm__touch(m);
 }
 
 void bm_set_battery(bm_model_t *m, uint8_t pct, bool charging, uint32_t now_ms)
@@ -1163,7 +1200,7 @@ void bm_tick(bm_model_t *m, uint32_t now_ms)
         bm__touch(m);
     }
 
-    if (m->hold_active && now_ms - m->hold_start_ms >= BM_HOLD_MS) decide(m, true, -1, now_ms);
+    hold_tick(m, now_ms);
 
     if (m->button_down && !m->button_long_fired && now_ms - m->button_down_ms >= BM_LONG_PRESS_MS) {
         m->button_long_fired = true;

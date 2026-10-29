@@ -7,6 +7,7 @@
 #include "lvgl.h"
 #include "support.h"
 #include "ui.h"
+#include "ui_priv.h"
 
 #define W 480
 #define FRAME_MS 33
@@ -713,6 +714,73 @@ static void scene_handback(void)
     bm_tap(&M, BM_TAP_BACK, 0, now);
 }
 
+static void ask(const char *id, const char *risk, bool remote, const char *detail, const char *why)
+{
+    CHECK(send("work", "agent.needs_permission",
+               "{\"request_id\":\"%s\",\"session\":\"s\",\"project\":\"payments-api\",\"tool\":\"Bash\",\"detail\":\"%s\","
+               "\"why\":\"%s\",\"cwd\":\"~/code/payments-api\",\"risk\":\"%s\",\"remote_allowed\":%s,\"expires_at\":%lld}",
+               id, detail, why, risk, remote ? "true" : "false", BASE_TS + now / 1000 + 600) == BM_OK);
+    run(BM_ATTN_SLIDE_MS + 100);
+}
+
+static void scroll_to_end(void)
+{
+    lv_obj_scroll_to_y(ui.ap_body, LV_COORD_MAX, LV_ANIM_OFF);
+    run(100);
+}
+
+static void scene_requests(void)
+{
+    linked();
+    CHECK(send("work", "session.start", "{\"session\":\"s\",\"project\":\"payments-api\",\"task\":\"Retries\"}") == BM_OK);
+    go_view(BM_VIEW_HOME);
+    const char *pipeline =
+        "git log --since=yesterday --pretty=format:'%h %an %s' -- src/payments | grep -v Merge | sort -k2 | uniq -c "
+        "| sort -rn | head -n 20 && pnpm --filter payments-api test -- --coverage --reporter=verbose && echo done";
+    const char *why = "Summarise yesterday's payment commits by author, then run the payments tests with coverage "
+                      "so the retry change can be checked before review.";
+
+    ask("01K8F5REQ0000000000000001A", "low", true, pipeline, why);
+    shot("request-low-long");
+    scroll_to_end();
+    shot("request-low-long-scrolled");
+    bm_tap(&M, BM_TAP_DENY, 0, now);
+    run(2000);
+
+    ask("01K8F5REQ0000000000000001B", "high", true, "git push --force origin retries", "Publish the rebased branch");
+    shot("request-high");
+    CHECK(bm_hold_begin(&M, now));
+    run(BM_HOLD_HIGH_MS / 2);
+    shot("request-high-holding");
+    run(BM_HOLD_HIGH_MS / 2 + 100);
+    bm_hold_cancel(&M);
+    run(100);
+    shot("request-high-confirm");
+    run(BM_CONFIRM_MS);
+    bm_tap(&M, BM_TAP_DENY, 0, now);
+    run(2000);
+
+    ask("01K8F5REQ0000000000000001C", "high", false, "terraform apply -auto-approve", "Apply the staging plan");
+    shot("request-mac-only");
+    bm_tap(&M, BM_TAP_DENY, 0, now);
+    run(2000);
+
+    CHECK(send("work", "agent.question",
+               "{\"request_id\":\"01K8F5REQ0000000000000001D\",\"session\":\"s\",\"project\":\"payments-api\","
+               "\"detail\":\"The retry policy can back off per request or per merchant. Per merchant keeps one slow "
+               "merchant from starving the queue but needs a new table. Which one should the first version use?\","
+               "\"options\":[\"Per request, keep it simple\",\"Per merchant with a new table\",\"Both behind a flag\","
+               "\"Ask me again after tests\"],\"expires_at\":%lld}",
+               BASE_TS + now / 1000 + 600) == BM_OK);
+    run(BM_ATTN_SLIDE_MS + 100);
+    shot("question-long");
+    scroll_to_end();
+    shot("question-long-scrolled");
+    bm_tap(&M, BM_TAP_ANSWER, 0, now);
+    run(2000);
+}
+
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -742,6 +810,7 @@ int main(int argc, char **argv)
     scene_looks();
     scene_face();
     scene_handback();
+    scene_requests();
 
     return failures ? EXIT_FAILURE : EXIT_SUCCESS;
 }

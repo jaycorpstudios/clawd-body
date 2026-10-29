@@ -27,6 +27,8 @@
 #define BM_REST_DELAY_MS 700
 #define BM_REMIND_MS 25000
 #define BM_HOLD_MS 900
+#define BM_HOLD_HIGH_MS 3000
+#define BM_CONFIRM_MS 4000
 #define BM_LONG_PRESS_MS 650
 #define BM_NEXT_ATTN_MS 1500
 #define BM_TOAST_MS 2400
@@ -322,6 +324,9 @@ typedef struct {
     uint32_t next_attn_ms;
     bool hold_active;
     uint32_t hold_start_ms;
+    char confirm_id[27];
+    uint32_t confirm_until_ms;
+    bool confirm_pressed;
     bool button_down;
     bool button_long_fired;
     bool button_pairing_armed;
@@ -388,6 +393,7 @@ typedef enum {
     BM_TAP_POMO_WORK,
     BM_TAP_POMO_BREAK,
     BM_TAP_POMO_AUTO,
+    BM_TAP_CONFIRM,
 } bm_tap_t;
 
 typedef enum { BM_MEDIA_PLAY_PAUSE, BM_MEDIA_NEXT, BM_MEDIA_PREVIOUS } bm_media_action_t;
@@ -406,6 +412,7 @@ void bm_button(bm_model_t *m, bool pressed, uint32_t now_ms);
 bool bm_hold_begin(bm_model_t *m, uint32_t now_ms);
 void bm_hold_cancel(bm_model_t *m);
 float bm_hold_progress(const bm_model_t *m, uint32_t now_ms);
+bool bm_confirm_armed(const bm_model_t *m, uint32_t now_ms);
 void bm_set_battery(bm_model_t *m, uint8_t pct, bool charging, uint32_t now_ms);
 void bm_set_accessory(bm_model_t *m, bm_acc_t acc);
 
@@ -450,6 +457,7 @@ float bm_attn_slide(const bm_model_t *m, uint32_t now_ms);
 bool bm_attn_leaving(const bm_model_t *m, uint32_t now_ms);
 float bm_ease(float t);
 bool bm_request_approvable(const bm_request_t *r);
+uint32_t bm_hold_ms(const bm_request_t *r);
 int bm_hosts_connected(const bm_model_t *m);
 int bm_live_waiting_count(const bm_model_t *m);
 

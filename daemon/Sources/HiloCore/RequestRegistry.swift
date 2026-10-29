@@ -65,14 +65,14 @@ public struct RequestRegistry: Sendable {
         case .failure(let failure): return failure
         case .success(let r): request = r
         }
-        guard case .permission(let risk, let remoteAllowed) = request.body else {
+        guard case .permission(_, let remoteAllowed) = request.body else {
             return .rejected(.wrongKind, reply: nil)
         }
         switch decision.decision {
         case .deny:
             return .accepted(.deny, resolved: close(request, outcome: .denied, via: .buddy))
         case .approve:
-            guard risk == .low, remoteAllowed else { return .rejected(.approvalNotAllowed, reply: nil) }
+            guard remoteAllowed else { return .rejected(.approvalNotAllowed, reply: nil) }
             return .accepted(.allow, resolved: close(request, outcome: .approved, via: .buddy))
         }
     }

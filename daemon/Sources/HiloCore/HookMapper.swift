@@ -64,10 +64,11 @@ public struct HookMapper: Sendable {
         case "PermissionRequest":
             let call = ToolCall(tool: tool, input: Self.flatStrings(input), cwd: hook.cwd, repoRoot: root, project: project)
             let c = policy.classify(call)
+            let shown = Self.detailText(tool: tool, input: input, root: root)
             return .awaitPermission(PermissionRequest(
                 requestId: requestId, session: session, project: project, tool: Text.clip(tool.isEmpty ? "Tool" : tool, 32),
-                detail: Self.detail(tool: tool, input: input, root: root), why: input["description"]?.string.map { Text.clip(Redactor.redact($0), 300) },
-                diff: Self.diff(input), cwd: Text.clipLeft(hook.cwd, 120), risk: c.risk, remoteAllowed: c.remoteAllowed,
+                detail: Text.clip(shown, 300), why: input["description"]?.string.map { Text.clip(Redactor.redact($0), 300) },
+                diff: Self.diff(input), cwd: Text.clipLeft(hook.cwd, 120), risk: c.risk, remoteAllowed: c.remoteAllowed && Text.fits(shown, 300),
                 expiresAt: now + Self.expirySeconds))
         case "PreToolUse" where tool == "AskUserQuestion":
             guard let q = Self.singleQuestion(input) else {
@@ -92,12 +93,16 @@ public struct HookMapper: Sendable {
     }
 
     static func detail(tool: String, input: JSONValue, root: String?) -> String {
+        Text.clip(detailText(tool: tool, input: input, root: root), 300)
+    }
+
+    static func detailText(tool: String, input: JSONValue, root: String?) -> String {
         let text: String
         if let command = input["command"]?.string { text = command }
         else if let path = input["file_path"]?.string { text = relative(path, root: root) }
         else if let url = input["url"]?.string { text = url }
         else { text = tool }
-        return Text.clip(Redactor.redact(text.isEmpty ? tool : text), 300)
+        return Redactor.redact(text.isEmpty ? tool : text)
     }
 
     static func diff(_ input: JSONValue) -> [DiffLine]? {
@@ -136,7 +141,16 @@ public struct HookMapper: Sendable {
 /// Limits count Unicode scalars, as JSON Schema's maxLength does.
 public enum Text {
     public static func clip(_ s: String, _ max: Int) -> String {
-        clipLine(s.replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces), max)
+        clipLine(oneLine(s), max)
+    }
+
+    /// Whether `clip` keeps all of `s`: the buddy may approve only what it shows whole.
+    public static func fits(_ s: String, _ max: Int) -> Bool {
+        oneLine(s).unicodeScalars.count <= max
+    }
+
+    private static func oneLine(_ s: String) -> String {
+        s.replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces)
     }
 
     public static func clipLine(_ s: String, _ max: Int) -> String {

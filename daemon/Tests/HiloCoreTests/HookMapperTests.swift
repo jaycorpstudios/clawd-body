@@ -51,6 +51,19 @@ private func map(_ json: String) throws -> HookAction {
     #expect(p.risk == .high)
 }
 
+@Test func aCommandTooLongToShowWholeIsMacOnly() throws {
+    func request(_ command: String) throws -> PermissionRequest? {
+        let json = #"{"hook_event_name":"PermissionRequest","session_id":"abc","cwd":"\#(repo)","tool_name":"Bash","tool_input":{"command":"\#(command)"}}"#
+        guard case .awaitPermission(let p) = try map(json) else { return nil }
+        return p
+    }
+    let words = "echo " + Array(repeating: "word", count: 59).joined(separator: " ")
+    let fits = try #require(try request(words + "s"))
+    let cut = try #require(try request(words + "ss"))
+    #expect(fits.remoteAllowed && fits.detail.count == 300)
+    #expect(!cut.remoteAllowed && cut.detail.hasSuffix("…"))
+}
+
 @Test func singleSelectQuestionIsForwarded() throws {
     let action = try map(#"""
     {"hook_event_name":"PreToolUse","session_id":"abc","cwd":"\#(repo)","tool_name":"AskUserQuestion",

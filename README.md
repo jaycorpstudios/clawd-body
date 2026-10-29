@@ -112,7 +112,7 @@ The drafts show in Hilo › Week, editable, and go into Export .md.
 
 ## Security model in one paragraph
 
-The Mac pushes events; the buddy only displays them and returns decisions. The buddy never stores credentials. BLE requires authenticated pairing (LE Secure Connections with passkey). High-risk actions can only be approved on the Mac, and every decision coming from the buddy is validated by the daemon. Details: [`docs/security/`](docs/security/README.md).
+The Mac pushes events; the buddy only displays them and returns decisions. The buddy never stores credentials. BLE requires authenticated pairing (LE Secure Connections with passkey). The buddy approves only what it shows whole, and high-risk actions need a 3 s hold plus a confirming tap, and every decision coming from the buddy is validated by the daemon. Details: [`docs/security/`](docs/security/README.md).
 
 ## Disclaimer
 

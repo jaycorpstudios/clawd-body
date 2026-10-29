@@ -73,11 +73,25 @@ func editIsLowOnlyInsideRepo(path: String, expected: Risk) {
     #expect(call("https://docs.espressif.com.evil.io/x") == .high)
 }
 
-@Test func lowAlwaysAllowsRemoteAndHighNever() {
+@Test func bothRisksAllowRemoteByDefault() {
     let low = RiskPolicy.default.classify(ToolCall(tool: "Bash", input: ["command": "npm test"], cwd: repo, repoRoot: repo))
     let high = RiskPolicy.default.classify(ToolCall(tool: "Bash", input: ["command": "terraform apply"], cwd: repo, repoRoot: repo))
     #expect(low == Classification(risk: .low, remoteAllowed: true))
-    #expect(high == Classification(risk: .high, remoteAllowed: false))
+    #expect(high == Classification(risk: .high, remoteAllowed: true))
+}
+
+@Test func thePolicyFileCanKeepHighRiskOrEverythingOffTheBuddy() throws {
+    let file = try PolicyFile.parse(Data(#"""
+    {"high_remote_approval":false,"projects":{"locked":{"remote_approval":false}}}
+    """#.utf8))
+    let policy = RiskPolicy(rules: RiskPolicy.default.rules, file: file)
+    func classify(_ command: String, project: String) -> Classification {
+        policy.classify(ToolCall(tool: "Bash", input: ["command": command], cwd: repo, repoRoot: repo, project: project))
+    }
+    #expect(classify("npm test", project: "web") == Classification(risk: .low, remoteAllowed: true))
+    #expect(classify("terraform apply", project: "web") == Classification(risk: .high, remoteAllowed: false))
+    #expect(classify("npm test", project: "locked") == Classification(risk: .high, remoteAllowed: false))
+    #expect(throws: PolicyError.self) { try PolicyFile.parse(Data(#"{"high_remote_approval":"no"}"#.utf8)) }
 }
 
 @Test func thePolicyFileOnlyTightensAndPerProjectRulesApplyToThatProject() throws {

@@ -28,7 +28,12 @@ const bm_session_t *bm_attn_shown(const bm_model_t *m)
 
 bool bm_request_approvable(const bm_request_t *r)
 {
-    return !r->is_question && !r->high_risk && r->remote_allowed;
+    return !r->is_question && r->remote_allowed;
+}
+
+uint32_t bm_hold_ms(const bm_request_t *r)
+{
+    return r->high_risk ? BM_HOLD_HIGH_MS : BM_HOLD_MS;
 }
 
 int bm_hosts_connected(const bm_model_t *m)

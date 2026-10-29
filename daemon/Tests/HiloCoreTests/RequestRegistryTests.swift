@@ -25,9 +25,15 @@ private func registry(_ request: PendingRequest) -> RequestRegistry {
     #expect(result == .accepted(.allow, resolved: RequestResolved(requestId: id, session: "s1", kind: .permission, outcome: .approved, via: .buddy)))
 }
 
-@Test(arguments: [(Risk.high, false), (Risk.low, false), (Risk.high, true)])
-func approvalIsRejectedUnlessLowAndRemoteAllowed(risk: Risk, remoteAllowed: Bool) {
-    var r = registry(permission(risk: risk, remoteAllowed: remoteAllowed))
+@Test func highRiskApprovalIsAcceptedWhenRemoteAllowed() {
+    var r = registry(permission(risk: .high, remoteAllowed: true))
+    let result = r.decide(PermissionDecision(requestId: id, decision: .approve), now: now)
+    #expect(result == .accepted(.allow, resolved: RequestResolved(requestId: id, session: "s1", kind: .permission, outcome: .approved, via: .buddy)))
+}
+
+@Test(arguments: [Risk.high, Risk.low])
+func approvalIsRejectedUnlessRemoteAllowed(risk: Risk) {
+    var r = registry(permission(risk: risk, remoteAllowed: false))
     #expect(r.decide(PermissionDecision(requestId: id, decision: .approve), now: now) == .rejected(.approvalNotAllowed, reply: nil))
     #expect(r.pendingRequests.count == 1)
 }

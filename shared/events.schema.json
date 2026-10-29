@@ -119,9 +119,7 @@
         "risk": { "enum": ["low", "high"] },
         "remote_allowed": { "type": "boolean" },
         "expires_at": { "$ref": "#/$defs/unix" }
-      },
-      "if": { "properties": { "risk": { "const": "high" } } },
-      "then": { "properties": { "remote_allowed": { "const": false } } }
+      }
     },
     "questionRequest": {
       "type": "object", "additionalProperties": false,

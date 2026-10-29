@@ -11,7 +11,7 @@ sequenceDiagram
     H->>D: forward and wait (user away, see mode below)
     D->>D: classify with risk policy → risk, remote_allowed, expires_at
     D-->>B: agent.needs_permission
-    B->>B: show screen (Hold to approve / Deny only if high risk)
+    B->>B: show screen (hold to approve, 3 s + confirm if high risk; Deny only if Mac-only)
     alt decided on the buddy
         B->>D: permission.decision {request_id, approve|deny}
         D->>D: validate (see below)
@@ -57,7 +57,7 @@ flowchart TD
     Exp -->|yes| Reply
     Exp -->|no| Used{already used?}
     Used -->|yes| Reply
-    Used -->|no| Policy{remote_allowed<br/>and risk = low?}
+    Used -->|no| Policy{remote_allowed?}
     Policy -->|no, decision = deny| Deny([accept deny])
     Policy -->|no, decision = approve| Reject([reject + log])
     Policy -->|yes| Accept([accept decision, mark used,<br/>log via: buddy])
@@ -65,7 +65,7 @@ flowchart TD
 
 ## Notes
 
-- A **deny** from the buddy is always safe to honor, even for high-risk requests; an **approve** is honored only for `remote_allowed` + `low`.
+- A **deny** from the buddy is always safe to honor; an **approve** is honored only for `remote_allowed` (since 2026-10-29 that includes high risk, which the buddy confirms with a 3 s hold and a second tap).
 - Default expiry: 10 min. "Later" on the device (`device.snooze`) keeps the request pending; the buddy reminds every 25 s.
 - Every outcome is logged in the session timeline with `via`.
 - **Pending to define** ([open questions › daemon](../plans/open-questions.md#daemon)): idle threshold for "away", and a hardware check that the terminal prompt stays hidden while the hook holds.

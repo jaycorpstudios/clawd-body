@@ -87,11 +87,20 @@ The rotation keeps the 6 s anti burn-in shift. Since 2026-10-27 it sits under Cl
 | research-notes | 260 | heart eyes |
 | main pet | 22 | wizard (configurable) |
 
+## Request card (changed 2026-10-29, from dogfooding)
+
+The permission and question card keeps the prototype's look but was too cramped to read and tap: the command box stopped at 96 px, the "why" at 66 px, and the buttons were 50–58 px.
+
+- **Fixed**: the header (eyes tile, kind, project, Mac · age) on top and, for a permission, the action bar at the bottom: **Deny** and **Hold to approve** (72 px tall), or "Approve on the Mac" when `remote_allowed` is false.
+- **Scrolls** (vertical, visible 5 px bar): the whole command, the whole "why", a question's options (full width, ≥ 62 px, labels wrap) and a row of **Details ›** and **Later** buttons (52 px), last, so they sit apart from Deny. A new request starts scrolled to the top.
+- **High risk**: red frame and "PERMISSION · HIGH RISK"; the approve button is dark red, "Hold 3 s to approve", and after the hold "Tap to confirm" for 4 s; only a new press and release approves (the hold's own release does not).
+- Host render `request-*` and `question-long*`.
+
 ## Interaction
 
 - Swipe left or right to change view. Tap to open details or close alerts.
 - Side button: click = back, close or next view; with a permission open it means "Later". Hold ~650 ms to sleep the screen.
-- Hold to approve: ~900 ms with a progress bar.
+- Hold to approve: ~900 ms with a progress bar; high risk 3 s, after which the button reads "Tap to confirm" for 4 s and only a new tap approves (decided 2026-10-29).
 - Temporary alerts last 1.6–3.2 s. The 100 % limit alert is persistent.
 
 ## Sounds (four families)

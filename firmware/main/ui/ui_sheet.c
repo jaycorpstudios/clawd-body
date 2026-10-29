@@ -238,8 +238,8 @@ static void build_perm(const bm_session_t *s, uint32_t now_ms)
         box(r->why, 0x14120f, 0xd9d1c6);
     }
     diff(r);
-    if (r->high_risk)
-        box("High-risk actions are only approved on the Mac. From here you can only deny them.", 0x2a0a0c, 0xffc7c9);
+    if (!r->is_question && r->remote_allowed && r->high_risk)
+        box("High risk: hold Approve for 3 s, then tap it again to confirm.", 0x2a0a0c, 0xffc7c9);
     else if (!r->is_question && !r->remote_allowed)
         box("This action is only approved on the Mac. From here you can only deny it.", 0x2a0a0c, 0xffc7c9);
     ui_on_tap(wide_button("Back to the decision", false), BM_TAP_BACK, 0);

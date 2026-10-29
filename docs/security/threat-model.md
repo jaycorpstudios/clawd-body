@@ -27,7 +27,7 @@
 | Spoofed buddy or Mac | Bonding required; LE Secure Connections with passkey; unbonded links rejected | Specified |
 | Pairing MITM | Passkey entry (no "Just Works") | Specified |
 | Replay of a decision | Unique `id`, `ts`, single-use `request_id`, expiry | Specified; replay window pending |
-| Approving high-risk work from the device | Daemon allowlist; approvals for `high` / `remote_allowed:false` rejected even if received | Specified |
+| Approving high-risk work from the device | Allowed since 2026-10-29 behind a 3 s hold plus a confirming tap; approvals for `remote_allowed:false` (a cut `detail`, or `policy.json`) rejected even if received. Anyone at the desk can now approve high-risk work: see "Device lock" in open questions | Specified |
 | Secret exfiltration from the buddy | No secrets sent to or stored on the buddy; likely secrets in shown text are masked by `hilod` before sending ([daemon › security](../components/daemon.md#security)) | Implemented (heuristic: a secret in a positional argument, e.g. `tool set-key <value>`, still shows) |
 | Physical access approves low-risk actions | Hold-to-approve only; reach limited by BLE range | **Pending**: device lock / PIN, auto-lock when away |
 | Local process forges hook input or decisions | Unix socket `0600` in a `0700` directory plus peer-UID check; processes of the same user are inside the trust boundary (they can already drive Claude Code) | Implemented |

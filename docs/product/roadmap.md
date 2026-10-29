@@ -13,7 +13,7 @@ flowchart LR
     P5 --> P6
 ```
 
-Status as of 2026-10-27. Percentages are a judgement of what is left, not a count: code written and covered by host tests counts as done; a check that only the board, the apps or a person can make keeps a phase below 100 %. What is left on the board is spelled out in the [hardware checklist](../plans/testing-strategy.md#hardware-checklist); open decisions are in [open questions](../plans/open-questions.md).
+Status as of 2026-10-27. Feedback from the first day of real use (2026-10-29) and its session plan: [dogfooding](../plans/dogfooding-2026-10-29.md). Percentages are a judgement of what is left, not a count: code written and covered by host tests counts as done; a check that only the board, the apps or a person can make keeps a phase below 100 %. What is left on the board is spelled out in the [hardware checklist](../plans/testing-strategy.md#hardware-checklist); open decisions are in [open questions](../plans/open-questions.md).
 
 | Phase | Outcome | Status | Left |
 | :--- | :--- | :--- | :--- |

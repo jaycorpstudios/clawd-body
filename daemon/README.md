@@ -95,7 +95,7 @@ Answer a held request as the buddy would:
 .build/debug/hilo buddy '{"v":1,"id":"<ULID>","ts":0,"type":"permission.decision","data":{"request_id":"<id>","decision":"approve"}}'
 ```
 
-`../scripts/hilod-e2e.sh [workdir]` does this end to end with a scratch config, store and socket: a low-risk deny, a question answer and an ignored high-risk approval go through `hilo hook` and `hilo buddy`, the secret in a `curl` header must not reach stdout, and every message is validated against the schema.
+`../scripts/hilod-e2e.sh [workdir]` does this end to end with a scratch config, store and socket: a low-risk deny, a question answer and a high-risk approval go through `hilo hook` and `hilo buddy`, the secret in a `curl` header must not reach stdout, and every message is validated against the schema.
 
 ## Usage
 

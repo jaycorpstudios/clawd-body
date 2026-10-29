@@ -1,9 +1,12 @@
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "ui_priv.h"
 
-#define BTN_H 58
+#define BTN_H 72
+#define OPT_PAD 20
+#define LINK_H 52
 #define ATTN_W (SCREEN - 56)
 
 #define FRAME_W 5
@@ -31,6 +34,21 @@ static void hold_cb(lv_event_t *e)
     lv_event_code_t code = lv_event_get_code(e);
     if (code == LV_EVENT_PRESSED) bm_hold_begin(ui.m, lv_tick_get());
     else bm_hold_cancel(ui.m);
+}
+
+// Restyled only on change: every style call invalidates the button.
+static void style_ok(bool high, bool armed)
+{
+    static int mode = -1;
+    int next = high ? (armed ? 2 : 1) : 0;
+    if (next == mode) return;
+    mode = next;
+    uint32_t edge = high ? BM_C_ERR : BM_C_WAIT;
+    lv_obj_set_style_border_color(ui.ap_ok, ui_hex(edge), 0);
+    lv_obj_set_style_bg_color(ui.ap_ok, ui_hex(high ? 0x4a1416 : 0x6a5216), 0);
+    lv_obj_set_style_bg_color(ui.ap_ok_fill, ui_hex(edge), 0);
+    lv_obj_set_style_text_color(ui.ap_ok_lbl, ui_hex(high && !armed ? 0xffd6d7 : 0x1a1200), 0);
+    lv_label_set_text(ui.ap_ok_lbl, armed ? "Tap to confirm" : high ? "Hold 3 s to approve" : "Hold to approve");
 }
 
 void ui_attn_create(lv_obj_t *scr)
@@ -66,9 +84,23 @@ void ui_attn_create(lv_obj_t *scr)
     lv_label_set_long_mode(ui.ap_p, LV_LABEL_LONG_MODE_DOTS);
     ui.ap_h = ui_label(ht, &font_mono_15, 0xb9a77a, "");
 
-    lv_obj_t *cmd = ui_box(ui.attn);
+    ui.ap_body = ui_box(ui.attn);
+    lv_obj_set_width(ui.ap_body, LV_PCT(100));
+    lv_obj_set_flex_grow(ui.ap_body, 1);
+    lv_obj_set_flex_flow(ui.ap_body, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_row(ui.ap_body, 12, 0);
+    lv_obj_set_style_pad_right(ui.ap_body, 12, 0);
+    lv_obj_set_scrollable(ui.ap_body, true);
+    lv_obj_set_scroll_dir(ui.ap_body, LV_DIR_VER);
+    lv_obj_set_clickable(ui.ap_body, true);
+    lv_obj_set_scrollbar_mode(ui.ap_body, LV_SCROLLBAR_MODE_AUTO);
+    lv_obj_set_style_width(ui.ap_body, 5, LV_PART_SCROLLBAR);
+    lv_obj_set_style_radius(ui.ap_body, 3, LV_PART_SCROLLBAR);
+    lv_obj_set_style_bg_color(ui.ap_body, ui_hex(0x8a7440), LV_PART_SCROLLBAR);
+    lv_obj_set_style_bg_opa(ui.ap_body, LV_OPA_COVER, LV_PART_SCROLLBAR);
+
+    lv_obj_t *cmd = ui_box(ui.ap_body);
     lv_obj_set_size(cmd, LV_PCT(100), LV_SIZE_CONTENT);
-    lv_obj_set_style_max_height(cmd, 96, 0);
     lv_obj_set_style_bg_color(cmd, ui_hex(0x120e05), 0);
     lv_obj_set_style_bg_opa(cmd, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(cmd, 2, 0);
@@ -80,65 +112,65 @@ void ui_attn_create(lv_obj_t *scr)
     lv_obj_set_width(ui.ap_cmd, LV_PCT(100));
     lv_label_set_long_mode(ui.ap_cmd, LV_LABEL_LONG_MODE_WRAP);
 
-    ui.ap_why = ui_label(ui.attn, &font_mono_16, 0xe8d8ad, "");
+    ui.ap_why = ui_label(ui.ap_body, &font_mono_16, 0xe8d8ad, "");
     lv_obj_set_width(ui.ap_why, LV_PCT(100));
     lv_label_set_long_mode(ui.ap_why, LV_LABEL_LONG_MODE_WRAP);
-    lv_obj_set_style_max_height(ui.ap_why, 66, 0);
 
-    lv_obj_t *spacer = ui_box(ui.attn);
-    lv_obj_set_width(spacer, 1);
-    lv_obj_set_flex_grow(spacer, 1);
-
-    ui.ap_opts = ui_box(ui.attn);
+    ui.ap_opts = ui_box(ui.ap_body);
     lv_obj_set_size(ui.ap_opts, LV_PCT(100), LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(ui.ap_opts, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_style_pad_row(ui.ap_opts, 8, 0);
+    lv_obj_set_style_pad_row(ui.ap_opts, 10, 0);
     for (int i = 0; i < BM_MAX_OPTIONS; i++) {
         ui.ap_opt[i] = button(ui.ap_opts, 0x4a3d1d, 0x0f0c06, C_FG, "", &ui.ap_opt_lbl[i]);
-        lv_obj_set_size(ui.ap_opt[i], LV_PCT(100), 50);
-        lv_obj_set_style_text_font(ui.ap_opt_lbl[i], &font_mono_17, 0);
-        lv_obj_align(ui.ap_opt_lbl[i], LV_ALIGN_LEFT_MID, 14, 0);
+        lv_obj_set_size(ui.ap_opt[i], LV_PCT(100), LV_SIZE_CONTENT);
+        lv_obj_set_style_pad_hor(ui.ap_opt[i], 16, 0);
+        lv_obj_set_style_pad_ver(ui.ap_opt[i], OPT_PAD, 0);
+        lv_obj_set_flex_flow(ui.ap_opt[i], LV_FLEX_FLOW_ROW);
+        lv_obj_set_style_text_font(ui.ap_opt_lbl[i], &font_mono_semi_18, 0);
+        lv_obj_set_width(ui.ap_opt_lbl[i], LV_PCT(100));
+        lv_label_set_long_mode(ui.ap_opt_lbl[i], LV_LABEL_LONG_MODE_WRAP);
         ui_on_tap(ui.ap_opt[i], BM_TAP_ANSWER, i);
     }
+
+    lv_obj_t *links = ui_box(ui.ap_body);
+    lv_obj_set_size(links, LV_PCT(100), LV_SIZE_CONTENT);
+    lv_obj_set_style_pad_top(links, 6, 0);
+    lv_obj_set_flex_flow(links, LV_FLEX_FLOW_ROW);
+    lv_obj_set_style_pad_column(links, 10, 0);
+    lv_obj_t *details = button(links, 0x3b2f10, 0x0f0c06, 0xc9b88d, "Details \xE2\x80\xBA", NULL);
+    lv_obj_set_height(details, LINK_H);
+    lv_obj_set_flex_grow(details, 1);
+    ui_on_tap(details, BM_TAP_DETAILS, 0);
+    lv_obj_t *later = button(links, 0x3b2f10, 0x0f0c06, 0xc9b88d, "Later", NULL);
+    lv_obj_set_height(later, LINK_H);
+    lv_obj_set_flex_grow(later, 1);
+    ui_on_tap(later, BM_TAP_LATER, 0);
 
     ui.ap_actions = ui_box(ui.attn);
     lv_obj_set_size(ui.ap_actions, LV_PCT(100), BTN_H);
     lv_obj_set_flex_flow(ui.ap_actions, LV_FLEX_FLOW_ROW);
-    lv_obj_set_style_pad_column(ui.ap_actions, 10, 0);
-    int32_t unit = (ATTN_W - 10) * 10 / 24;
+    lv_obj_set_style_pad_column(ui.ap_actions, 12, 0);
+    int32_t unit = (ATTN_W - 12) * 10 / 24;
     ui.ap_deny = button(ui.ap_actions, 0x5a2427, 0x0f0c06, 0xffb3b5, "Deny", NULL);
     lv_obj_set_width(ui.ap_deny, unit);
     ui_on_tap(ui.ap_deny, BM_TAP_DENY, 0);
 
-    lv_obj_t *ok_lbl;
-    ui.ap_ok = button(ui.ap_actions, BM_C_WAIT, 0x6a5216, 0x1a1200, "Hold to approve", &ok_lbl);
+    ui.ap_ok = button(ui.ap_actions, BM_C_WAIT, 0x6a5216, 0x1a1200, "Hold to approve", &ui.ap_ok_lbl);
     lv_obj_set_flex_grow(ui.ap_ok, 1);
-    lv_obj_set_clickable(ui.ap_ok, true);
     lv_obj_add_event_cb(ui.ap_ok, hold_cb, LV_EVENT_PRESSED, NULL);
     lv_obj_add_event_cb(ui.ap_ok, hold_cb, LV_EVENT_RELEASED, NULL);
     lv_obj_add_event_cb(ui.ap_ok, hold_cb, LV_EVENT_PRESS_LOST, NULL);
+    ui_on_tap(ui.ap_ok, BM_TAP_CONFIRM, 0);
     ui.ap_ok_fill = ui_box(ui.ap_ok);
     lv_obj_set_size(ui.ap_ok_fill, 0, LV_PCT(100));
-    lv_obj_set_style_bg_color(ui.ap_ok_fill, ui_hex(BM_C_WAIT), 0);
     lv_obj_set_style_bg_opa(ui.ap_ok_fill, LV_OPA_COVER, 0);
     lv_obj_move_to_index(ui.ap_ok_fill, 0);
 
-    ui.ap_locked = button(ui.ap_actions, 0x5a2427, 0x140708, 0xff9a9d, "", &ui.ap_locked_lbl);
+    ui.ap_locked = button(ui.ap_actions, 0x5a2427, 0x140708, 0xff9a9d, "Approve on\nthe Mac", &ui.ap_locked_lbl);
     lv_obj_set_flex_grow(ui.ap_locked, 1);
     lv_obj_set_style_border_opa(ui.ap_locked, LV_OPA_50, 0);
     lv_obj_set_style_text_font(ui.ap_locked_lbl, &font_mono_bold_15, 0);
     lv_obj_set_style_text_align(ui.ap_locked_lbl, LV_TEXT_ALIGN_CENTER, 0);
-
-    lv_obj_t *links = ui_box(ui.attn);
-    lv_obj_set_size(links, LV_PCT(100), LV_SIZE_CONTENT);
-    lv_obj_t *details = ui_label(links, &font_mono_16, 0xc9b88d, "View details \xE2\x80\xBA");
-    lv_obj_set_style_pad_ver(details, 4, 0);
-    ui_on_tap(details, BM_TAP_DETAILS, 0);
-    lv_obj_t *later = ui_label(links, &font_mono_16, 0xc9b88d, "Later");
-    lv_obj_set_style_pad_ver(later, 4, 0);
-    lv_obj_set_style_pad_left(later, 24, 0);
-    lv_obj_align(later, LV_ALIGN_RIGHT_MID, 0, 0);
-    ui_on_tap(later, BM_TAP_LATER, 0);
 
     // Four edges instead of one bordered box: a box's style change invalidates the whole screen.
     static const int16_t edges[4][4] = {{0, 0, SCREEN, FRAME_W},
@@ -163,8 +195,8 @@ void ui_attn_update(uint32_t now_ms)
     uint32_t accent = risk ? BM_C_ERR : BM_C_WAIT;
 
     char k[64], host[17], ago[24];
-    snprintf(k, sizeof(k), "%s \xC2\xB7 %s", q ? "Question" : risk ? "Permission \xC2\xB7 high risk" : "Permission",
-             r->tool);
+    if (q) snprintf(k, sizeof(k), "Question");
+    else snprintf(k, sizeof(k), "%s \xC2\xB7 %s", risk ? "Permission \xC2\xB7 high risk" : "Permission", r->tool);
     ui_upper(k, sizeof(k), k);
     lv_label_set_text(ui.ap_k, k);
     lv_obj_set_style_text_color(ui.ap_k, ui_hex(accent), 0);
@@ -187,8 +219,15 @@ void ui_attn_update(uint32_t now_ms)
     bool approvable = bm_request_approvable(r);
     ui_show(ui.ap_ok, !q && approvable);
     ui_show(ui.ap_locked, !q && !approvable);
-    lv_label_set_text(ui.ap_locked_lbl, risk ? "High risk:\nMac only" : "Approve on\nthe Mac");
+    if (!q && approvable) style_ok(risk, bm_confirm_armed(ui.m, now_ms));
     for (int i = 0; i < 4; i++) lv_obj_set_style_bg_color(frame[i], ui_hex(accent), 0);
+
+    static char shown_id[sizeof(r->request_id)];
+    if (strcmp(shown_id, r->request_id) != 0) {
+        snprintf(shown_id, sizeof(shown_id), "%s", r->request_id);
+        lv_obj_update_layout(ui.ap_body);
+        lv_obj_scroll_to_y(ui.ap_body, 0, LV_ANIM_OFF);
+    }
 }
 
 void ui_attn_frame(uint32_t now_ms)
@@ -202,6 +241,7 @@ void ui_attn_frame(uint32_t now_ms)
     if (!s) return;
     float k = (cosf(ui.t * 2 * 3.14159f / 1.1f) + 1) / 2;
     for (int i = 0; i < 4; i++) lv_obj_set_style_bg_opa(frame[i], (lv_opa_t)(k * 255), 0);
-    int32_t fill = (int32_t)(bm_hold_progress(ui.m, now_ms) * lv_obj_get_width(ui.ap_ok));
+    float p = bm_confirm_armed(ui.m, now_ms) ? 1.0f : bm_hold_progress(ui.m, now_ms);
+    int32_t fill = (int32_t)(p * lv_obj_get_width(ui.ap_ok));
     if (fill != lv_obj_get_style_width(ui.ap_ok_fill, 0)) lv_obj_set_width(ui.ap_ok_fill, fill);
 }

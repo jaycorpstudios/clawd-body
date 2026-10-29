@@ -16,9 +16,6 @@ public struct ToolCall: Sendable {
 public struct Classification: Equatable, Sendable {
     public var risk: Risk
     public var remoteAllowed: Bool
-
-    static let high = Classification(risk: .high, remoteAllowed: false)
-    static let low = Classification(risk: .low, remoteAllowed: true)
 }
 
 public enum CommandToken: Equatable, Sendable {
@@ -56,13 +53,14 @@ public struct RiskPolicy: Sendable {
     ])
 
     public func classify(_ call: ToolCall) -> Classification {
-        guard let root = call.repoRoot.flatMap(Self.normalized) else { return .high }
-        let matches = rules.contains { rule in
-            rule.tool == call.tool && Self.matches(rule.matcher, call, root: root)
-        }
-        guard matches else { return .high }
-        if let file, file.tightens(call, tokens: call.input["command"].flatMap(Self.plainTokens) ?? []) { return .high }
-        return .low
+        let tokens = call.input["command"].flatMap(Self.plainTokens) ?? []
+        let risk: Risk = allowlisted(call) && file?.forcesHigh(call, tokens: tokens) != true ? .low : .high
+        return Classification(risk: risk, remoteAllowed: file?.allowsRemote(call, risk: risk) ?? true)
+    }
+
+    private func allowlisted(_ call: ToolCall) -> Bool {
+        guard let root = call.repoRoot.flatMap(Self.normalized) else { return false }
+        return rules.contains { $0.tool == call.tool && Self.matches($0.matcher, call, root: root) }
     }
 
     private static func matches(_ matcher: RiskRule.Matcher, _ call: ToolCall, root: String) -> Bool {
@@ -108,12 +106,13 @@ public struct RiskPolicy: Sendable {
     }
 }
 
-/// `policy.json`: it can only turn low-risk calls into high, never the reverse. Unknown keys are an error, so a typo cannot silently do nothing.
+/// `policy.json`: it can only tighten (turn low into high, or keep requests off the buddy), never the reverse. Unknown keys are an error, so a typo cannot silently do nothing.
 public struct PolicyFile: Equatable, Sendable {
     public struct Rules: Equatable, Sendable {
         public var remoteApproval = true
         public var highTools: Set<String> = []
         public var highCommands: [[String]] = []
+        public var highRemoteApproval = true
     }
 
     public var all = Rules()
@@ -133,12 +132,16 @@ public struct PolicyFile: Equatable, Sendable {
     }
 
     private static func rules(_ json: [String: Any], extra: Set<String>) throws -> Rules {
-        let known: Set<String> = ["remote_approval", "high_tools", "high_commands"]
+        let known: Set<String> = ["remote_approval", "high_remote_approval", "high_tools", "high_commands"]
         if let unknown = Set(json.keys).subtracting(known).subtracting(extra).sorted().first { throw PolicyError("unknown key \(unknown)") }
         var r = Rules()
         if let v = json["remote_approval"] {
             guard let v = v as? Bool else { throw PolicyError("remote_approval must be true or false") }
             r.remoteApproval = v
+        }
+        if let v = json["high_remote_approval"] {
+            guard let v = v as? Bool else { throw PolicyError("high_remote_approval must be true or false") }
+            r.highRemoteApproval = v
         }
         if let v = json["high_tools"] {
             guard let v = v as? [String] else { throw PolicyError("high_tools must be a list of tool names") }
@@ -152,11 +155,19 @@ public struct PolicyFile: Equatable, Sendable {
     }
 
     /// `tokens` are the Bash command's words; a high command matches as a prefix.
-    func tightens(_ call: ToolCall, tokens: [String]) -> Bool {
-        [all, call.project.flatMap { projects[$0] }].compactMap { $0 }.contains { r in
+    func forcesHigh(_ call: ToolCall, tokens: [String]) -> Bool {
+        applicable(call).contains { r in
             !r.remoteApproval || r.highTools.contains(call.tool)
                 || (call.tool == "Bash" && r.highCommands.contains { tokens.starts(with: $0) })
         }
+    }
+
+    func allowsRemote(_ call: ToolCall, risk: Risk) -> Bool {
+        applicable(call).allSatisfy { $0.remoteApproval && (risk == .low || $0.highRemoteApproval) }
+    }
+
+    private func applicable(_ call: ToolCall) -> [Rules] {
+        [all, call.project.flatMap { projects[$0] }].compactMap { $0 }
     }
 }
 

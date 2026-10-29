@@ -114,9 +114,17 @@ private func behavior(_ reply: Data) -> String? {
     #expect(await h.link.field("agent.request_resolved", "outcome") == "approved")
 }
 
-@Test func highRiskApprovalKeepsWaitingAndDenyIsHonored() async throws {
+@Test func highRiskApprovalFromTheBuddyIsHonored() async throws {
     let h = Harness()
     let hook = Task { await h.coordinator.handleHook(try h.permission("terraform apply")) }
+    try await h.buddy(try await h.pendingRequestId(), "approve")
+    #expect(behavior(try await hook.value) == "allow")
+}
+
+@Test func macOnlyApprovalKeepsWaitingAndDenyIsHonored() async throws {
+    let h = Harness()
+    let tooLongToShow = "echo " + Array(repeating: "word", count: 60).joined(separator: " ")
+    let hook = Task { await h.coordinator.handleHook(try h.permission(tooLongToShow)) }
     let id = try await h.pendingRequestId()
     try await h.buddy(id, "approve")
     #expect(await h.link.field("agent.request_resolved", "request_id") == nil)

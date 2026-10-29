@@ -27,7 +27,7 @@ Senders produce exactly the schema: no extra fields in the envelope or any paylo
 | `snapshot` | `{ sessions:[session], usage, hilo:{ current, next, agreements_today }, media?, face?, pomodoro? }`. Sent on connect and reconnect; replaces all state for that `host`. See below. |
 | `session.start` | `{ session, project, task, look? }`. `look` `{ hue, acc }` is the session's pet: `hue` 0–359 in its project's colour family, `acc` one of the eight accessories; absent from an older daemon (the buddy then derives the project's look). Snapshot sessions carry the same optional `look` |
 | `session.end` | `{ session }` |
-| `agent.needs_permission` | `{ request_id, session, project, tool, detail, why?, diff?, cwd, risk:"low"\|"high", remote_allowed, expires_at }`. `risk:"high"` implies `remote_allowed:false`. |
+| `agent.needs_permission` | `{ request_id, session, project, tool, detail, why?, diff?, cwd, risk:"low"\|"high", remote_allowed, expires_at }`. `remote_allowed:false` when the policy keeps it on the Mac or `detail` had to be cut (since 2026-10-29 `risk:"high"` may be `true`; firmware before that drops such a request, so flash the buddy before updating `hilod`). |
 | `agent.question` | `{ request_id, session, project, detail, options:[2–4 strings], expires_at }` |
 | `agent.request_resolved` | `{ request_id, session, kind:"permission"\|"question", outcome, via:"mac"\|"buddy"\|"timeout", choice_index? }`. Closes any pending request; see below. |
 | `agent.task_done` | `{ session, summary }` |
@@ -138,7 +138,7 @@ Every message and field above was added in v1 as optional. A buddy built before 
 
 ## Rules
 
-- An **approval** for a request with `risk:"high"` or `remote_allowed:false` is never accepted from the buddy, even if it arrives. A **deny** is always honored (the device shows "Deny" on high-risk prompts).
+- An **approval** for a request with `remote_allowed:false` is never accepted from the buddy, even if it arrives. A **deny** is always honored. A `risk:"high"` request the buddy may approve needs a 3 s hold and then a separate confirming tap on the device.
 - A decision for a `request_id` that is already resolved or expired is ignored; the daemon replies with `agent.request_resolved` carrying the real outcome.
 - The buddy executes nothing. It only displays and answers.
 - `media.control` maps to playback commands of a local player only; the daemon accepts nothing else from it.

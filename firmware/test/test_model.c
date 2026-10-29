@@ -97,7 +97,47 @@ TEST(permission_needs_a_full_900ms_hold)
     CHECK(M.ov.type == BM_OV_NONE);
 }
 
-TEST(high_risk_and_mac_only_requests_can_only_be_denied)
+TEST(high_risk_needs_a_3s_hold_then_a_confirming_tap)
+{
+    outs_t o;
+    fresh();
+    M.view = BM_VIEW_HOME;
+    start_session("work", "s", "alpha");
+    ask_permission("work", "s", RID1, "high", true);
+    CHECK(heard(BM_SND_RISK));
+    CHECK(bm_request_approvable(&bm_attn_session(&M)->req));
+
+    bm_tap(&M, BM_TAP_CONFIRM, 0, now);
+    CHECK(bm_hold_begin(&M, now));
+    advance(BM_HOLD_MS + 100);
+    CHECK(bm_hold_progress(&M, now) < 0.5f);
+    advance(BM_HOLD_HIGH_MS);
+    drain(&o);
+    CHECK(find_out(&o, "permission.decision") == NULL);
+    CHECK(bm_confirm_armed(&M, now) && !M.hold_active);
+    CHECK(!bm_hold_begin(&M, now));
+
+    advance(BM_CONFIRM_MS);
+    CHECK(!bm_confirm_armed(&M, now));
+    bm_tap(&M, BM_TAP_CONFIRM, 0, now);
+    drain(&o);
+    CHECK(find_out(&o, "permission.decision") == NULL);
+    CHECK(bm_attn_session(&M) != NULL);
+
+    CHECK(bm_hold_begin(&M, now));
+    advance(BM_HOLD_HIGH_MS);
+    bm_tap(&M, BM_TAP_CONFIRM, 0, now);
+    drain(&o);
+    CHECK(find_out(&o, "permission.decision") == NULL);
+    CHECK(!bm_hold_begin(&M, now));
+    bm_tap(&M, BM_TAP_CONFIRM, 0, now);
+    drain(&o);
+    const bm_out_t *d = find_out(&o, "permission.decision");
+    CHECK(d && strstr(d->json, "\"decision\":\"approve\"") && strstr(d->json, RID1));
+    CHECK(bm_attn_session(&M) == NULL && !bm_confirm_armed(&M, now));
+}
+
+TEST(mac_only_requests_can_only_be_denied)
 {
     outs_t o;
     const char *risks[] = {"high", "low"};

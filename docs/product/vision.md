@@ -31,4 +31,4 @@ A developer works on several projects at once, with several Claude Code sessions
 | Hook to buddy screen | < 500 ms | Timestamp at `hilo hook` vs. render on the device (phase 3 hardware test) |
 | Battery | ≥ 8 h of normal use per charge | Manual run on the 1000 mAh cell |
 | `hilod` idle | < 1 % CPU, < 30 MB RAM | Activity Monitor / `top` with no session activity |
-| No remote high-risk approval | Never possible | Automated: `scripts/swift-test.sh` (registry and coordinator tests) |
+| Remote approval only of what the buddy shows whole | A cut or Mac-only request can never be approved from the buddy; high-risk needs a 3 s hold plus a confirming tap | Automated: `scripts/swift-test.sh` (registry, mapper and coordinator tests), `scripts/firmware-test.sh` (hold and confirm) |

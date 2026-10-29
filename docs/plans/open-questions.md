@@ -66,6 +66,5 @@ Nothing pending.
 
 | Gap | Context | What to fill | Phase |
 | :--- | :--- | :--- | :---: |
-| Device lock | Anyone at the desk can hold-to-approve | Whether low-risk approvals need a lock/PIN or auto-lock when the user is away | 4 |
-| High-risk deny | Contract said "never accepted"; the UI shows "Deny" | Confirm: deny from the buddy is always honored, approve never (current docs assume this) | 4 |
+| Device lock | Anyone at the desk can hold-to-approve, and since 2026-10-29 that includes high-risk work (3 s hold plus a confirming tap) | **Raised priority.** Whether approvals (at least high-risk) need a PIN or pattern on the buddy, or a lock while the Mac is locked and the user is away for long | 4 |
 | Secrets in `detail` | Implemented 2026-10-26: conservative redaction in `hilod` ([daemon › security](../components/daemon.md#security)). Heuristic: a secret passed as a positional argument (`aws configure set aws_secret_access_key <value>`) or behind a short flag (`docker login -p <value>`) still reaches the buddy | Whether high-risk Bash should show only the command's first word(s) on the buddy (it can only be denied there, so the full text matters less) — changes what the buddy shows for high risk, not the contract | 3 |
