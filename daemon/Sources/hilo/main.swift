@@ -58,8 +58,11 @@ case "hook":
     }
     exit(0)
 case "statusline":
-    // Forwards only `rate_limits` to hilod, then hands the same input to the wrapped status line command, if any.
+    // Forwards the session (for answers at a terminal prompt) and `rate_limits` to hilod, then hands the same input to the wrapped status line command, if any.
     let input = FileHandle.standardInput.readDataToEndOfFile()
+    if let tick = try? JSONDecoder().decode(StatusLineTick.self, from: input), let body = try? JSONEncoder().encode(tick) {
+        _ = LocalSocket.request(path: socketPath, op: "status-tick", body: body, timeoutSeconds: 1)
+    }
     if let limits = RateLimits.fromStatusLine(input), let body = try? JSONEncoder().encode(limits) {
         _ = LocalSocket.request(path: socketPath, op: "usage", body: body, timeoutSeconds: 1)
     }
@@ -164,7 +167,7 @@ default:
       hilo install [--hilod path]      run hilod at login as a LaunchAgent (default: the hilod in Hilo.app)
       hilo uninstall                   stop hilod and remove the LaunchAgent
       hilo hook                        read a Claude Code hook payload on stdin (configured in settings.json)
-      hilo statusline [-- command…]    status line command: sends rate_limits to hilod, then runs the wrapped command
+      hilo statusline [-- command…]    status line command: sends the session and rate_limits to hilod, then runs the wrapped command
       hilo buddy '<json>'              send a buddy -> Mac message to hilod (development); ts 0 or absent becomes now
 
     """.utf8))

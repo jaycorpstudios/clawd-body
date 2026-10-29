@@ -48,6 +48,15 @@ public actor Coordinator {
     /// Buddy messages more than this far from the Mac clock are dropped; ids outlive the ±window, so a replay inside it is caught.
     static let replayWindow = 120, seenFor = 600
     private var seenIds: [String: Int] = [:]
+    /// A terminal prompt: held for the buddy (by request id) or left on the Mac (by session).
+    private struct Prompt { var session: String; var tool: String; var since: Int }
+    private var heldPrompts: [String: Prompt] = [:]
+    private var macPrompts: [String: Prompt] = [:]
+    private var transcripts: [String: String] = [:]
+    /// Claude Code refreshes the status line about 0.3 s after writing a tool call, before anyone can answer.
+    static let answerAfter = 2
+    /// A denial reaches the transcript about 0.25 s after the status line refresh.
+    static let transcriptSettle = 0.5
     private var buddySettings: DeviceSettings?
     private var face: RGB565Image?
     private var pomodoro: PomodoroState?
@@ -68,7 +77,11 @@ public actor Coordinator {
     }
 
     /// Returns what the hook command must print to stdout.
-    public func handleHook(_ input: HookInput) async -> Data {
+    /// `peerAlive` tells whether the `hilo hook` process still waits: Claude Code kills it when the user denies in the terminal.
+    public func handleHook(_ input: HookInput, peerAlive: (@Sendable () -> Bool)? = nil) async -> Data {
+        let session = Text.clip(input.sessionId, 64)
+        if let path = input.transcriptPath { transcripts[session] = path }
+        await settlePrompts(after: input, session: session)
         switch mapper.map(input, now: clock.now()) {
         case .emit(let messages):
             for m in messages { await send(m) }
@@ -76,15 +89,15 @@ public actor Coordinator {
                             repo: mapper.repoRoot(input.cwd))
             return HookResponse.passThrough
         case .awaitPermission(let request):
-            guard let resolution = await hold(id: request.requestId, session: request.session, expiresAt: request.expiresAt,
+            guard let resolution = await hold(id: request.requestId, session: request.session, project: request.project, tool: input.toolName ?? "", expiresAt: request.expiresAt,
                                               body: .permission(risk: request.risk, remoteAllowed: request.remoteAllowed),
-                                              message: .needsPermission(request), onMac: "Waiting on the Mac: \(request.tool)")
+                                              message: .needsPermission(request), onMac: "Waiting on the Mac: \(request.tool)", peerAlive: peerAlive)
             else { return HookResponse.passThrough }
             return HookResponse.permission(resolution)
         case .awaitQuestion(let request, let toolInput):
-            guard let resolution = await hold(id: request.requestId, session: request.session, expiresAt: request.expiresAt,
+            guard let resolution = await hold(id: request.requestId, session: request.session, project: request.project, tool: "AskUserQuestion", expiresAt: request.expiresAt,
                                               body: .question(options: request.options),
-                                              message: .question(request), onMac: "Asked a question on the Mac")
+                                              message: .question(request), onMac: "Asked a question on the Mac", peerAlive: nil)
             else { return HookResponse.passThrough }
             return HookResponse.question(resolution, toolInput: toolInput)
         }
@@ -140,6 +153,7 @@ public actor Coordinator {
         switch result {
         case .accepted(let resolution, let resolved):
             log("request \(resolved.requestId): \(resolved.outcome.rawValue) on the buddy")
+            heldPrompts[resolved.requestId] = nil
             waiting.removeValue(forKey: resolved.requestId)?.resume(returning: resolution)
             await send(.requestResolved(resolved))
         case .rejected(let rejection, let reply):
@@ -151,20 +165,25 @@ public actor Coordinator {
         }
     }
 
-    private func hold(id: String, session: String, expiresAt: Int, body: PendingRequest.Body,
-                      message: Outbound, onMac: String) async -> Resolution? {
+    private func hold(id: String, session: String, project: String, tool: String, expiresAt: Int, body: PendingRequest.Body,
+                      message: Outbound, onMac: String, peerAlive: (@Sendable () -> Bool)?) async -> Resolution? {
+        let prompt = Prompt(session: session, tool: tool, since: clock.now())
         guard await awayWithinGrace() else {
             log("request \(id): user at the Mac, prompt stays in the terminal")
             await send(.agentStep(AgentStep(session: session, kind: .ask, text: String(onMac.prefix(120)))))
+            macPrompts[session] = prompt
+            store.setOnMac(session, project: project, now: clock.now())
+            await sendSnapshot()
             return nil
         }
         log("request \(id): user away, holding for the buddy")
         registry.register(PendingRequest(id: id, session: session, body: body, expiresAt: expiresAt))
+        if case .permission = body { heldPrompts[id] = prompt }
         return await withCheckedContinuation { continuation in
             waiting[id] = continuation
             Task {
                 await send(message)
-                await watch(id: id, expiresAt: expiresAt)
+                await watch(id: id, expiresAt: expiresAt, prompt: prompt, peerAlive: peerAlive)
             }
         }
     }
@@ -182,11 +201,12 @@ public actor Coordinator {
 
     /// Any input on the Mac takes a held request back to the terminal; while the buddy shows it, only
     /// `handBackAfter` seconds of continuous input do, so a nudged mouse does not take it away mid-reach.
-    private func watch(id: String, expiresAt: Int) async {
-        defer { shownOnBuddy[id] = nil }
+    private func watch(id: String, expiresAt: Int, prompt: Prompt, peerAlive: (@Sendable () -> Bool)?) async {
+        defer { shownOnBuddy[id] = nil; heldPrompts[id] = nil }
         var activeSince: Int?
         while registry.pendingRequests.contains(where: { $0.id == id }) {
             await clock.sleep(seconds: pollSeconds)
+            if let peerAlive, !peerAlive() { return await closeOnMac(id, approved: false, why: "its hook ended") }
             let now = clock.now(), expired = now >= expiresAt
             let shown = shownOnBuddy[id].map { now - $0 < Self.shownWithin } ?? false
             activeSince = presence.quiet(for: Self.activeWithin) ? nil : activeSince ?? now
@@ -194,10 +214,69 @@ public actor Coordinator {
             if back || expired, let released = registry.release(id) {
                 log("request \(id): released to the Mac (\(expired ? "expired" : "user back"))")
                 waiting.removeValue(forKey: id)?.resume(returning: nil)
+                macPrompts[prompt.session] = prompt
                 await send(.requestResolved(released))
                 return
             }
         }
+    }
+
+    /// Claude Code refreshes the status line 60–160 ms after any answer at a terminal prompt and not while one waits
+    /// (verified 2026-10-29), so a refresh means the session's prompt was answered; the transcript tells how.
+    public func statusLineTick(session: String, transcriptPath: String?) async {
+        if let transcriptPath { transcripts[session] = transcriptPath }
+        let now = clock.now()
+        let held = heldPrompts.filter { $0.value.session == session && now - $0.value.since >= Self.answerAfter }
+        let left = macPrompts[session].flatMap { now - $0.since >= Self.answerAfter ? $0 : nil }
+        guard !held.isEmpty || left != nil else { return }
+        await clock.sleep(seconds: Self.transcriptSettle)
+        for (id, prompt) in held where heldPrompts[id] != nil {
+            await closeOnMac(id, approved: !rejected(prompt), why: "status line")
+        }
+        if let left, macPrompts[session]?.since == left.since {
+            macPrompts[session] = nil
+            await answeredOnMac(session, approved: !rejected(left))
+        }
+    }
+
+    /// Fallback without the status line: a later hook of the session means its prompt was answered.
+    private func settlePrompts(after input: HookInput, session: String) async {
+        let tool = input.toolName ?? ""
+        let approved: Bool
+        switch input.hookEventName {
+        case "PostToolUse", "PostToolUseFailure": approved = true
+        case "UserPromptSubmit", "Stop", "StopFailure", "SessionEnd": approved = false
+        default: return
+        }
+        if let left = macPrompts[session], !approved || left.tool == tool { macPrompts[session] = nil }
+        for (id, prompt) in heldPrompts where prompt.session == session && (!approved || prompt.tool == tool) {
+            await closeOnMac(id, approved: approved, why: input.hookEventName)
+        }
+    }
+
+    private func rejected(_ prompt: Prompt) -> Bool {
+        transcripts[prompt.session].map { TranscriptTail.rejected(path: $0, tool: prompt.tool) } ?? false
+    }
+
+    private func closeOnMac(_ id: String, approved: Bool, why: String) async {
+        heldPrompts[id] = nil
+        guard let resolved = registry.closeOnMac(id, approved: approved) else { return }
+        log("request \(id): \(resolved.outcome.rawValue) in the terminal (\(why))")
+        waiting.removeValue(forKey: id)?.resume(returning: nil)
+        await send(.requestResolved(resolved))
+        if !approved { await turnEnded(resolved.session) }
+    }
+
+    private func answeredOnMac(_ session: String, approved: Bool) async {
+        log("session \(session): prompt \(approved ? "approved" : "denied") in the terminal")
+        await send(.agentStep(AgentStep(session: session, kind: approved ? .ok : .deny, text: approved ? "Approved on the Mac" : "Denied on the Mac")))
+        if !approved { await turnEnded(session) }
+    }
+
+    /// A denial in the terminal ends the turn and fires no hook, so nothing else would move the session out of working.
+    private func turnEnded(_ session: String) async {
+        store.setIdle(session, now: clock.now())
+        await sendSnapshot()
     }
 
     public var currentHost: String { host }

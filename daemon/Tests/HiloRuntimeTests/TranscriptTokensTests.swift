@@ -96,3 +96,15 @@ import Testing
         #expect(tokens.takeSessionTotals() == [other: 8])
     }
 }
+
+@Test func transcriptTailReadsARejectionOfTheLatestCallOfThatTool() {
+    func lines(_ s: [String]) -> [Data.SubSequence] { s.map { Data($0.utf8)[...] } }
+    let call = { (id: String) in #"{"type":"assistant","message":{"content":[{"type":"tool_use","id":"\#(id)","name":"Bash"}]}}"# }
+    let rejected = { (id: String) in #"{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"\#(id)","is_error":true,"content":"The user doesn't want to proceed with this tool use."}]},"toolUseResult":"User rejected tool use"}"# }
+    let ran = { (id: String) in #"{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"\#(id)","content":"ok"}]}}"# }
+    #expect(TranscriptTail.rejected(lines: lines([call("a"), rejected("a")]), tool: "Bash"))
+    #expect(!TranscriptTail.rejected(lines: lines([call("a"), rejected("a"), call("b")]), tool: "Bash"))
+    #expect(!TranscriptTail.rejected(lines: lines([call("a"), ran("a")]), tool: "Bash"))
+    #expect(!TranscriptTail.rejected(lines: lines(["{partial", call("a")]), tool: "Bash"))
+    #expect(!TranscriptTail.rejected(path: "/nonexistent/transcript.jsonl", tool: "Bash"))
+}

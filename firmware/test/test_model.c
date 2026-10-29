@@ -723,9 +723,11 @@ TEST(a_request_handed_back_to_the_mac_says_answer_it_on_the_mac_until_the_next_s
                "\"via\":\"timeout\"}") == BM_OK);
     CHECK(!bm_attn_session(&M) && bm_on_mac(&M, &M.sessions[i]));
     CHECK_STR(bm_session_label(&M, &M.sessions[i]), "on the Mac");
+    CHECK(bm_session_color(&M, &M.sessions[i]) == BM_C_INFO);
     bm_home_t h;
     bm_home(&M, now, &h);
     CHECK_STR(h.msg, "Answer it on the Mac");
+    CHECK(h.color == BM_C_INFO);
     CHECK_STR(h.sub, "alpha \xC2\xB7 handed back");
     CHECK(h.tap_session == i);
     bm_tap(&M, BM_TAP_OPEN_PERM, i, now);

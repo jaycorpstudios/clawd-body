@@ -183,7 +183,7 @@ static void build_agent(const bm_session_t *s, uint32_t now_ms)
     lv_obj_t *col = ui_box(dh);
     lv_obj_set_size(col, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(col, LV_FLEX_FLOW_COLUMN);
-    chip_label(col, bm_session_label(ui.m, s), bm_status_color(s->status), live);
+    chip_label(col, bm_session_label(ui.m, s), bm_session_color(ui.m, s), live);
     snprintf(buf, sizeof(buf), "%s Mac", host);
     lv_obj_set_style_margin_top(ui_label(col, &font_mono_15, C_DIM, buf), 6, 0);
 

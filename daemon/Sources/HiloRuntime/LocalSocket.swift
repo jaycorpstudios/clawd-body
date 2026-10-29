@@ -14,7 +14,8 @@ public enum LocalSocket {
 
     public enum SocketError: Error { case pathTooLong, system(String) }
 
-    public static func serve(path: String, handler: @escaping @Sendable (String, Data) async -> Data) throws {
+    /// The handler also gets the client's pid, so it can tell when a long-waiting client was killed.
+    public static func serve(path: String, handler: @escaping @Sendable (String, Data, pid_t) async -> Data) throws {
         let dir = URL(filePath: path).deletingLastPathComponent()
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: dir.path(percentEncoded: false))
@@ -38,8 +39,9 @@ public enum LocalSocket {
                 guard peerIsSameUser(client) else { close(client); continue }
                 DispatchQueue.global().async {
                     guard let (op, body) = readRequest(client) else { close(client); return }
+                    let pid = peerPid(client)
                     Task {
-                        let reply = await handler(op, body)
+                        let reply = await handler(op, body, pid)
                         writeAll(client, reply)
                         close(client)
                     }
@@ -82,6 +84,12 @@ public enum LocalSocket {
         return getpeereid(fd, &uid, &gid) == 0 && uid == getuid()
     }
 
+    private static func peerPid(_ fd: Int32) -> pid_t {
+        var pid: pid_t = 0
+        var size = socklen_t(MemoryLayout<pid_t>.size)
+        return getsockopt(fd, SOL_LOCAL, LOCAL_PEERPID, &pid, &size) == 0 ? pid : 0
+    }
+
     private static func readRequest(_ fd: Int32) -> (String, Data)? {
         guard let raw = readAll(fd), let newline = raw.firstIndex(of: UInt8(ascii: "\n")) else { return nil }
         let op = String(decoding: raw[raw.startIndex..<newline], as: UTF8.self)
@@ -110,4 +118,11 @@ public enum LocalSocket {
             }
         }
     }
+}
+
+/// The `hilo hook` process on the other end of a held request.
+public struct HookPeer: Sendable {
+    public let pid: pid_t
+    public init(pid: pid_t) { self.pid = pid }
+    @Sendable public func isAlive() -> Bool { kill(pid, 0) == 0 }
 }

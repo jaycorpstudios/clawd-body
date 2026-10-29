@@ -26,6 +26,7 @@ How `hilod` learns what Claude Code sessions do. Verified against the [Claude Co
 | `PostToolUse` | no | `agent.step` — `Read`/`Glob`/`Grep` → `read`, `Edit`/`Write` → `edit`, `Bash` → `run`, others → `plan` |
 | `PostToolUseFailure` | no | `agent.step { kind: "err" }` |
 | `PermissionRequest` | yes | `agent.needs_permission`; outcome → `agent.request_resolved` |
+| `PermissionRequest` (`AskUserQuestion`) | no | Nothing: it follows the question's own `PreToolUse` hold, which already handed it back to the terminal |
 | `PreToolUse` (`AskUserQuestion`) | yes | `agent.question` when it is one single-select question with 2–4 options; otherwise only `agent.step { kind: "ask" }` and the question stays on the Mac |
 | `Stop` | no | `agent.task_done { summary }` from `last_assistant_message` (trimmed to 300 chars) |
 | `StopFailure` | no | `agent.error { detail }` from `error` |
@@ -51,6 +52,13 @@ Other observations:
 - Approving writes nothing to the transcript, so a transcript watcher cannot see it; a denial is visible there about 0.25 s later.
 - `PreToolUse` for the next tool comes only after the approved tool ends, never earlier than `PostToolUse`.
 - So the status line is the earliest signal for every answer, and the only one for an approval until the tool ends. It needs the status line to go through `hilo statusline` (Hilo › Setup), and its input carries `session_id`.
+
+How `hilod` uses it (built 2026-10-29):
+
+- `hilo statusline` sends `session_id` and `transcript_path` (socket op `status-tick`) before it forwards usage. A tick counts as "the prompt was answered" only for a session with a request held, or handed back, for 2 s or more, which skips the refresh right after the tool call is written.
+- About 0.5 s after such a tick `hilod` reads the transcript tail: a rejected `tool_result` for that tool means denied, anything else approved. A held request closes with `agent.request_resolved` `via:"mac"`; its hook returns no decision. A handed-back session gets `agent.step` "Approved on the Mac" or "Denied on the Mac"; a denial also sets the session idle, since no hook follows.
+- Without the status line: the held hook process dying (`LOCAL_PEERPID` + `kill(pid, 0)`) means a terminal deny; any later hook for the session (`PostToolUse*` approves, `UserPromptSubmit`, `Stop*`, `SessionEnd` deny) closes what is still open.
+- A request kept in the terminal because the user is at the Mac leaves the session `waiting` without a pending request (a snapshot), so the buddy reads "on the Mac" in the info colour, not "needs you".
 
 Usage (`usage.update`) has no hook source: it comes from the status line's `rate_limits` and, opt-in, the local transcripts ([daemon README › Usage](../../daemon/README.md#usage)).
 

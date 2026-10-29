@@ -86,6 +86,11 @@ private func map(_ json: String) throws -> HookAction {
     #expect(tight.detailFull == nil && !tight.remoteAllowed)
 }
 
+@Test func aPermissionRequestForAQuestionPassesThrough() throws {
+    let action = try map(#"{"hook_event_name":"PermissionRequest","session_id":"abc","cwd":"\#(repo)","tool_name":"AskUserQuestion","tool_input":{}}"#)
+    #expect(action == .emit([]))
+}
+
 @Test func singleSelectQuestionIsForwarded() throws {
     let action = try map(#"""
     {"hook_event_name":"PreToolUse","session_id":"abc","cwd":"\#(repo)","tool_name":"AskUserQuestion",

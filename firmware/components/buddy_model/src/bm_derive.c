@@ -251,6 +251,11 @@ const char *bm_session_label(const bm_model_t *m, const bm_session_t *s)
     return bm_on_mac(m, s) ? "on the Mac" : bm_status_label(s->status);
 }
 
+uint32_t bm_session_color(const bm_model_t *m, const bm_session_t *s)
+{
+    return bm_on_mac(m, s) ? BM_C_INFO : bm_status_color(s->status);
+}
+
 void bm_project_look(const char *project, uint16_t *hue, bm_acc_t *acc)
 {
     uint32_t h = 2166136261u;
@@ -353,7 +358,7 @@ void bm_home(const bm_model_t *m, uint32_t now_ms, bm_home_t *out)
     }
     if (!out->sub[0]) bm__copy(out->sub, sizeof(out->sub), "no active sessions");
     if (w || er) {
-        out->color = w ? BM_C_WAIT : BM_C_ERR;
+        out->color = w ? (first_waiting->has_request ? BM_C_WAIT : BM_C_INFO) : BM_C_ERR;
         out->colored = true;
     }
 }

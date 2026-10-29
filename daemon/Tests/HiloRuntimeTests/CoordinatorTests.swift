@@ -76,6 +76,16 @@ private struct Harness {
         for _ in 0..<1_000_000 where presence.polls.get() < target { await Task.yield() }
     }
 
+    func snapshot() async throws -> Snapshot {
+        let raw = try #require(await link.raw.last { (try? Wire.decodeOutbound($0))?.body.type == "snapshot" })
+        guard case .snapshot(let snap) = try Wire.decodeOutbound(raw).body else { throw CancellationError() }
+        return snap
+    }
+
+    func hook(_ event: String, tool: String) throws -> HookInput {
+        try HookInput.decode(Data(#"{"hook_event_name":"\#(event)","session_id":"s1","cwd":"\#(repo)","tool_name":"\#(tool)","tool_input":{}}"#.utf8))
+    }
+
     func buddy(_ id: String, _ decision: String) async throws {
         let msg = #"{"v":1,"id":"\#(ULID.make())","ts":\#(clock.now()),"type":"permission.decision","data":{"request_id":"\#(id)","decision":"\#(decision)"}}"#
         try await coordinator.handleBuddy(Data(msg.utf8))
@@ -93,7 +103,9 @@ private func behavior(_ reply: Data) -> String? {
     h.presence.present.set(true)
     let reply = await h.coordinator.handleHook(try h.permission("npm test"))
     #expect(reply.isEmpty)
-    #expect(await h.link.types() == ["agent.step"])
+    #expect(await h.link.types() == ["agent.step", "snapshot"])
+    let s = try #require(try await h.snapshot().sessions.first)
+    #expect(s.status == .waiting && s.pendingPermission == nil)
 }
 
 @Test func aUserWhoGoesQuietWithinTheGraceGetsTheRequestOnTheBuddy() async throws {
@@ -344,4 +356,79 @@ private func behavior(_ reply: Data) -> String? {
     let id = ULID.make()
     try await h.coordinator.handleBuddy(battery(id, ts: 1_000))
     await #expect(throws: ContractError.replayed("id \(id) already seen")) { try await h.coordinator.handleBuddy(battery(id, ts: 1_000)) }
+}
+
+private func transcript(rejected: Bool) throws -> String {
+    let url = FileManager.default.temporaryDirectory.appending(path: "hilo-transcript-\(UUID().uuidString).jsonl")
+    var lines = [#"{"type":"assistant","message":{"content":[{"type":"tool_use","id":"toolu_1","name":"Bash","input":{}}]}}"#]
+    if rejected {
+        lines.append(#"{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"toolu_1","is_error":true,"content":"The user doesn't want to proceed with this tool use."}]},"toolUseResult":"User rejected tool use"}"#)
+    }
+    try lines.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
+    return url.path(percentEncoded: false)
+}
+
+@Test(arguments: [false, true])
+func aStatusLineRefreshClosesAHeldRequestAnsweredInTheTerminal(denied: Bool) async throws {
+    let h = Harness()
+    let hook = Task { await h.coordinator.handleHook(try h.permission("npm test")) }
+    let id = try await h.pendingRequestId()
+    await h.coordinator.statusLineTick(session: "s1", transcriptPath: try transcript(rejected: denied))
+    #expect(await h.link.field("agent.request_resolved", "request_id") == nil)
+
+    h.clock.time.set(1_000 + Coordinator.answerAfter)
+    await h.coordinator.statusLineTick(session: "s1", transcriptPath: try transcript(rejected: denied))
+    #expect(try await hook.value.isEmpty)
+    #expect(await h.link.field("agent.request_resolved", "request_id") == id)
+    #expect(await h.link.field("agent.request_resolved", "via") == "mac")
+    #expect(await h.link.field("agent.request_resolved", "outcome") == (denied ? "denied" : "approved"))
+    await h.coordinator.sendSnapshot()
+    let s = try #require(try await h.snapshot().sessions.first)
+    #expect(s.status == (denied ? .idle : .working))
+}
+
+@Test func aPromptLeftOnTheMacReadsApprovedOnceTheStatusLineRefreshes() async throws {
+    let h = Harness()
+    h.presence.present.set(true)
+    _ = await h.coordinator.handleHook(try h.permission("npm test"))
+    h.clock.time.set(1_000 + Coordinator.answerAfter)
+    await h.coordinator.statusLineTick(session: "s1", transcriptPath: try transcript(rejected: false))
+    #expect(await h.link.field("agent.step", "text") == "Approved on the Mac")
+    await h.coordinator.statusLineTick(session: "s1", transcriptPath: nil)
+    #expect(await h.link.types().filter { $0 == "agent.step" }.count == 2)
+}
+
+@Test func aHandedBackPromptReadsDeniedAndTheSessionGoesIdle() async throws {
+    let h = Harness()
+    let hook = Task { await h.coordinator.handleHook(try h.permission("npm test")) }
+    _ = try await h.pendingRequestId()
+    h.presence.present.set(true)
+    _ = try await hook.value
+    h.clock.time.set(1_000 + Coordinator.answerAfter)
+    await h.coordinator.statusLineTick(session: "s1", transcriptPath: try transcript(rejected: true))
+    #expect(await h.link.field("agent.step", "text") == "Denied on the Mac")
+    #expect(try await h.snapshot().sessions.first?.status == .idle)
+}
+
+@Test func withoutTheStatusLineTheToolsOwnPostToolUseClosesTheHeldRequest() async throws {
+    let h = Harness()
+    let hook = Task { await h.coordinator.handleHook(try h.permission("npm test")) }
+    let id = try await h.pendingRequestId()
+    _ = await h.coordinator.handleHook(try h.hook("PostToolUse", tool: "Read"))
+    #expect(await h.link.field("agent.request_resolved", "request_id") == nil)
+    _ = await h.coordinator.handleHook(try h.hook("PostToolUse", tool: "Bash"))
+    #expect(try await hook.value.isEmpty)
+    #expect(await h.link.field("agent.request_resolved", "request_id") == id)
+    #expect(await h.link.field("agent.request_resolved", "outcome") == "approved")
+}
+
+@Test func aKilledHookMeansTheTerminalDenied() async throws {
+    let h = Harness()
+    let alive = Box(true)
+    let hook = Task { await h.coordinator.handleHook(try h.permission("npm test"), peerAlive: { alive.get() }) }
+    let id = try await h.pendingRequestId()
+    alive.set(false)
+    #expect(try await hook.value.isEmpty)
+    #expect(await h.link.field("agent.request_resolved", "request_id") == id)
+    #expect(await h.link.field("agent.request_resolved", "outcome") == "denied")
 }

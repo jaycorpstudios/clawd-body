@@ -570,7 +570,7 @@ static void update_agents(void)
         bm_host_label(ui.m->hosts[s->host].name, host, sizeof(host));
         lv_label_set_text(ui.rows[i].name, s->project);
         lv_label_set_text_fmt(ui.rows[i].task, "%s \xC2\xB7 %s", host, s->task);
-        uint32_t c = live ? bm_status_color(s->status) : 0x888888;
+        uint32_t c = live ? bm_session_color(ui.m, s) : 0x888888;
         lv_label_set_text(ui.rows[i].chip_lbl, bm_session_label(ui.m, s));
         lv_obj_set_style_text_color(ui.rows[i].chip_lbl, ui_hex(c), 0);
         lv_obj_set_style_bg_color(ui.rows[i].chip, ui_hex(live ? c : 0x222222), 0);

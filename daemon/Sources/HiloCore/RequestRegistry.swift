@@ -97,6 +97,12 @@ public struct RequestRegistry: Sendable {
         return close(request, outcome: .expired, via: .timeout)
     }
 
+    /// The user answered the terminal prompt while the buddy still showed the request.
+    public mutating func closeOnMac(_ id: String, approved: Bool) -> RequestResolved? {
+        guard let request = pending[id], case .permission = request.body else { return nil }
+        return close(request, outcome: approved ? .approved : .denied, via: .mac)
+    }
+
     public mutating func expire(now: Int) -> [RequestResolved] {
         pending.values.filter { $0.expiresAt <= now }.sorted { $0.id < $1.id }.map { close($0, outcome: .expired, via: .timeout) }
     }

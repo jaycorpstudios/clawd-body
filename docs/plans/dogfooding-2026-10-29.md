@@ -14,7 +14,7 @@ A day of real use on the work Mac. Each item: what hurt, what we build, where it
 | :--- | :--- | :--- |
 | 1 | Request card readable and easy to hit | **Done** (session A) |
 | 2 | High-risk approvable from the buddy | **Done** (session A) |
-| 3 | Requests vanish, and "answered on the Mac" shows late | Session B: signals verified, design proposed, build waits for OK |
+| 3 | Requests vanish, and "answered on the Mac" shows late | **Done** (session B) |
 | 4 | Longer commands and question notes on the buddy | **Done** (session B) |
 | 5 | Pomodoro: choose work or break | **Done** (session B) |
 | 6 | Session names (Claude's title, `/rename`, history) | Session C |
@@ -29,7 +29,7 @@ Question and permission text was cut (command box 96 px, "why" 66 px) and button
 
 Almost every real request was high (the low allowlist is tiny), so the buddy could approve nothing. Decided 2026-10-29: everything the buddy shows whole is approvable; high needs a 3 s hold plus a new tap within 4 s; a `detail` cut at 300 characters is Mac-only; `policy.json` `high_remote_approval: false` restores the old rule. Spec: [risk policy](../security/risk-policy.md). Follow-up: [device lock](open-questions.md#security) now matters more.
 
-### 3. Requests vanish / late "answered" (session B: verified, design proposed)
+### 3. Requests vanish / late "answered" (done, session B)
 
 - A held request goes back to the terminal after 10 s of input at the Mac, or at 600 s; the buddy then says "Answer it on the Mac".
 - After the user answers in the terminal, the buddy keeps the session "waiting" until the next hook, which for an approved long command is `PostToolUse` when it ends (minutes).
@@ -43,12 +43,12 @@ Verified on a real session (2026-10-29, [Claude Code hooks › answering in the 
 - A denial in the terminal fires no hook at all: the session stays "waiting" until the next prompt.
 - When the `PreToolUse` hold on `AskUserQuestion` hands back, Claude Code sends `PermissionRequest` for `AskUserQuestion`, which `hilod` would hold again as a permission.
 
-Proposed design (not built; waiting for the user's OK):
+Design (approved and built 2026-10-29; Hilo needed no change: a handed-back session already reads "Handed back to the Mac", not "needs you"):
 
 1. `hilo statusline` also sends the status line's `session_id` to `hilod`. A tick for a session counts as "the prompt was answered" when that session has a request held for 2 s or more, or one handed back: the 2 s skips the refresh Claude Code makes right after writing the tool call.
-2. On such a tick, `hilod` looks at the transcript tail about 0.5 s later: a "doesn't want to proceed" `tool_result` means denied, otherwise approved (an approval writes nothing). A held request closes with `agent.request_resolved` `via:"mac"` and that outcome, and its waiting hook returns no decision (Claude Code already moved on). A handed-back session gets `agent.step` "Approved on the Mac" (working) or `agent.task_done` "Denied on the Mac" (the turn ended).
+2. On such a tick, `hilod` looks at the transcript tail about 0.5 s later: a "doesn't want to proceed" `tool_result` means denied, otherwise approved (an approval writes nothing). A held request closes with `agent.request_resolved` `via:"mac"` and that outcome, and its waiting hook returns no decision (Claude Code already moved on). A handed-back session gets `agent.step` "Approved on the Mac" (working) or "Denied on the Mac" and the session goes idle (the turn ended).
 3. Fallbacks without the status line: the held hook's socket closing (a terminal deny kills the hook) closes the request as denied; any later hook for the session (`PostToolUse`, `PostToolUseFailure`, `UserPromptSubmit`, `Stop`) closes a request still held for it.
-4. "On the Mac", not "needs you": a request kept in the terminal because the user is at the Mac leaves the session `waiting` without a pending request (the buddy already reads that as "on the Mac"; today it turns `working`), sent in a snapshot so older firmware understands it; Hilo › Sessions shows "on the Mac" for that state instead of "needs you". No contract change.
+4. "On the Mac", not "needs you": a request kept in the terminal because the user is at the Mac leaves the session `waiting` without a pending request (the buddy already reads that as "on the Mac"; today it turns `working`), sent in a snapshot so older firmware understands it. No contract change. A dedicated "on the Mac" in Hilo › Sessions would need a store migration: left for session C.
 5. `PermissionRequest` for `AskUserQuestion` passes straight through: the question flow owns it.
 
 ### 4. Longer detail and question notes (done, session B)

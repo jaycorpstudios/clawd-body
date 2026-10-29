@@ -53,6 +53,7 @@ One request per connection on the Unix socket: the first line is the op, the res
 | :--- | :--- | :--- | :--- |
 | `hook` | Claude Code hook JSON | What the hook prints | `hilo hook` |
 | `usage` | `rate_limits` JSON | `ok` | `hilo statusline` |
+| `status-tick` | `{"session_id","transcript_path"?}` from the status line input | `ok`; closes a request answered in the terminal ([hooks › answering in the terminal](../docs/architecture/claude-code-hooks.md#answering-in-the-terminal-verified-2026-10-29)) | `hilo statusline` |
 | `hilo` | — | `ok`; re-sends the snapshot | CLI, MCP, app after a store change |
 | `buddy` | A buddy → Mac message | `ok` or `rejected` | `hilo buddy` (development) |
 | `status` | — | `DaemonStatus` JSON: host, buddy link and pairing, transcript tokens, and the buddy's last `device.settings` | Hilo app |

@@ -61,6 +61,21 @@ public struct SessionStore: Sendable {
         }
     }
 
+    /// The turn ended without a hook (a denial in the terminal).
+    public mutating func setIdle(_ session: String, now: Int) {
+        update(session, now: now) { $0.status = .idle }
+    }
+
+    /// A prompt left in the terminal: waiting, with nothing to answer on the buddy.
+    public mutating func setOnMac(_ session: String, project: String, now: Int) {
+        ensure(session, project: project, now: now)
+        update(session, now: now) { s in
+            s.pendingPermission = nil
+            s.pendingQuestion = nil
+            s.status = .waiting
+        }
+    }
+
     /// Working sessions with no event for `seconds` turn idle (an interrupted turn sends no hook); returns them.
     public mutating func idleStale(now: Int, after seconds: Int) -> [String] {
         let stale = sessions.values.filter { $0.status == .working && now - (lastEvent[$0.session] ?? $0.since) >= seconds }.map(\.session)

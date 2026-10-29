@@ -108,14 +108,18 @@ if let face = RGB565Image.load(URL(filePath: HiloConfig.facePath())) { Task { aw
 let control = ControlOps(coordinator: coordinator, buddy: central, tokensFromTranscripts: tokensFromTranscripts, policyError: policy.error)
 
 do {
-    try LocalSocket.serve(path: socketPath) { op, body in
+    try LocalSocket.serve(path: socketPath) { op, body, pid in
         if let reply = await control.handle(op: op, body: body) { return reply }
         switch op {
         case "hook":
             guard let input = try? HookInput.decode(body) else { return HookResponse.passThrough }
-            return await coordinator.handleHook(input)
+            return await coordinator.handleHook(input, peerAlive: pid > 0 ? HookPeer(pid: pid).isAlive : nil)
         case "hilo":
             await coordinator.sendSnapshot()
+            return Data("ok\n".utf8)
+        case "status-tick":
+            guard let tick = try? JSONDecoder().decode(StatusLineTick.self, from: body) else { return Data("rejected\n".utf8) }
+            await coordinator.statusLineTick(session: Text.clip(tick.sessionId, 64), transcriptPath: tick.transcriptPath)
             return Data("ok\n".utf8)
         case "usage":
             guard let limits = try? JSONDecoder().decode(RateLimits.self, from: body) else { return Data("rejected\n".utf8) }

@@ -5,6 +5,7 @@ public struct HookInput: Decodable, Sendable {
     public var hookEventName: String
     public var sessionId: String
     public var cwd: String
+    public var transcriptPath: String?
     public var toolName: String?
     public var toolInput: JSONValue?
     public var lastAssistantMessage: String?
@@ -61,6 +62,8 @@ public struct HookMapper: Sendable {
             return .emit([.taskDone(TaskDone(session: session, summary: summary.isEmpty ? "Finished" : summary))])
         case "StopFailure":
             return .emit([.agentError(AgentError(session: session, detail: Text.clip(Redactor.redact(hook.error ?? "Turn failed"), 300)))])
+        case "PermissionRequest" where tool == "AskUserQuestion":
+            return .emit([]) // comes after the question's own hold handed it back to the terminal
         case "PermissionRequest":
             let call = ToolCall(tool: tool, input: Self.flatStrings(input), cwd: hook.cwd, repoRoot: root, project: project)
             let c = policy.classify(call)

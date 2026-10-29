@@ -24,6 +24,13 @@ public struct RateLimits: Codable, Equatable, Sendable {
     }
 }
 
+/// Which session refreshed its status line; `hilod` reads it as "that session's terminal prompt was answered".
+public struct StatusLineTick: Codable, Equatable, Sendable {
+    public var sessionId: String
+    public var transcriptPath: String?
+    enum CodingKeys: String, CodingKey { case sessionId = "session_id", transcriptPath = "transcript_path" }
+}
+
 public struct UsageTracker: Sendable {
     public static let windowMinutes = 300
 
