@@ -8,12 +8,13 @@ cd "$(dirname "$0")/../hilo"
 swift build -c release --product HiloApp
 app=".build/Hilo.app"
 rm -rf "$app"
-mkdir -p "$app/Contents/MacOS"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Helpers"
 # Not "Hilo": APFS is case-insensitive and the hilo CLI below would overwrite it.
 cp .build/release/HiloApp "$app/Contents/MacOS/HiloApp"
-# The app starts hilod from its own bundle; build-hilod.sh signs it, and that signature is kept here.
+# hilod lives in Helpers: in Contents/MacOS macOS treats it as the app itself (TCC reads the app's Info.plist, and Hilo.app "is already open" while hilod runs).
+# build-hilod.sh signs it, and that signature is kept here.
 hilod="../daemon/.build/release/hilod"
-if [ -x "$hilod" ]; then cp "$hilod" "$app/Contents/MacOS/hilod"; else echo "note: no $hilod yet, run scripts/build-hilod.sh first"; fi
+if [ -x "$hilod" ]; then cp "$hilod" "$app/Contents/Helpers/hilod"; else echo "note: no $hilod yet, run scripts/build-hilod.sh first"; fi
 # The CLI too, so Setup can point Claude Code's status line at a stable path.
 [ -x "../daemon/.build/release/hilo" ] && cp "../daemon/.build/release/hilo" "$app/Contents/MacOS/hilo"
 # JetBrains Mono (OFL) from the firmware font sources; Bricolage Grotesque and Hanken Grotesk are not in the repo yet.
@@ -35,8 +36,6 @@ cat > "$app/Contents/Info.plist" <<PLIST
   <key>NSHighResolutionCapable</key><true/>
   <key>ATSApplicationFontsPath</key><string>Fonts</string>
   <key>NSAppleEventsUsageDescription</key><string>Hilo asks Spotify and Music what is playing so the buddy can show it.</string>
-  <!-- The bundled hilod reads this plist, not its embedded one: without the key macOS kills it on first Bluetooth use. -->
-  <key>NSBluetoothAlwaysUsageDescription</key><string>hilod talks to your Hilo Buddy over Bluetooth.</string>
 </dict>
 </plist>
 PLIST

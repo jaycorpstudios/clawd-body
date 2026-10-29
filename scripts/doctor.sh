@@ -37,7 +37,7 @@ echo "Build state"
 if security find-certificate -c "Hilo Local Signing" >/dev/null 2>&1; then ok "signing identity 'Hilo Local Signing'"
 else warn "no signing identity yet" "scripts/build-hilod.sh creates it (macOS asks for the login keychain password)"; fi
 [ -x "$root/daemon/.build/release/hilod" ] && ok "hilod built" || warn "hilod not built" "scripts/build-hilod.sh"
-[ -x "$root/hilo/.build/Hilo.app/Contents/MacOS/hilod" ] && ok "Hilo.app built" || warn "Hilo.app not built" "scripts/build-hilo-app.sh (after build-hilod.sh)"
+[ -x "$root/hilo/.build/Hilo.app/Contents/Helpers/hilod" ] && ok "Hilo.app built" || warn "Hilo.app not built" "scripts/build-hilo-app.sh (after build-hilod.sh)"
 launchctl list dev.hilo.hilod >/dev/null 2>&1 && ok "hilod running (LaunchAgent dev.hilo.hilod)" \
   || warn "hilod not running" "open Hilo.app › Setup › Run hilod › Start"
 

@@ -221,17 +221,17 @@ final class AppModel {
 
     static let statusLineCommand = "hilo statusline -- <your status line command>"
 
-    /// `HILO_HILOD` overrides it; otherwise the copy bundled next to the app's executable.
+    /// `HILO_HILOD` overrides it; otherwise the copy in the app's `Contents/Helpers`.
     var hilodPath: String? {
         if let path = ProcessInfo.processInfo.environment["HILO_HILOD"] { return path }
-        let bundled = Bundle.main.bundleURL.appending(path: "Contents/MacOS/hilod").path(percentEncoded: false)
+        let bundled = Bundle.main.bundleURL.appending(path: "Contents/Helpers/hilod").path(percentEncoded: false)
         return FileManager.default.isExecutableFile(atPath: bundled) ? bundled : nil
     }
 
-    /// The `hilo` CLI bundled next to `hilod`, or the build `HILO_HILOD` points at.
+    /// The `hilo` CLI next to the app's executable, or next to the build `HILO_HILOD` points at.
     var hiloPath: String? {
-        guard let hilodPath else { return nil }
-        let path = URL(filePath: hilodPath).deletingLastPathComponent().appending(path: "hilo").path(percentEncoded: false)
+        let env = ProcessInfo.processInfo.environment["HILO_HILOD"].map { URL(filePath: $0).deletingLastPathComponent() }
+        let path = (env ?? Bundle.main.bundleURL.appending(path: "Contents/MacOS")).appending(path: "hilo").path(percentEncoded: false)
         return FileManager.default.isExecutableFile(atPath: path) ? path : nil
     }
 

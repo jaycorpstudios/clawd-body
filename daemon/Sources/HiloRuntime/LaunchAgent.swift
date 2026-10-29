@@ -133,12 +133,13 @@ public struct LaunchAgent: Sendable {
                 String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self))
     }
 
-    /// The `hilod` inside an installed Hilo.app, or next to the calling executable.
+    /// The `hilod` inside an installed Hilo.app (`Contents/Helpers`), or next to the calling executable.
     public static func bundledHilod(executable: String = CommandLine.arguments[0]) -> String? {
         let home = FileManager.default.homeDirectoryForCurrentUser
         let sibling = URL(filePath: executable).resolvingSymlinksInPath().deletingLastPathComponent().appending(path: "hilod")
-        let candidates = ["/Applications/Hilo.app/Contents/MacOS/hilod", home.appending(path: "Applications/Hilo.app/Contents/MacOS/hilod").path(percentEncoded: false),
-                          sibling.path(percentEncoded: false)]
+        let helpers = URL(filePath: executable).resolvingSymlinksInPath().deletingLastPathComponent().appending(path: "../Helpers/hilod").standardized
+        let candidates = ["/Applications/Hilo.app/Contents/Helpers/hilod", home.appending(path: "Applications/Hilo.app/Contents/Helpers/hilod").path(percentEncoded: false),
+                          helpers.path(percentEncoded: false), sibling.path(percentEncoded: false)]
         return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 }

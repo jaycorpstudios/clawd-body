@@ -25,10 +25,10 @@ private final class Calls: @unchecked Sendable {
     }
 
     @Test func plistRunsTheBundledHilodAtLoadAndKeepsItAlive() throws {
-        let data = try agent.plist(hilod: "/Applications/Hilo.app/Contents/MacOS/hilod")
+        let data = try agent.plist(hilod: "/Applications/Hilo.app/Contents/Helpers/hilod")
         let job = try #require(try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any])
         #expect(job["Label"] as? String == "dev.hilo.hilod")
-        #expect(job["ProgramArguments"] as? [String] == ["/Applications/Hilo.app/Contents/MacOS/hilod"])
+        #expect(job["ProgramArguments"] as? [String] == ["/Applications/Hilo.app/Contents/Helpers/hilod"])
         #expect(job["RunAtLoad"] as? Bool == true)
         #expect(job["KeepAlive"] as? Bool == true)
         #expect(job["StandardOutPath"] as? String == agent.logPath)
