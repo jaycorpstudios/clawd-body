@@ -71,10 +71,12 @@ Setup › Run hilod › Stop (removes the LaunchAgent), remove the hooks and sta
 | Symptom | Check |
 | :--- | :--- |
 | Setup says "No hilo next to hilod" | Run `scripts/build-hilod.sh`, then `scripts/build-hilo-app.sh` again |
-| `hilod` dies right after starting | Start it from Setup, not a terminal: macOS aborts it on first Bluetooth use outside launchd |
+| `hilod` dies right after starting, or Start does nothing | Setup now says why. `launchctl print gui/$(id -u)/dev.hilo.hilod` with `last exit reason = OS_REASON_TCC` (and a `~/Library/Logs/DiagnosticReports/hilod-*.ips` with namespace TCC) means macOS aborted it for the Bluetooth permission: rebuild with the current `scripts/build-hilo-app.sh` and press Start. Start it from Setup or `hilo install`, never a terminal: there macOS checks the terminal app, which has no Bluetooth usage description |
+| Hilo.app does not open (`open` fails with -600) or comes back after force-quit | An app built before 2026-10-29 had `hilod` in `Contents/MacOS`, so macOS took it for the app. Rebuild both (`scripts/build-hilod.sh`, `scripts/build-hilo-app.sh`) and run `hilo/.build/Hilo.app/Contents/MacOS/hilo install`, which points the LaunchAgent at `Contents/Helpers/hilod` |
 | Buddy never connects | Bluetooth permission for `hilod` in System Settings › Privacy & Security › Bluetooth; `~/Library/Logs/Hilo/hilod.log` |
 | No sessions in Hilo | Setup › Claude Code hooks must be green, and the session must have started after the hooks were added |
 | `codesign` keeps asking for a password | Click "Always Allow" on the keychain prompt |
+| `codesign` fails with `errSecInternalComponent` on the first build | The keychain could not show its prompt (e.g. an agent ran the script). Run `scripts/build-hilod.sh` from your own terminal once and answer "Always Allow" |
 
 ## Repository
 

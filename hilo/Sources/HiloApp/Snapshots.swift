@@ -8,6 +8,11 @@ enum Snapshots {
 
     @MainActor
     static func runIfRequested(_ model: AppModel) async {
+        if let path = ProcessInfo.processInfo.environment["HILO_ICON"] {
+            saveIcon(to: URL(fileURLWithPath: path))
+            NSApp.terminate(nil)
+            return
+        }
         guard let dir = ProcessInfo.processInfo.environment["HILO_SNAPSHOT"] else { return }
         try? await Task.sleep(for: .seconds(1.5))
         for section in AppSection.allCases {
@@ -21,6 +26,15 @@ enum Snapshots {
             }
         }
         NSApp.terminate(nil)
+    }
+
+    /// With `HILO_ICON=<png>`: the 1024 px source of the app icon (scripts/make-app-icon.sh).
+    @MainActor
+    private static func saveIcon(to url: URL) {
+        let renderer = ImageRenderer(content: AppIconArt())
+        renderer.scale = 1
+        guard let image = renderer.cgImage else { return }
+        try? NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])?.write(to: url)
     }
 
     @MainActor
@@ -39,5 +53,20 @@ enum Snapshots {
                (found.documentView?.bounds.height ?? 0) > (best?.documentView?.bounds.height ?? 0) { best = found }
         }
         return best
+    }
+}
+
+/// Claudio on a dark squircle, sized to macOS's icon grid (824 px plate in a 1024 px canvas).
+struct AppIconArt: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 185, style: .continuous)
+                .fill(LinearGradient(colors: [Color(hex: "#2b2520"), Color(hex: "#12100e")], startPoint: .top, endPoint: .bottom))
+                .overlay(RoundedRectangle(cornerRadius: 185, style: .continuous).strokeBorder(Color.white.opacity(0.08), lineWidth: 4))
+                .frame(width: 824, height: 824)
+                .shadow(color: .black.opacity(0.35), radius: 20, y: 12)
+            PetView(state: .idle, size: 640, frozenAt: 0).offset(y: -40)
+        }
+        .frame(width: 1024, height: 1024)
     }
 }

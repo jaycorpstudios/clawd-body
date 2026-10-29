@@ -22,14 +22,22 @@ struct PetView: View {
     var look: PetLook = .main
     var state: PetState = .idle
     var size: CGFloat = 42
+    /// A fixed moment instead of the animation, for still images such as the app icon.
+    var frozenAt: Double? = nil
 
     private var hue: Double { Double(look.hue) }
     private var acc: Accessory { look.accessory }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 20)) { timeline in
-            Canvas { ctx, canvasSize in
-                draw(&ctx, unit: canvasSize.width / 32, t: timeline.date.timeIntervalSinceReferenceDate)
+        Group {
+            if let frozenAt {
+                Canvas { ctx, canvasSize in draw(&ctx, unit: canvasSize.width / 32, t: frozenAt) }
+            } else {
+                TimelineView(.animation(minimumInterval: 1 / 20)) { timeline in
+                    Canvas { ctx, canvasSize in
+                        draw(&ctx, unit: canvasSize.width / 32, t: timeline.date.timeIntervalSinceReferenceDate)
+                    }
+                }
             }
         }
         .frame(width: size, height: size)
