@@ -77,6 +77,26 @@ public struct LaunchAgent: Sendable {
         try check(launchctl(restartCommand), restartCommand)
     }
 
+    /// Why launchd's job is not up, in words a user can act on; nil when `launchctl print` names no exit.
+    public func whyNotRunning(print: String) -> String? {
+        func field(_ name: String) -> String? {
+            print.split(separator: "\n").lazy.compactMap { line -> String? in
+                let parts = line.split(separator: "=", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
+                return parts.count == 2 && parts[0] == name ? parts[1] : nil
+            }.first
+        }
+        if field("last exit reason") == "OS_REASON_TCC" {
+            return "macOS stopped hilod for lack of a privacy permission (Bluetooth). Rebuild Hilo with scripts/build-hilo-app.sh, start hilod again and allow Bluetooth when asked, or turn it on in System Settings › Privacy & Security › Bluetooth."
+        }
+        if let reason = field("last exit reason") { return "hilod stopped: \(reason). Log in ~/Library/Logs/Hilo." }
+        if let code = field("last exit code"), code != "0", code != "(never exited)" {
+            return "hilod exited with \(code). Log in ~/Library/Logs/Hilo."
+        }
+        return nil
+    }
+
+    public var printCommand: [String] { ["print", "\(domain)/\(Self.label)"] }
+
     public struct Failure: Error, CustomStringConvertible {
         public let description: String
     }
@@ -88,19 +108,29 @@ public struct LaunchAgent: Sendable {
     }
 
     public static let run: Launchctl = { arguments in
+        let result = launch(arguments)
+        return (result.status, result.error)
+    }
+
+    /// `launchctl print`'s text for the job, empty when it cannot run.
+    public func printed() -> String { Self.launch(printCommand).output }
+
+    private static func launch(_ arguments: [String]) -> (status: Int32, output: String, error: String) {
         let process = Process()
         process.executableURL = URL(filePath: "/bin/launchctl")
         process.arguments = arguments
-        let errors = Pipe()
+        let output = Pipe(), errors = Pipe()
         process.standardError = errors
-        process.standardOutput = FileHandle.nullDevice
+        process.standardOutput = output
         do {
             try process.run()
-            process.waitUntilExit()
         } catch {
-            return (-1, "\(error)")
+            return (-1, "", "\(error)")
         }
-        return (process.terminationStatus, String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self))
+        let out = output.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        return (process.terminationStatus, String(decoding: out, as: UTF8.self),
+                String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self))
     }
 
     /// The `hilod` inside an installed Hilo.app, or next to the calling executable.

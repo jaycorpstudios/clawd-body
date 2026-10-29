@@ -66,6 +66,13 @@ private final class Calls: @unchecked Sendable {
         try agent.uninstall(launchctl: calls.launchctl)
     }
 
+    @Test func aJobStoppedByPrivacyChecksSaysSo() {
+        let print = "gui/501/dev.hilo.hilod = {\n\tstate = spawn scheduled\n\truns = 5\n\tlast exit reason = OS_REASON_TCC\n}"
+        #expect(agent.whyNotRunning(print: print)?.contains("Bluetooth") == true)
+        #expect(agent.whyNotRunning(print: "\tstate = running\n\tlast exit code = (never exited)\n") == nil)
+        #expect(agent.whyNotRunning(print: "\tlast exit code = 1\n") == "hilod exited with 1. Log in ~/Library/Logs/Hilo.")
+    }
+
     @Test func restartKicksTheJob() throws {
         let calls = Calls()
         try agent.restart(launchctl: calls.launchctl)

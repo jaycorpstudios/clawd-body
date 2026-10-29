@@ -35,6 +35,8 @@ cat > "$app/Contents/Info.plist" <<PLIST
   <key>NSHighResolutionCapable</key><true/>
   <key>ATSApplicationFontsPath</key><string>Fonts</string>
   <key>NSAppleEventsUsageDescription</key><string>Hilo asks Spotify and Music what is playing so the buddy can show it.</string>
+  <!-- The bundled hilod reads this plist, not its embedded one: without the key macOS kills it on first Bluetooth use. -->
+  <key>NSBluetoothAlwaysUsageDescription</key><string>hilod talks to your Hilo Buddy over Bluetooth.</string>
 </dict>
 </plist>
 PLIST

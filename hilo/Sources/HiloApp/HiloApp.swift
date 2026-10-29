@@ -62,6 +62,12 @@ struct RootView: View {
                 .background(Theme.window)
             }
         }
+        .overlay(alignment: .bottom) {
+            if let toast = model.toast {
+                ToastView(toast: toast).id(toast.id).padding(.bottom, 22).transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeOut(duration: 0.2), value: model.toast)
         .background(WindowSetup())
         .background(Theme.window)
         .ignoresSafeArea(.container, edges: .top)

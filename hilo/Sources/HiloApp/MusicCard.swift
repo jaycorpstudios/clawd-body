@@ -7,7 +7,7 @@ extension AppModel {
         var updated = HiloConfig.load()
         if let spotify { updated.musicSpotify = spotify }
         if let app { updated.musicApp = app }
-        do { try updated.save() } catch { daemonError = "Cannot save the setting: \(error)" }
+        do { try updated.save() } catch { notify("Cannot save the setting: \(error)", .error) }
         config = HiloConfig.load()
         refreshMusic()
     }

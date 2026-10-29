@@ -58,7 +58,10 @@ struct SetupView: View {
                 Circle().fill(model.daemonRunning ? Theme.doneCheck : Theme.muted).frame(width: 9, height: 9)
                 Text(model.daemonRunning ? "hilod is running as \(model.daemonStatus?.host ?? "?")" : "hilod is stopped")
                 Spacer()
-                if model.daemonRunning {
+                if let busy = model.daemonBusy {
+                    ProgressView().controlSize(.small)
+                    Text(busy).foregroundStyle(Theme.secondary)
+                } else if model.daemonRunning {
                     Button("Restart") { model.restartDaemon() }.buttonStyle(SecondaryButtonStyle())
                     Button("Stop") { model.stopDaemon() }.buttonStyle(SecondaryButtonStyle())
                 } else {

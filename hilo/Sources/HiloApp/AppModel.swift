@@ -51,6 +51,9 @@ final class AppModel {
     var statusLine = StatusLineSetup.State.noStatusLine
     var hooks = HooksSetup.State.installed
     var daemonError: String?
+    /// "Starting…" while a start, restart or stop waits for hilod to answer; the buttons are disabled meanwhile.
+    var daemonBusy: String?
+    var toast: Toast?
     var config = HiloConfig.load()
     var selectedTask: Int?
     var selectedSession: String?
@@ -78,7 +81,7 @@ final class AppModel {
 
     func refresh() {
         guard let store else { return }
-        attempt {
+        reading {
             let fresh = (try store.tasks(doneSince: Self.startOfToday), try store.sessions(since: Self.startOfToday),
                          try store.agreements(), try store.projects())
             if fresh.0 != tasks { tasks = fresh.0 }
@@ -157,7 +160,7 @@ final class AppModel {
     }
 
     func editSummary(weekStart: Int, project: Int, text: String) {
-        attempt { try store?.editSummary(week: HiloStore.weekKey(weekStart), projectId: project, text: text, now: Self.now) }
+        attempt(done: "Summary saved") { try store?.editSummary(week: HiloStore.weekKey(weekStart), projectId: project, text: text, now: Self.now) }
         changed()
     }
 
@@ -178,7 +181,7 @@ final class AppModel {
     }
 
     func delete(_ id: Int) {
-        attempt { try store?.deleteTask(id) }
+        attempt(done: "Task deleted") { try store?.deleteTask(id) }
         changed()
     }
 
@@ -207,12 +210,12 @@ final class AppModel {
     }
 
     func confirm(_ agreement: Agreement) {
-        attempt { try store?.confirmAgreement(agreement.id) }
+        attempt(done: "Agreement confirmed") { try store?.confirmAgreement(agreement.id) }
         changed()
     }
 
     func discard(_ agreement: Agreement) {
-        attempt { try store?.deleteAgreement(agreement.id) }
+        attempt(done: "Agreement discarded") { try store?.deleteAgreement(agreement.id) }
         changed()
     }
 
@@ -237,10 +240,16 @@ final class AppModel {
         if daemonRunning, let reply = LocalSocket.request(path: LocalSocket.defaultPath, op: "host", body: Data(display.utf8), timeoutSeconds: 2),
            (try? JSONDecoder().decode(DaemonStatus.self, from: reply)) != nil {
             daemonError = nil
+            notify("Saved: the buddy now shows \(host)")
         } else {
             var updated = HiloConfig.load()
             updated.host = host
-            do { try updated.save() } catch { daemonError = "Cannot save the name: \(error)" }
+            do {
+                try updated.save()
+                notify(daemonRunning ? "Saved; hilod did not answer, it applies on its next start" : "Saved; it applies when hilod starts")
+            } catch {
+                fail("Cannot save the name: \(error)")
+            }
         }
         config = HiloConfig.load()
         refresh()
@@ -249,24 +258,59 @@ final class AppModel {
     func setTokensFromTranscripts(_ on: Bool) {
         var updated = HiloConfig.load()
         updated.tokensFromTranscripts = on
-        do { try updated.save() } catch { daemonError = "Cannot save the setting: \(error)" }
+        do { try updated.save() } catch { fail("Cannot save the setting: \(error)") }
         config = HiloConfig.load()
     }
 
     /// Installs the LaunchAgent, so hilod also starts at every login; replaces a job started with `launchctl submit`.
-    func startDaemon() {
-        guard let hilodPath else { return }
-        launchAgent { try $0.install(hilod: hilodPath) }
-    }
+    func startDaemon() { launchDaemon(busy: "Starting…", done: "hilod is running") }
+
+    func restartDaemon() { launchDaemon(busy: "Restarting…", done: "hilod restarted") }
 
     func stopDaemon() {
-        launchAgent { try $0.uninstall() }
+        guard daemonBusy == nil else { return }
+        daemonBusy = "Stopping…"
+        Task {
+            let failure = await Task.detached { () -> String? in
+                do { try LaunchAgent().uninstall() } catch { return "\(error)" }
+                return nil
+            }.value
+            daemonBusy = nil
+            if let failure { fail(failure) } else { daemonError = nil; notify("hilod stopped") }
+            refresh()
+        }
     }
 
-    func restartDaemon() { startDaemon() }
+    /// A bootstrap that works says nothing about hilod itself (macOS may kill it at once), so it waits for the socket to answer twice.
+    private func launchDaemon(busy: String, done: String) {
+        guard daemonBusy == nil else { return }
+        guard let hilodPath else {
+            fail("hilod was not found next to Hilo. Build it with scripts/build-hilod.sh, then rebuild the app.")
+            return
+        }
+        daemonBusy = busy
+        Task {
+            let failure = await Task.detached { () -> String? in
+                let agent = LaunchAgent()
+                do { try agent.install(hilod: hilodPath) } catch { return "\(error)" }
+                var answers = 0
+                for _ in 0..<20 {
+                    usleep(500_000)
+                    let up = LocalSocket.request(path: LocalSocket.defaultPath, op: "status", body: Data(), timeoutSeconds: 1) != nil
+                    answers = up ? answers + 1 : 0
+                    if answers == 3 { return nil }
+                }
+                return agent.whyNotRunning(print: agent.printed())
+                    ?? "hilod did not answer within 10 s. Log in ~/Library/Logs/Hilo."
+            }.value
+            daemonBusy = nil
+            if let failure { fail(failure) } else { daemonError = nil; notify(done) }
+            refresh()
+        }
+    }
 
-    func startPairing() { control("pair") }
-    func cancelPairing() { control("pair-cancel") }
+    func startPairing() { control("pair", done: "Pairing started") }
+    func cancelPairing() { control("pair-cancel", done: "Pairing cancelled") }
 
     var facePath: String { HiloConfig.facePath() }
 
@@ -279,21 +323,21 @@ final class AppModel {
                 let side = min(square.width, 480)
                 guard let ctx = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
                                           space: CGColorSpace(name: CGColorSpace.sRGB)!,
-                                          bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return }
+                                          bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { fail("Cannot save the picture"); return }
                 ctx.interpolationQuality = .high
                 ctx.draw(square, in: CGRect(x: 0, y: 0, width: side, height: side))
                 guard let scaled = ctx.makeImage(),
-                      let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else { return }
+                      let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else { fail("Cannot save the picture"); return }
                 CGImageDestinationAddImage(dest, scaled, nil)
-                guard CGImageDestinationFinalize(dest) else { daemonError = "Cannot save the picture"; return }
+                guard CGImageDestinationFinalize(dest) else { fail("Cannot save the picture"); return }
             } else if FileManager.default.fileExists(atPath: facePath) {
                 try FileManager.default.removeItem(at: url)
             }
         } catch {
-            daemonError = "Cannot save the picture: \(error)"
+            fail("Cannot save the picture: \(error)")
             return
         }
-        control("face")
+        control("face", done: square == nil ? "Picture removed" : "Picture saved; the buddy picks it up next time it asks")
         refreshSoon()
     }
 
@@ -309,19 +353,20 @@ final class AppModel {
         control("pomodoro", body: body)
     }
 
-    private func control(_ op: String, body: Data = Data()) {
+    private func control(_ op: String, body: Data = Data(), done: String? = nil) {
         let reply = LocalSocket.request(path: LocalSocket.defaultPath, op: op, body: body, timeoutSeconds: 2)
-        if let status = reply.flatMap({ try? JSONDecoder().decode(DaemonStatus.self, from: $0) }) { daemonStatus = status }
+        guard let status = reply.flatMap({ try? JSONDecoder().decode(DaemonStatus.self, from: $0) }) else {
+            notify(reply == nil ? "hilod did not answer. Start it in Setup." : "hilod could not do that; its log is in ~/Library/Logs/Hilo.", .error)
+            return
+        }
+        daemonStatus = status
+        if let done { notify(done) }
     }
 
-    private func launchAgent(_ action: (LaunchAgent) throws -> Void) {
-        do {
-            try action(LaunchAgent())
-            daemonError = nil
-        } catch {
-            daemonError = "\(error)"
-        }
-        refreshSoon()
+    /// Daemon errors also stay in the Setup card, where the fix usually is.
+    private func fail(_ message: String) {
+        daemonError = message
+        notify(message, .error)
     }
 
     private func refreshSoon() {
@@ -347,7 +392,12 @@ final class AppModel {
         panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
         panel.nameFieldStringValue = name
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        do { try Data(markdown.utf8).write(to: url, options: .atomic) } catch { errorMessage = "Cannot save \(url.lastPathComponent): \(error)" }
+        do {
+            try Data(markdown.utf8).write(to: url, options: .atomic)
+            notify("Saved \(url.lastPathComponent)")
+        } catch {
+            notify("Cannot save \(url.lastPathComponent): \(error)", .error)
+        }
     }
 
     /// Refreshes the window and lets `hilod` push the new Hilo state to the buddy.
@@ -358,13 +408,27 @@ final class AppModel {
         }
     }
 
-    private func attempt(_ body: () throws -> Void) {
+    /// A background read: its error stays on the page until a later read works, instead of a toast every 2 s.
+    private func reading(_ body: () throws -> Void) {
         do {
             try body()
             if errorMessage != nil, store != nil { errorMessage = nil }
         } catch {
             errorMessage = "\(error)"
         }
+    }
+
+    private func attempt(done: String? = nil, _ body: () throws -> Void) {
+        do {
+            try body()
+            if let done { notify(done) }
+        } catch {
+            notify("\(error)", .error)
+        }
+    }
+
+    func notify(_ text: String, _ kind: Toast.Kind = .done) {
+        toast = Toast(kind: kind, text: text)
     }
 }
 
