@@ -140,8 +140,11 @@ static bool parse_permission(const cJSON *o, bm_request_t *r, char *session, cha
     bool ok = ULID_OK(o, "request_id", r->request_id) && req_str(o, "session", 1, 64, session, 65) &&
               req_str(o, "project", 1, 64, project, 65) && req_str(o, "tool", 1, 32, r->tool, sizeof(r->tool)) &&
               req_str(o, "detail", 1, 300, r->detail, sizeof(r->detail)) &&
+              opt_str(o, "detail_full", 1, 2000, r->detail_full, sizeof(r->detail_full)) &&
               opt_str(o, "why", 1, 300, r->why, sizeof(r->why)) && req_str(o, "cwd", 0, 120, r->cwd, sizeof(r->cwd)) &&
               req_int(o, "expires_at", 0, INT64_MAX, &r->expires_at);
+    const cJSON *full = cJSON_GetObjectItemCaseSensitive(o, "detail_full");
+    if (cJSON_IsString(full) && strlen(full->valuestring) >= sizeof(r->detail_full)) r->remote_allowed = false; /* cut here */
     const cJSON *diff = opt_array(o, "diff", BM_MAX_DIFF, &ok);
     const cJSON *line;
     cJSON_ArrayForEach(line, diff)
@@ -176,6 +179,16 @@ static bool parse_question(const cJSON *o, bm_request_t *r, char *session, char 
         size_t len = utf8_len(opt->valuestring);
         if (len < 1 || len > 40 || strlen(opt->valuestring) >= sizeof(r->options[0])) return false;
         bm__copy(r->options[r->n_options++], sizeof(r->options[0]), opt->valuestring);
+    }
+    const cJSON *notes = cJSON_GetObjectItemCaseSensitive(o, "option_descriptions");
+    if (notes) {
+        if (!cJSON_IsArray(notes) || cJSON_GetArraySize(notes) != r->n_options) return false;
+        int i = 0;
+        cJSON_ArrayForEach(opt, notes)
+        {
+            if (!cJSON_IsString(opt) || utf8_len(opt->valuestring) > 200) return false;
+            bm__copy(r->option_notes[i++], sizeof(r->option_notes[0]), opt->valuestring);
+        }
     }
     bm__copy(r->tool, sizeof(r->tool), "Question");
     return true;

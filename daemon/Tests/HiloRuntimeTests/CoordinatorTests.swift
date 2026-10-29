@@ -123,7 +123,7 @@ private func behavior(_ reply: Data) -> String? {
 
 @Test func macOnlyApprovalKeepsWaitingAndDenyIsHonored() async throws {
     let h = Harness()
-    let tooLongToShow = "echo " + Array(repeating: "word", count: 60).joined(separator: " ")
+    let tooLongToShow = "echo " + Array(repeating: "word", count: 420).joined(separator: " ")
     let hook = Task { await h.coordinator.handleHook(try h.permission(tooLongToShow)) }
     let id = try await h.pendingRequestId()
     try await h.buddy(id, "approve")

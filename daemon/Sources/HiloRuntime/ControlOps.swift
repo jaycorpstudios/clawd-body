@@ -85,14 +85,15 @@ public struct ControlOps: Sendable {
         var workMin: Int?
         var breakMin: Int?
         var on: Bool?
-        enum CodingKeys: String, CodingKey { case action, workMin = "work_min", breakMin = "break_min", on }
+        var phase: PomodoroPhase?
+        enum CodingKeys: String, CodingKey { case action, workMin = "work_min", breakMin = "break_min", on, phase }
     }
 
-    /// `{"action":"toggle"}`, `{"action":"reset"}`, `{"action":"durations","work_min":50,"break_min":10}` or `{"action":"auto_continue","on":true}`.
+    /// `{"action":"toggle"}` (optionally with `"phase":"work"|"break"`), `{"action":"reset"}`, `{"action":"durations","work_min":50,"break_min":10}` or `{"action":"auto_continue","on":true}`.
     static func pomodoroCommand(_ body: Data) -> PomodoroCommand? {
         guard let b = try? JSONDecoder().decode(PomodoroBody.self, from: body) else { return nil }
         switch b.action {
-        case "toggle": return .toggle
+        case "toggle": return b.phase.map { .start($0) } ?? .toggle
         case "reset": return .reset
         case "durations" where b.workMin != nil || b.breakMin != nil: return .durations(work: b.workMin, rest: b.breakMin)
         case "auto_continue": return b.on.map { .autoContinue($0) }

@@ -54,6 +54,8 @@ public struct PermissionRequest: Codable, Equatable, Sendable {
     public var project: String
     public var tool: String
     public var detail: String
+    /// The whole text when `detail` had to be cut (up to 2000 scalars, line breaks kept); absent otherwise.
+    public var detailFull: String?
     public var why: String?
     public var diff: [DiffLine]?
     public var cwd: String
@@ -61,10 +63,10 @@ public struct PermissionRequest: Codable, Equatable, Sendable {
     public var remoteAllowed: Bool
     public var expiresAt: Int
 
-    public init(requestId: String, session: String, project: String, tool: String, detail: String, why: String? = nil,
-                diff: [DiffLine]? = nil, cwd: String, risk: Risk, remoteAllowed: Bool, expiresAt: Int) {
+    public init(requestId: String, session: String, project: String, tool: String, detail: String, detailFull: String? = nil,
+                why: String? = nil, diff: [DiffLine]? = nil, cwd: String, risk: Risk, remoteAllowed: Bool, expiresAt: Int) {
         self.requestId = requestId; self.session = session; self.project = project; self.tool = tool
-        self.detail = detail; self.why = why; self.diff = diff; self.cwd = cwd
+        self.detail = detail; self.detailFull = detailFull; self.why = why; self.diff = diff; self.cwd = cwd
         self.risk = risk; self.remoteAllowed = remoteAllowed; self.expiresAt = expiresAt
     }
 }
@@ -75,11 +77,14 @@ public struct QuestionRequest: Codable, Equatable, Sendable {
     public var project: String
     public var detail: String
     public var options: [String]
+    /// One per option, "" where it has none; absent when no option has one.
+    public var optionDescriptions: [String]?
     public var expiresAt: Int
 
-    public init(requestId: String, session: String, project: String, detail: String, options: [String], expiresAt: Int) {
+    public init(requestId: String, session: String, project: String, detail: String, options: [String],
+                optionDescriptions: [String]? = nil, expiresAt: Int) {
         self.requestId = requestId; self.session = session; self.project = project
-        self.detail = detail; self.options = options; self.expiresAt = expiresAt
+        self.detail = detail; self.options = options; self.optionDescriptions = optionDescriptions; self.expiresAt = expiresAt
     }
 }
 

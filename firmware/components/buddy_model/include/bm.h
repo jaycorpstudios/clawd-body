@@ -12,6 +12,8 @@
 #define BM_MAX_STEPS 5
 #define BM_MAX_DIFF 12
 #define BM_MAX_OPTIONS 4
+#define BM_DETAIL_FULL_BYTES 6001 /* hilod caps detail_full at 6000 UTF-8 bytes */
+#define BM_OPT_NOTE_BYTES 801
 #define BM_MAX_NEXT 3
 #define BM_MAX_AGREEMENTS 3
 #define BM_AGENT_ROWS 5
@@ -127,6 +129,7 @@ typedef struct {
     bool is_question;
     char tool[33];
     char detail[301];
+    char detail_full[BM_DETAIL_FULL_BYTES];
     char why[301];
     char cwd[121];
     bm_diff_line_t diff[BM_MAX_DIFF];
@@ -135,6 +138,7 @@ typedef struct {
     bool remote_allowed;
     int64_t expires_at;
     char options[BM_MAX_OPTIONS][41];
+    char option_notes[BM_MAX_OPTIONS][BM_OPT_NOTE_BYTES];
     uint8_t n_options;
     bool snoozed;
     bool acked;
@@ -394,6 +398,7 @@ typedef enum {
     BM_TAP_POMO_BREAK,
     BM_TAP_POMO_AUTO,
     BM_TAP_CONFIRM,
+    BM_TAP_POMO_START, /* arg 0 = work, 1 = break */
 } bm_tap_t;
 
 typedef enum { BM_MEDIA_PLAY_PAUSE, BM_MEDIA_NEXT, BM_MEDIA_PREVIOUS } bm_media_action_t;
@@ -423,6 +428,7 @@ void bm_panel(bm_model_t *m, bool open, uint32_t now_ms);
 int32_t bm_pomo_left_s(const bm_model_t *m, uint32_t now_ms);
 float bm_pomo_progress(const bm_model_t *m, uint32_t now_ms);
 bm_pet_state_t bm_pomo_pet(const bm_model_t *m);
+bool bm_pomo_ready(const bm_model_t *m);
 bool bm_alarm_ringing(const bm_model_t *m);
 void bm_alarm_stop(bm_model_t *m, uint32_t now_ms);
 
@@ -457,6 +463,7 @@ float bm_attn_slide(const bm_model_t *m, uint32_t now_ms);
 bool bm_attn_leaving(const bm_model_t *m, uint32_t now_ms);
 float bm_ease(float t);
 bool bm_request_approvable(const bm_request_t *r);
+const char *bm_request_text(const bm_request_t *r);
 uint32_t bm_hold_ms(const bm_request_t *r);
 int bm_hosts_connected(const bm_model_t *m);
 int bm_live_waiting_count(const bm_model_t *m);

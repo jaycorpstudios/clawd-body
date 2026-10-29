@@ -49,7 +49,7 @@ bm_err_t send_raw(const char *json)
 
 bm_err_t send(const char *host, const char *type, const char *data_fmt, ...)
 {
-    char data[4096], json[5000];
+    char data[8192], json[9000];
     va_list ap;
     va_start(ap, data_fmt);
     vsnprintf(data, sizeof(data), data_fmt, ap);

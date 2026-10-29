@@ -7,8 +7,8 @@ sequenceDiagram
     participant B as Buddy
 
     CC->>D: question to the user (text + 2–4 options)
-    D-->>B: agent.question {request_id, options, expires_at}
-    B->>B: show options as buttons
+    D-->>B: agent.question {request_id, options, option_descriptions?, expires_at}
+    B->>B: show options as buttons, each with its description
     alt answered on the buddy
         B->>D: question.answer {request_id, choice_index, choice}
         D->>D: validate pending, not expired, single use, choice in options

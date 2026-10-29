@@ -120,8 +120,9 @@ public struct SessionStore: Sendable {
         if !fits(snap) { snap.sessions = snap.sessions.map { var s = $0; s.steps = nil; return s } }
         if !fits(snap) { snap.sessions = snap.sessions.map { var s = $0; s.pendingPermission?.diff = nil; return s } }
         if !fits(snap) {
-            snap.sessions = snap.sessions.map { var s = $0; s.pendingPermission?.why = nil; s.summary = nil; s.error = nil; return s }
+            snap.sessions = snap.sessions.map { var s = $0; s.pendingPermission?.why = nil; s.pendingQuestion?.optionDescriptions = nil; s.summary = nil; s.error = nil; return s }
         }
+        if !fits(snap) { snap.sessions = snap.sessions.map { var s = $0; s.pendingPermission = s.pendingPermission?.withoutDetailFull(); return s } }
         while !fits(snap), !snap.sessions.isEmpty { snap.sessions.removeLast() }
         return snap
     }
@@ -166,5 +167,28 @@ extension Outbound {
         case .agentError(let e): e.session
         case .snapshot, .usageUpdate, .usageWindowReset, .hiloTaskChanged, .nowPlaying, .settingsSet, .face, .cover, .pomodoro: nil
         }
+    }
+}
+
+extension PermissionRequest {
+    /// The longest host name, so the message fits whichever Mac sends it.
+    static let widestHost = String(repeating: "x", count: 16)
+
+    /// Drops what the 8 KB message cap cannot carry: the diff first, then `detail_full`.
+    public func fitted(maxBytes: Int = Framing.maxMessageSize) -> PermissionRequest {
+        let fits = { (p: PermissionRequest) in ((try? Wire.encode(.needsPermission(p), host: Self.widestHost).count) ?? .max) <= maxBytes }
+        var p = self
+        if !fits(p) { p.diff = nil }
+        if !fits(p) { p = p.withoutDetailFull() }
+        return p
+    }
+
+    /// Without the whole text the buddy shows only the cut `detail`, so it may no longer approve.
+    func withoutDetailFull() -> PermissionRequest {
+        guard detailFull != nil else { return self }
+        var p = self
+        p.detailFull = nil
+        p.remoteAllowed = false
+        return p
     }
 }

@@ -57,6 +57,18 @@ extension PomodoroState {
         updatedAt = now
     }
 
+    /// Whether the phase has not begun: stopped, or paused at its full length after one ended.
+    public var ready: Bool { state == .stopped || (state == .paused && leftS == phaseSeconds) }
+
+    /// Starts `phase` at its full length; the cycle count stays.
+    public mutating func start(_ phase: PomodoroPhase, now: Int) {
+        self.phase = phase
+        endsAt = now + phaseSeconds
+        leftS = nil
+        state = .running
+        updatedAt = now
+    }
+
     public mutating func reset(now: Int) {
         let auto = autoContinue
         self = .stopped(workMin: workMin, breakMin: breakMin, now: now)
@@ -75,6 +87,8 @@ extension PomodoroState {
 
 public enum PomodoroCommand: Equatable, Sendable {
     case toggle, reset, durations(work: Int?, rest: Int?), autoContinue(Bool)
+    /// A `toggle` op that names a phase: while running it pauses like any toggle, so an older `hilod` that ignores the phase agrees.
+    case start(PomodoroPhase)
 }
 
 /// Announces each phase end once, from the states `hilod` reports; a change made by hand (new `updatedAt`) is never announced.

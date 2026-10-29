@@ -633,7 +633,8 @@ void bm_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms)
     case BM_TAP_POMO_RESET:
     case BM_TAP_POMO_WORK:
     case BM_TAP_POMO_BREAK:
-    case BM_TAP_POMO_AUTO: bm__pomo_tap(m, target, arg, now_ms); break;
+    case BM_TAP_POMO_AUTO:
+    case BM_TAP_POMO_START: bm__pomo_tap(m, target, arg, now_ms); break;
     case BM_TAP_NONE: break;
     }
 }

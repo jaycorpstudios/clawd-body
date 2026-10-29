@@ -79,6 +79,7 @@ typedef struct {
     ui_pet_t *pomo_pet;
     lv_obj_t *pomo_cycle, *pomo_time, *pomo_phase, *pomo_bar, *pomo_steps, *pomo_work, *pomo_break, *pomo_play;
     lv_obj_t *pomo_ring, *pomo_reset, *pomo_auto, *alarm_catch;
+    lv_obj_t *pomo_starts;
     int pomo_tint;
     lv_image_dsc_t cover_dsc;
     uint16_t *cover_px;
@@ -94,7 +95,8 @@ typedef struct {
     int n_confetti;
 
     lv_obj_t *attn, *ap_k, *ap_p, *ap_h, *ap_body, *ap_cmd, *ap_why, *ap_actions, *ap_deny, *ap_ok, *ap_ok_lbl, *ap_ok_fill,
-        *ap_locked, *ap_locked_lbl, *ap_opts, *ap_opt[BM_MAX_OPTIONS], *ap_opt_lbl[BM_MAX_OPTIONS];
+        *ap_locked, *ap_locked_lbl, *ap_opts, *ap_opt[BM_MAX_OPTIONS], *ap_opt_lbl[BM_MAX_OPTIONS],
+        *ap_opt_note[BM_MAX_OPTIONS];
 
     lv_obj_t *sheet, *sh_title, *sh_body;
     ui_pet_t *sh_pet;

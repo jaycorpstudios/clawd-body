@@ -24,7 +24,8 @@ Spare parts available: PAM8403 amplifiers and 8 Ω 0.5 W speakers, in case the o
 4. **Permission or question screen**: shows project, Mac, tool, command and reason.
    - Normal permission: **Deny** and **Hold to approve** (hold ~0.9 s).
    - High risk: **Hold 3 s to approve**, then **Tap to confirm** within 4 s (since 2026-10-29). A Mac-only request (`remote_allowed:false`): **Deny** only, with the caption "Approve on the Mac".
-   - Question: options as buttons.
+   - Question: options as buttons, each with its description below when the Mac sent `option_descriptions` (2026-10-29).
+   - A command longer than the one-line `detail` shows whole from `detail_full` (up to 2000 characters, in the model's PSRAM block: 6001 bytes per request slot); one that arrives cut stays Mac-only.
    - **Later**: keeps it pending without losing it.
    - **View details**: opens a sheet with full information (diff, directory, risk).
 5. **Detail sheets** opened by tapping: agent (recent activity, tokens, diff, error or summary), usage (per-session breakdown) and Hilo task (notes, agreements, linked sessions).

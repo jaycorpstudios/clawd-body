@@ -113,6 +113,7 @@
         "project": { "$ref": "#/$defs/project" },
         "tool": { "type": "string", "minLength": 1, "maxLength": 32 },
         "detail": { "$ref": "#/$defs/text" },
+        "detail_full": { "type": "string", "minLength": 1, "maxLength": 2000 },
         "why": { "$ref": "#/$defs/text" },
         "diff": { "$ref": "#/$defs/diff" },
         "cwd": { "type": "string", "maxLength": 120 },
@@ -132,6 +133,10 @@
         "options": {
           "type": "array", "minItems": 2, "maxItems": 4,
           "items": { "type": "string", "minLength": 1, "maxLength": 40 }
+        },
+        "option_descriptions": {
+          "type": "array", "minItems": 2, "maxItems": 4,
+          "items": { "type": "string", "maxLength": 200 }
         },
         "expires_at": { "$ref": "#/$defs/unix" }
       }

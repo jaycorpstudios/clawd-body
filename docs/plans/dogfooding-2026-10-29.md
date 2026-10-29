@@ -14,9 +14,9 @@ A day of real use on the work Mac. Each item: what hurt, what we build, where it
 | :--- | :--- | :--- |
 | 1 | Request card readable and easy to hit | **Done** (session A) |
 | 2 | High-risk approvable from the buddy | **Done** (session A) |
-| 3 | Requests vanish, and "answered on the Mac" shows late | Session B |
-| 4 | Longer commands and question notes on the buddy | Session B |
-| 5 | Pomodoro: choose work or break | Session B |
+| 3 | Requests vanish, and "answered on the Mac" shows late | Session B: signals verified, design proposed, build waits for OK |
+| 4 | Longer commands and question notes on the buddy | **Done** (session B) |
+| 5 | Pomodoro: choose work or break | **Done** (session B) |
 | 6 | Session names (Claude's title, `/rename`, history) | Session C |
 | 7 | Name, describe and file sessions from the app | Session C |
 | 8 | Projects in the sidebar do nothing | Session D |
@@ -29,22 +29,41 @@ Question and permission text was cut (command box 96 px, "why" 66 px) and button
 
 Almost every real request was high (the low allowlist is tiny), so the buddy could approve nothing. Decided 2026-10-29: everything the buddy shows whole is approvable; high needs a 3 s hold plus a new tap within 4 s; a `detail` cut at 300 characters is Mac-only; `policy.json` `high_remote_approval: false` restores the old rule. Spec: [risk policy](../security/risk-policy.md). Follow-up: [device lock](open-questions.md#security) now matters more.
 
-### 3. Requests vanish / late "answered" (session B)
+### 3. Requests vanish / late "answered" (session B: verified, design proposed)
 
 - A held request goes back to the terminal after 10 s of input at the Mac, or at 600 s; the buddy then says "Answer it on the Mac".
 - After the user answers in the terminal, the buddy keeps the session "waiting" until the next hook, which for an approved long command is `PostToolUse` when it ends (minutes).
 - Build: find the earliest signal that the terminal prompt was answered (transcript writes, `Notification`, the status line refresh, `PreToolUse` of the next tool) and send a step at once; show handed-back sessions as "on the Mac", not "needs you". Verify each signal on a real session before relying on it; record findings in [Claude Code hooks](../architecture/claude-code-hooks.md).
 - Later (design first): decide requests from Hilo.app too, so a request never has to leave the buddy while you are at the Mac.
 
-### 4. Longer detail and question notes (session B)
+Verified on a real session (2026-10-29, [Claude Code hooks › answering in the terminal](../architecture/claude-code-hooks.md#answering-in-the-terminal-verified-2026-10-29)):
+
+- The status line refreshes 60–160 ms after any terminal answer (approve, deny, question) and not while a prompt waits; it is the earliest signal every time, and for an approval the only one until `PostToolUse`.
+- The terminal prompt shows about 0.6 s into `PermissionRequest`, while `hilod` still holds it. An answer there does not end the hook (approve leaves it waiting; deny kills it), so today the buddy keeps showing a request that was already answered.
+- A denial in the terminal fires no hook at all: the session stays "waiting" until the next prompt.
+- When the `PreToolUse` hold on `AskUserQuestion` hands back, Claude Code sends `PermissionRequest` for `AskUserQuestion`, which `hilod` would hold again as a permission.
+
+Proposed design (not built; waiting for the user's OK):
+
+1. `hilo statusline` also sends the status line's `session_id` to `hilod`. A tick for a session counts as "the prompt was answered" when that session has a request held for 2 s or more, or one handed back: the 2 s skips the refresh Claude Code makes right after writing the tool call.
+2. On such a tick, `hilod` looks at the transcript tail about 0.5 s later: a "doesn't want to proceed" `tool_result` means denied, otherwise approved (an approval writes nothing). A held request closes with `agent.request_resolved` `via:"mac"` and that outcome, and its waiting hook returns no decision (Claude Code already moved on). A handed-back session gets `agent.step` "Approved on the Mac" (working) or `agent.task_done` "Denied on the Mac" (the turn ended).
+3. Fallbacks without the status line: the held hook's socket closing (a terminal deny kills the hook) closes the request as denied; any later hook for the session (`PostToolUse`, `PostToolUseFailure`, `UserPromptSubmit`, `Stop`) closes a request still held for it.
+4. "On the Mac", not "needs you": a request kept in the terminal because the user is at the Mac leaves the session `waiting` without a pending request (the buddy already reads that as "on the Mac"; today it turns `working`), sent in a snapshot so older firmware understands it; Hilo › Sessions shows "on the Mac" for that state instead of "needs you". No contract change.
+5. `PermissionRequest` for `AskUserQuestion` passes straight through: the question flow owns it.
+
+### 4. Longer detail and question notes (done, session B)
 
 - Optional `detail_full` (up to ~2000 characters) next to `detail`; the card shows it and the 300-character cut stops making most long commands Mac-only. Firmware buffer in PSRAM.
 - Optional option descriptions for questions (`AskUserQuestion` sends them; today they are dropped), shown under each option in the scroll.
 - Maybe: a multi-select question, or several questions in one request (today those stay on the Mac).
 
-### 5. Pomodoro start choice (session B)
+Built 2026-10-29: `detail_full` (up to 2000 characters and 6000 bytes, line breaks kept) travels only when `detail` was cut; only a command longer than that is Mac-only now. `hilod` keeps every permission message under 8 KB (drops the diff, then `detail_full`), and a snapshot drops `detail_full` before whole sessions; either way the request turns Mac-only. The buddy keeps it in the model's PSRAM block (6001 bytes per request) and shows it on the card and in Details. `option_descriptions` (one per option, 200 characters) show under each option. Render `request-detail-full*`, `question-descriptions*`. **Old firmware would offer to approve the cut `detail`: flash the buddy before updating `hilod`.**
+
+### 5. Pomodoro start choice (done, session B)
 
 Today the next phase is fixed (work → break → work). Build: from stopped or paused, start either **Work** or **Break**; on the buddy (two start buttons while stopped), in Hilo › Focus and the `pomodoro` socket op. Additive: `PomodoroState.phase` already exists; a start with a chosen phase is a new optional field, older peers keep their order.
+
+Built 2026-10-29: no wire change at all (a started phase is just `phase` + `running` with a new `updated_at`). The socket op takes `{"action":"toggle","phase":"break"}`; while running it pauses like any toggle, so an older `hilod` that ignores `phase` agrees. Buddy: **▶ Work** / **▶ Break** pills replace play while the next phase has not begun (stopped, or paused at full length after one ended). Hilo › Focus: **Start work** / **Start break**, plus Resume when paused mid-phase.
 
 ### 6. Session names (session C)
 

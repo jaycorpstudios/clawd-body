@@ -410,6 +410,13 @@ bm_pet_state_t bm_pomo_pet(const bm_model_t *m)
     return m->pomo.on_break ? BM_PET_HAPPY : BM_PET_WORKING;
 }
 
+/* Stopped, or paused at the full length of a phase that has not begun. */
+bool bm_pomo_ready(const bm_model_t *m)
+{
+    const bm_pomo_t *p = &m->pomo;
+    return p->state == BM_POMO_STOPPED || (p->state == BM_POMO_PAUSED && p->left_s == phase_s(p));
+}
+
 static void pomo_changed(bm_model_t *m, uint32_t now_ms)
 {
     m->pomo.updated_at = m->clock_known ? wall_s(m, now_ms) : 0;
@@ -434,6 +441,14 @@ void bm__pomo_tap(bm_model_t *m, bm_tap_t target, int arg, uint32_t now_ms)
             p->state = BM_POMO_RUNNING;
             bm__sound(m, BM_SND_CLICK);
         }
+        break;
+    case BM_TAP_POMO_START:
+        if (!m->clock_known || p->state == BM_POMO_RUNNING) return;
+        p->on_break = arg == 1;
+        p->ends_at = now_s + phase_s(p);
+        p->left_s = 0;
+        p->state = BM_POMO_RUNNING;
+        bm__sound(m, BM_SND_CLICK);
         break;
     case BM_TAP_POMO_RESET:
         if (p->state == BM_POMO_STOPPED && !p->on_break && !p->cycle) return;

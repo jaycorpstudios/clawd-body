@@ -8,7 +8,7 @@ Decided 2026-10-29 (dogfooding: almost every real request was high, so the buddy
 | :--- | :--- | :--- |
 | low | `Read`, `Edit` inside the repo, `npm test`, `npm install <pkg>@<exact-version>`, `WebFetch` | hold 0.9 s to approve, or deny |
 | high | `terraform apply`, `git push --force`, `rm -rf`, deployments, any command outside the repo, network to new hosts, anything unknown | hold 3 s, then tap again within 4 s to confirm; or deny |
-| Mac-only (`remote_allowed:false`) | a `detail` cut at 300 characters, or kept off the buddy by `policy.json` | deny only |
+| Mac-only (`remote_allowed:false`) | a command the buddy cannot show whole (over 2000 characters or 6000 bytes, since 2026-10-29; before, anything over the 300 of `detail`), or kept off the buddy by `policy.json` | deny only |
 | question | `AskUserQuestion` or equivalent | answer with one option |
 
 ```mermaid

@@ -65,6 +65,19 @@ private func permission(_ session: String, id: String = ULID.make(), diff: Int =
     _ = try Wire.decodeOutbound(bytes)
 }
 
+@Test func fullTextsAreDroppedBeforeSessionsAndTheirRequestsTurnMacOnly() throws {
+    var store = SessionStore()
+    for i in 0..<4 {
+        var p = permission("s\(i)")
+        p.detailFull = String(repeating: "f", count: 2000)
+        store.apply(.needsPermission(p), now: 100 + i)
+    }
+    let snap = store.snapshot()
+    #expect(snap.sessions.count == 4)
+    #expect(snap.sessions.allSatisfy { $0.pendingPermission?.detailFull == nil && $0.pendingPermission?.remoteAllowed == false })
+    #expect(try Wire.encode(.snapshot(snap), host: "work").count <= Framing.maxMessageSize)
+}
+
 @Test func aHandBackKeepsTheSessionWaitingOnTheMacUntilItsNextStep() throws {
     var store = SessionStore()
     store.apply(.sessionStart(SessionStart(session: "s1", project: "api", task: "")), now: 10)

@@ -31,6 +31,11 @@ bool bm_request_approvable(const bm_request_t *r)
     return !r->is_question && r->remote_allowed;
 }
 
+const char *bm_request_text(const bm_request_t *r)
+{
+    return r->detail_full[0] ? r->detail_full : r->detail;
+}
+
 uint32_t bm_hold_ms(const bm_request_t *r)
 {
     return r->high_risk ? BM_HOLD_HIGH_MS : BM_HOLD_MS;

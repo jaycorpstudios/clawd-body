@@ -365,6 +365,24 @@ static lv_obj_t *stepper(lv_obj_t *parent, const char *name, bm_tap_t tap)
     return value;
 }
 
+static void start_pill(lv_obj_t *parent, const char *name, uint32_t color, int arg)
+{
+    lv_obj_t *b = ui_box(parent);
+    lv_obj_set_size(b, 124, 60);
+    lv_obj_set_style_radius(b, 30, 0);
+    lv_obj_set_style_border_width(b, 2, 0);
+    lv_obj_set_style_border_color(b, ui_hex(color), 0);
+    lv_obj_set_style_bg_color(b, ui_hex(0x161412), 0);
+    lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
+    lv_obj_set_flex_flow(b, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(b, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(b, 8, 0);
+    lv_obj_set_ext_click_area(b, 6);
+    ui_label(b, &lv_font_montserrat_16, color, LV_SYMBOL_PLAY);
+    ui_label(b, &font_mono_bold_18, C_FG, name);
+    ui_on_tap(b, BM_TAP_POMO_START, arg);
+}
+
 static void create_pomodoro(lv_obj_t *v)
 {
     title_row(v, "Focus", &ui.pomo_cycle);
@@ -408,6 +426,12 @@ static void create_pomodoro(lv_obj_t *v)
     lv_obj_set_style_pad_column(ctl, 28, 0);
     ui.pomo_reset = lv_obj_get_parent(round_button(ctl, 52, &lv_font_montserrat_24, LV_SYMBOL_REFRESH, BM_TAP_POMO_RESET, 0));
     ui.pomo_play = round_button(ctl, 68, &lv_font_montserrat_32, LV_SYMBOL_PLAY, BM_TAP_POMO_TOGGLE, 0);
+    ui.pomo_starts = ui_box(ctl);
+    lv_obj_set_size(ui.pomo_starts, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(ui.pomo_starts, LV_FLEX_FLOW_ROW);
+    lv_obj_set_style_pad_column(ui.pomo_starts, 12, 0);
+    start_pill(ui.pomo_starts, "Work", BM_C_WORK, 0);
+    start_pill(ui.pomo_starts, "Break", BM_C_DONE, 1);
     ui.pomo_auto = round_button(ctl, 52, &lv_font_montserrat_24, LV_SYMBOL_LOOP, BM_TAP_POMO_AUTO, 0);
 }
 
@@ -802,7 +826,11 @@ static void update_pomodoro(void)
     lv_label_set_text_fmt(ui.pomo_work, "%u", p->work_min);
     lv_label_set_text_fmt(ui.pomo_break, "%u", p->break_min);
     lv_label_set_text(ui.pomo_play, p->state == BM_POMO_RUNNING ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
+    bool ready = bm_pomo_ready(ui.m);
+    ui_show(lv_obj_get_parent(ui.pomo_play), !ready);
+    ui_show(ui.pomo_starts, ready);
     lv_obj_set_style_opa(lv_obj_get_parent(ui.pomo_play), ui.m->clock_known ? LV_OPA_COVER : LV_OPA_40, 0);
+    lv_obj_set_style_opa(ui.pomo_starts, ui.m->clock_known ? LV_OPA_COVER : LV_OPA_40, 0);
     lv_obj_set_style_text_color(ui.pomo_auto, ui_hex(p->auto_continue ? BM_C_DONE : C_DIM), 0);
     bool ringing = bm_alarm_ringing(ui.m);
     ui_show(ui.alarm_catch, ringing);

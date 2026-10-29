@@ -326,6 +326,24 @@ TEST(pomodoro_counts_alone_and_rings_at_each_phase_end)
     CHECK(bm_alarm_ringing(&M) && heard(BM_SND_DONE));
 }
 
+TEST(pomodoro_starts_the_chosen_phase_when_ready)
+{
+    fresh();
+    CHECK(snapshot("work", "") == BM_OK);
+    CHECK(bm_pomo_ready(&M));
+    bm_tap(&M, BM_TAP_POMO_START, 1, now);
+    CHECK(M.pomo.state == BM_POMO_RUNNING && M.pomo.on_break && M.pomo.ends_at == wall_now() + 5 * 60 && M.pomo.cycle == 0);
+    CHECK(!bm_pomo_ready(&M));
+    bm_tap(&M, BM_TAP_POMO_START, 0, now);
+    CHECK(M.pomo.on_break);
+    outs_t o;
+    drain(&o);
+    const bm_out_t *b = find_out(&o, "device.pomodoro");
+    CHECK(b && strstr(b->json, "\"phase\":\"break\"") && strstr(b->json, "\"state\":\"running\""));
+    advance(5 * 60 * 1000);
+    CHECK(M.pomo.state == BM_POMO_PAUSED && !M.pomo.on_break && M.pomo.cycle == 0 && bm_pomo_ready(&M));
+}
+
 TEST(pomodoro_pause_resume_reset_and_durations)
 {
     fresh();

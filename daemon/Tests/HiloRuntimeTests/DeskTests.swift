@@ -176,6 +176,15 @@ final class DeskClock: Clock, @unchecked Sendable {
         #expect(await coordinator.changePomodoro(.durations(work: 40, rest: nil)) == false)
     }
 
+    @Test func aStartWithAPhasePausesWhileRunningLikeAnOlderToggle() async throws {
+        #expect(await coordinator.changePomodoro(.start(.rest)))
+        let started = await coordinator.focus
+        #expect(started?.phase == .rest && started?.endsAt == 10_000 + 5 * 60)
+        _ = await coordinator.changePomodoro(.start(.work))
+        let paused = await coordinator.focus
+        #expect(paused?.state == .paused && paused?.phase == .rest)
+    }
+
     @Test func finishedWorkIsRecordedWithTheCurrentTask() async throws {
         let task = try store.addTask("Write the focus view", project: "hilo-app", status: .doing, now: 9_000)
         _ = await coordinator.changePomodoro(.toggle)
@@ -253,6 +262,8 @@ final class DeskClock: Clock, @unchecked Sendable {
         #expect(ControlOps.pomodoroCommand(Data(#"{"action":"durations"}"#.utf8)) == nil)
         #expect(ControlOps.pomodoroCommand(Data(#"{"action":"auto_continue","on":true}"#.utf8)) == .autoContinue(true))
         #expect(ControlOps.pomodoroCommand(Data(#"{"action":"auto_continue"}"#.utf8)) == nil)
+        #expect(ControlOps.pomodoroCommand(Data(#"{"action":"toggle","phase":"break"}"#.utf8)) == .start(.rest))
+        #expect(ControlOps.pomodoroCommand(Data(#"{"action":"toggle","phase":"lunch"}"#.utf8)) == nil)
         #expect(ControlOps.pomodoroCommand(Data(#"{"action":"skip"}"#.utf8)) == nil)
         let ops = ControlOps(coordinator: coordinator, buddy: nil, configPath: "/nonexistent/config.json", tokensFromTranscripts: false)
         let reply = try #require(await ops.handle(op: "pomodoro", body: Data(#"{"action":"toggle"}"#.utf8)))

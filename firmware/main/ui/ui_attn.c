@@ -29,6 +29,12 @@ static lv_obj_t *button(lv_obj_t *parent, uint32_t border, uint32_t bg, uint32_t
     return b;
 }
 
+/* Called every second; a 6 KB detail_full is not relaid out unless it changed. */
+static void set_text(lv_obj_t *label, const char *text)
+{
+    if (strcmp(lv_label_get_text(label), text) != 0) lv_label_set_text(label, text);
+}
+
 static void hold_cb(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
@@ -125,10 +131,14 @@ void ui_attn_create(lv_obj_t *scr)
         lv_obj_set_size(ui.ap_opt[i], LV_PCT(100), LV_SIZE_CONTENT);
         lv_obj_set_style_pad_hor(ui.ap_opt[i], 16, 0);
         lv_obj_set_style_pad_ver(ui.ap_opt[i], OPT_PAD, 0);
-        lv_obj_set_flex_flow(ui.ap_opt[i], LV_FLEX_FLOW_ROW);
+        lv_obj_set_flex_flow(ui.ap_opt[i], LV_FLEX_FLOW_COLUMN);
+        lv_obj_set_style_pad_row(ui.ap_opt[i], 6, 0);
         lv_obj_set_style_text_font(ui.ap_opt_lbl[i], &font_mono_semi_18, 0);
         lv_obj_set_width(ui.ap_opt_lbl[i], LV_PCT(100));
         lv_label_set_long_mode(ui.ap_opt_lbl[i], LV_LABEL_LONG_MODE_WRAP);
+        ui.ap_opt_note[i] = ui_label(ui.ap_opt[i], &font_mono_15, 0xb9a77a, "");
+        lv_obj_set_width(ui.ap_opt_note[i], LV_PCT(100));
+        lv_label_set_long_mode(ui.ap_opt_note[i], LV_LABEL_LONG_MODE_WRAP);
         ui_on_tap(ui.ap_opt[i], BM_TAP_ANSWER, i);
     }
 
@@ -206,8 +216,8 @@ void ui_attn_update(uint32_t now_ms)
     int pending = bm_live_waiting_count(ui.m);
     if (pending > 1) lv_label_set_text_fmt(ui.ap_h, "%s Mac \xC2\xB7 %s \xC2\xB7 %d pending", host, ago, pending);
     else lv_label_set_text_fmt(ui.ap_h, "%s Mac \xC2\xB7 %s", host, ago);
-    lv_label_set_text(ui.ap_cmd, r->detail);
-    lv_label_set_text(ui.ap_why, r->why);
+    set_text(ui.ap_cmd, bm_request_text(r));
+    set_text(ui.ap_why, r->why);
     ui_show(ui.ap_why, r->why[0]);
 
     ui_show(ui.ap_opts, q);
@@ -215,6 +225,8 @@ void ui_attn_update(uint32_t now_ms)
     for (int i = 0; i < BM_MAX_OPTIONS; i++) {
         ui_show(ui.ap_opt[i], q && i < r->n_options);
         if (q && i < r->n_options) lv_label_set_text_fmt(ui.ap_opt_lbl[i], "%d. %s", i + 1, r->options[i]);
+        ui_show(ui.ap_opt_note[i], q && i < r->n_options && r->option_notes[i][0]);
+        if (q && i < r->n_options) set_text(ui.ap_opt_note[i], r->option_notes[i]);
     }
     bool approvable = bm_request_approvable(r);
     ui_show(ui.ap_ok, !q && approvable);

@@ -181,6 +181,45 @@ TEST(question_answer_carries_index_and_escaped_choice)
     CHECK(M.ov.type == BM_OV_APPROVED && M.ov.question);
 }
 
+static void ask_long(const char *rid, const char *unit, int times)
+{
+    static char full[8000];
+    full[0] = 0;
+    for (int i = 0; i < times; i++) strcat(full, i % 40 == 39 ? "\\n" : unit);
+    CHECK(send("work", "agent.needs_permission",
+               "{\"request_id\":\"%s\",\"session\":\"s\",\"project\":\"p\",\"tool\":\"Bash\",\"detail\":\"cut…\","
+               "\"detail_full\":\"%s\",\"cwd\":\"~/p\",\"risk\":\"low\",\"remote_allowed\":true,\"expires_at\":%lld}",
+               rid, full, BASE_TS + now / 1000 + 600) == BM_OK);
+}
+
+TEST(a_long_command_shows_whole_from_detail_full_and_stays_approvable)
+{
+    fresh();
+    start_session("work", "s", "alpha");
+    ask_long(RID1, "a", 1500);
+    const bm_request_t *r = &M.sessions[session_index("work", "s")].req;
+    CHECK(strlen(r->detail_full) == 1500 && strchr(r->detail_full, '\n'));
+    CHECK(bm_request_text(r) == r->detail_full && bm_request_approvable(r));
+    ask_long(RID2, "\xF0\x9F\x98\x80", 1600);
+    CHECK(r->detail_full[0] && !bm_request_approvable(r));
+}
+
+TEST(option_descriptions_show_under_their_options)
+{
+    fresh();
+    start_session("work", "q", "alpha");
+    CHECK(send("work", "agent.question",
+               "{\"request_id\":\"%s\",\"session\":\"q\",\"project\":\"p\",\"detail\":\"How?\",\"options\":[\"A\",\"B\"],"
+               "\"option_descriptions\":[\"First way\",\"\"],\"expires_at\":%lld}",
+               RID1, BASE_TS + now / 1000 + 600) == BM_OK);
+    const bm_request_t *r = &M.sessions[session_index("work", "q")].req;
+    CHECK(strcmp(r->option_notes[0], "First way") == 0 && r->option_notes[1][0] == 0);
+    CHECK(send("work", "agent.question",
+               "{\"request_id\":\"%s\",\"session\":\"q\",\"project\":\"p\",\"detail\":\"How?\",\"options\":[\"A\",\"B\"],"
+               "\"option_descriptions\":[\"only one\"],\"expires_at\":%lld}",
+               RID2, BASE_TS + now / 1000 + 600) == BM_E_DATA);
+}
+
 TEST(later_snoozes_and_reminders_repeat_every_25s)
 {
     outs_t o;

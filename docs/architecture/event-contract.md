@@ -27,8 +27,8 @@ Senders produce exactly the schema: no extra fields in the envelope or any paylo
 | `snapshot` | `{ sessions:[session], usage, hilo:{ current, next, agreements_today }, media?, face?, pomodoro? }`. Sent on connect and reconnect; replaces all state for that `host`. See below. |
 | `session.start` | `{ session, project, task, look? }`. `look` `{ hue, acc }` is the session's pet: `hue` 0–359 in its project's colour family, `acc` one of the eight accessories; absent from an older daemon (the buddy then derives the project's look). Snapshot sessions carry the same optional `look` |
 | `session.end` | `{ session }` |
-| `agent.needs_permission` | `{ request_id, session, project, tool, detail, why?, diff?, cwd, risk:"low"\|"high", remote_allowed, expires_at }`. `remote_allowed:false` when the policy keeps it on the Mac or `detail` had to be cut (since 2026-10-29 `risk:"high"` may be `true`; firmware before that drops such a request, so flash the buddy before updating `hilod`). |
-| `agent.question` | `{ request_id, session, project, detail, options:[2–4 strings], expires_at }` |
+| `agent.needs_permission` | `{ request_id, session, project, tool, detail, detail_full?, why?, diff?, cwd, risk:"low"\|"high", remote_allowed, expires_at }`. `detail` is one line of at most 300 characters; when that cut it, `detail_full` (optional, 2026-10-29) carries the whole text with its line breaks, up to 2000 characters and 6000 UTF-8 bytes, and the buddy shows it instead. `remote_allowed:false` when the policy keeps it on the Mac or even `detail_full` had to be cut (it then ends in "…"); a buddy that gets a `detail_full` too big for its buffer treats the request as Mac-only. Firmware before `detail_full` shows only the cut `detail` and would offer to approve it, so **flash the buddy before updating `hilod`**. Since 2026-10-29 `risk:"high"` may also come with `remote_allowed:true` (firmware before that drops such a request). Each permission message alone must fit 8 KB: `hilod` drops its diff, then its `detail_full` (Mac-only again), when it would not. |
+| `agent.question` | `{ request_id, session, project, detail, options:[2–4 strings], option_descriptions?, expires_at }`. `option_descriptions` (optional, 2026-10-29): one string per option, up to 200 characters, `""` where an option has none; absent when none has one. A count that differs from `options` makes the buddy drop the message |
 | `agent.request_resolved` | `{ request_id, session, kind:"permission"\|"question", outcome, via:"mac"\|"buddy"\|"timeout", choice_index? }`. Closes any pending request; see below. |
 | `agent.task_done` | `{ session, summary }` |
 | `agent.error` | `{ session, detail }` |
@@ -54,7 +54,7 @@ Senders produce exactly the schema: no extra fields in the envelope or any paylo
 | `pomodoro` | The Mac's pomodoro (same shape as `pomodoro.state`); omitted when it has never been set. |
 | `media_enabled` | Optional; only `false` is sent: this Mac follows no music app (both switches off in Hilo › Setup), so it sends no `media`. The buddy hides its Music view when every Mac it knows says so; absent means on. |
 
-A snapshot must fit the 8 KB message cap ([framing](ble-transport.md#framing)). The daemon trims in this order until it fits: steps, then diffs, then `why` / `summary` / `error`, then whole sessions from the lowest priority (`waiting` > `error` > `working` > `done` > `idle`). The worst case (8 sessions, each with a pending permission) fits after the third step; see `SessionStoreTests`.
+A snapshot must fit the 8 KB message cap ([framing](ble-transport.md#framing)). The daemon trims in this order until it fits: steps, then diffs, then `why` / `option_descriptions` / `summary` / `error`, then `detail_full` (that request turns `remote_allowed:false`), then whole sessions from the lowest priority (`waiting` > `error` > `working` > `done` > `idle`). The worst case (8 sessions, each with a pending permission) fits after the third step; see `SessionStoreTests`.
 
 ### `agent.request_resolved`
 
@@ -129,6 +129,8 @@ One timer per buddy, mirrored by each connected Mac.
 | `cycle` | Work phases completed since the last reset |
 | `updated_at` | When a person last changed it (start, pause, reset, durations, auto-continue); not touched by phase changes |
 | `auto_continue` | Optional (2026-10-27, #37), absent means `false`. `true`: the next phase starts on its own when one ends. `false`: it waits, `paused` with its full length in `left_s` |
+
+Starting a chosen phase (2026-10-29) needs no new field: the buddy or a Mac sets `phase` and `running` with that phase's full length in `ends_at`, a new `updated_at`, and `cycle` unchanged. Older peers adopt it like any other state.
 
 Phase changes need no message: while `running` and `ends_at` has passed, both sides flip `phase` (a finished `work` adds one to `cycle`) and, with `auto_continue`, add the new phase's duration to `ends_at`; without it they stop at the first end, `paused` with the new phase's full length, so they agree after any time apart. A copy with a newer `updated_at` wins: the buddy adopts a newer `pomodoro.state` or snapshot `pomodoro` and broadcasts it as `device.pomodoro`; when its own copy is newer than a snapshot's, it answers that Mac with `device.pomodoro`. The buddy keeps counting while every link is down.
 

@@ -63,7 +63,7 @@ When asked to get Hilo running on this Mac:
 
 - The buddy never stores credentials, tokens or API keys; only BLE bonding keys managed by the stack.
 - BLE uses LE Secure Connections with passkey; unbonded connections are always rejected.
-- The daemon decides what the buddy may approve (`remote_allowed`): a command cut to fit the screen is Mac-only, high-risk needs a 3 s hold plus a confirming tap, and `policy.json` can keep high-risk (or everything) on the Mac. Decided 2026-10-29.
+- The daemon decides what the buddy may approve (`remote_allowed`): a command the buddy cannot show whole (over 2000 characters) is Mac-only, high-risk needs a 3 s hold plus a confirming tap, and `policy.json` can keep high-risk (or everything) on the Mac. Decided 2026-10-29.
 - Every decision from the buddy is validated by the daemon: pending `request_id`, not expired, single use.
 - Hilo data stays on the Mac that produced it; no sync between machines.
 - This repo is public: no personal data, absolute paths, hostnames or real work project names.

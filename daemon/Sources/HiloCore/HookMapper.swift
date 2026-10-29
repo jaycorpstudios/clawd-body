@@ -65,17 +65,21 @@ public struct HookMapper: Sendable {
             let call = ToolCall(tool: tool, input: Self.flatStrings(input), cwd: hook.cwd, repoRoot: root, project: project)
             let c = policy.classify(call)
             let shown = Self.detailText(tool: tool, input: input, root: root)
+            let cut = !Text.fits(shown, 300)
             return .awaitPermission(PermissionRequest(
                 requestId: requestId, session: session, project: project, tool: Text.clip(tool.isEmpty ? "Tool" : tool, 32),
-                detail: Text.clip(shown, 300), why: input["description"]?.string.map { Text.clip(Redactor.redact($0), 300) },
-                diff: Self.diff(input), cwd: Text.clipLeft(hook.cwd, 120), risk: c.risk, remoteAllowed: c.remoteAllowed && Text.fits(shown, 300),
-                expiresAt: now + Self.expirySeconds))
+                detail: Text.clip(shown, 300), detailFull: cut ? Text.clipBlock(shown) : nil,
+                why: input["description"]?.string.map { Text.clip(Redactor.redact($0), 300) },
+                diff: Self.diff(input), cwd: Text.clipLeft(hook.cwd, 120), risk: c.risk,
+                remoteAllowed: c.remoteAllowed && (!cut || Text.fitsBlock(shown)),
+                expiresAt: now + Self.expirySeconds).fitted())
         case "PreToolUse" where tool == "AskUserQuestion":
             guard let q = Self.singleQuestion(input) else {
                 return .emit([.agentStep(AgentStep(session: session, kind: .ask, text: "Asked a question on the Mac"))])
             }
             return .awaitQuestion(QuestionRequest(requestId: requestId, session: session, project: project,
-                                                  detail: Text.clip(Redactor.redact(q.text), 300), options: q.options, expiresAt: now + Self.expirySeconds),
+                                                  detail: Text.clip(Redactor.redact(q.text), 300), options: q.options,
+                                                  optionDescriptions: q.descriptions, expiresAt: now + Self.expirySeconds),
                                   toolInput: input)
         default:
             return .emit([])
@@ -124,12 +128,13 @@ public struct HookMapper: Sendable {
         return AgentStep(session: session, kind: kind, text: Text.clip(text, 120))
     }
 
-    static func singleQuestion(_ input: JSONValue) -> (text: String, options: [String])? {
+    static func singleQuestion(_ input: JSONValue) -> (text: String, options: [String], descriptions: [String]?)? {
         guard let questions = input["questions"]?.array, questions.count == 1, let q = questions.first,
               q["multiSelect"]?.bool != true, let text = q["question"]?.string, !text.isEmpty,
-              let options = q["options"]?.array?.compactMap({ $0["label"]?.string }),
+              let items = q["options"]?.array, case let options = items.compactMap({ $0["label"]?.string }), options.count == items.count,
               (2...4).contains(options.count), options.allSatisfy({ (1...40).contains($0.count) }) else { return nil }
-        return (text, options)
+        let descriptions = items.map { Text.clip(Redactor.redact($0["description"]?.string ?? ""), 200) }
+        return (text, options, descriptions.allSatisfy(\.isEmpty) ? nil : descriptions)
     }
 
     static func flatStrings(_ input: JSONValue) -> [String: String] {
@@ -147,6 +152,29 @@ public enum Text {
     /// Whether `clip` keeps all of `s`: the buddy may approve only what it shows whole.
     public static func fits(_ s: String, _ max: Int) -> Bool {
         oneLine(s).unicodeScalars.count <= max
+    }
+
+    /// `detail_full`: line breaks kept; the byte cap keeps the message under the 8 KB frame limit and fits the buddy's buffer.
+    public static let blockScalars = 2000, blockBytes = 6000
+
+    public static func clipBlock(_ s: String) -> String {
+        let b = block(s)
+        guard !fitsBlock(b) else { return b }
+        var out = String.UnicodeScalarView(), scalars = 0, bytes = 0
+        for u in b.unicodeScalars {
+            guard scalars < blockScalars - 1, bytes + u.utf8.count <= blockBytes - 3 else { break }
+            out.append(u); scalars += 1; bytes += u.utf8.count
+        }
+        return String(out) + "…"
+    }
+
+    public static func fitsBlock(_ s: String) -> Bool {
+        let b = block(s)
+        return b.unicodeScalars.count <= blockScalars && b.utf8.count <= blockBytes
+    }
+
+    private static func block(_ s: String) -> String {
+        s.replacingOccurrences(of: "\r\n", with: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func oneLine(_ s: String) -> String {

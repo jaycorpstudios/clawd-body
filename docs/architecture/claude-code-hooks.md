@@ -1,6 +1,6 @@
 # Claude Code hooks → contract
 
-How `hilod` learns what Claude Code sessions do. Verified against the [Claude Code hooks reference](https://code.claude.com/docs/en/hooks) on 2026-10-25.
+How `hilod` learns what Claude Code sessions do. Verified against the [Claude Code hooks reference](https://code.claude.com/docs/en/hooks) on 2026-10-25, and against a real session on 2026-10-29 ([answering in the terminal](#answering-in-the-terminal-verified-2026-10-29)).
 
 ## Facts the design relies on
 
@@ -13,7 +13,8 @@ How `hilod` learns what Claude Code sessions do. Verified against the [Claude Co
 | `PreToolUse` on `AskUserQuestion` can answer it: `permissionDecision: "allow"` plus `updatedInput` echoing `questions` and adding `answers: { "<question text>": "<label>" }` | Questions **can** be answered from the buddy |
 | Default timeout for `command` and `http` hooks is 600 s, configurable per hook | Matches the 10-minute request expiry |
 | Hook types include `command` and `http` (POST of the event JSON) | Both can reach `hilod`; see transport below |
-| The docs only describe a race between hooks and `canUseTool` / `--permission-prompt-tool`, not the interactive prompt | **Unverified:** whether the terminal prompt shows while a `PermissionRequest` hook is still waiting. If not, a long wait hides the Mac prompt |
+| The terminal prompt shows about 0.6 s after `PermissionRequest` starts, while the hook still waits (verified 2026-10-29, below) | A request held for the buddy is also answerable in the terminal the whole time; a terminal answer takes effect at once and does not cancel the hook (an approval leaves it waiting), so `hilod` must notice it some other way |
+| When the `PreToolUse` hook on `AskUserQuestion` returns no decision, Claude Code then sends `PermissionRequest` for `AskUserQuestion`, and the question shows in the terminal only from there (verified 2026-10-29) | The question is held twice: once as a question, then as a permission for `AskUserQuestion` |
 
 ## Mapping
 
@@ -28,9 +29,28 @@ How `hilod` learns what Claude Code sessions do. Verified against the [Claude Co
 | `PreToolUse` (`AskUserQuestion`) | yes | `agent.question` when it is one single-select question with 2–4 options; otherwise only `agent.step { kind: "ask" }` and the question stays on the Mac |
 | `Stop` | no | `agent.task_done { summary }` from `last_assistant_message` (trimmed to 300 chars) |
 | `StopFailure` | no | `agent.error { detail }` from `error` |
-| `Notification` | no | Not forwarded; `PermissionRequest` already covers prompts |
+| `Notification` | no | Not forwarded; `PermissionRequest` already covers prompts. Its `permission_prompt` comes about 6 s after the prompt shows, so it says nothing about an answer |
 
 The buddy infers session status from the stream: `session.start` and `agent.step` → working, a pending request → waiting, `agent.task_done` → done, `agent.error` → error.
+
+## Answering in the terminal (verified 2026-10-29)
+
+What reaches `hilod` when the user answers a prompt in the terminal. Claude Code 2.1.312, `--permission-mode default`, run under `expect` with a probe hook on every event (a `PermissionRequest` hook that waits 3–20 s and then returns no decision, like a hand-back), the status line command and a watcher on the transcript, all logging with millisecond timestamps. Each case ran once or twice; the order held every time.
+
+| Answer | First signal | Then |
+| :--- | :--- | :--- |
+| Approve, after the hook handed back | status line refresh, +80 ms | nothing (no hook, no transcript line) until `PostToolUse` when the command ends (+15.7 s for a `sleep 15`) |
+| Approve, while the hook still waits | status line refresh, +72 ms | the command runs at once; the hook is **not** killed and keeps waiting; its later answer is ignored |
+| Deny (Esc), after the hand-back | status line refresh, +156 ms | a transcript `tool_result` "The user doesn't want to proceed…" +267 ms; **no hook at all** (no `PostToolUse*`, no `Stop`): the turn just ends |
+| Deny (Esc), while the hook still waits | the hook process gets a signal, +100 ms; status line +114 ms | as above |
+| Question answered in the terminal | `PostToolUse` (`AskUserQuestion`), +49 ms; status line +61 ms | transcript `tool_result` +226 ms, `Stop` when the turn ends |
+
+Other observations:
+
+- No status line refresh happened while a prompt sat unanswered (3–10 s in these runs). One does come about 0.3 s after Claude Code writes a tool call, i.e. right when a `PermissionRequest` or `PreToolUse` starts, before anyone could answer.
+- Approving writes nothing to the transcript, so a transcript watcher cannot see it; a denial is visible there about 0.25 s later.
+- `PreToolUse` for the next tool comes only after the approved tool ends, never earlier than `PostToolUse`.
+- So the status line is the earliest signal for every answer, and the only one for an approval until the tool ends. It needs the status line to go through `hilo statusline` (Hilo › Setup), and its input carries `session_id`.
 
 Usage (`usage.update`) has no hook source: it comes from the status line's `rate_limits` and, opt-in, the local transcripts ([daemon README › Usage](../../daemon/README.md#usage)).
 

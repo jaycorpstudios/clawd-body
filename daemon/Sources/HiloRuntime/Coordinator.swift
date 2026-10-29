@@ -351,6 +351,7 @@ public actor Coordinator {
         p.advance(to: now)
         switch command {
         case .toggle: p.toggle(now: now)
+        case .start(let phase): p.state == .running ? p.toggle(now: now) : p.start(phase, now: now)
         case .reset: p.reset(now: now)
         case .durations(let work, let rest): guard p.setDurations(work: work, rest: rest, now: now) else { return false }
         case .autoContinue(let on): p.setAutoContinue(on, now: now)

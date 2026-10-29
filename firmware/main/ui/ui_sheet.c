@@ -232,7 +232,7 @@ static void build_perm(const bm_session_t *s, uint32_t now_ms)
     kv(t, "Requested", buf, C_FG);
 
     section(r->is_question ? "Question" : "Requested action");
-    box(r->detail, 0x120e05, 0xfff4d6);
+    box(bm_request_text(r), 0x120e05, 0xfff4d6);
     if (r->why[0]) {
         section("Why it asks");
         box(r->why, 0x14120f, 0xd9d1c6);

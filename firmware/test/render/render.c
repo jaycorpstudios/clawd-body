@@ -375,6 +375,10 @@ static void scene_focus(void)
     run(300);
     shot("focus-alarm-silenced");
 
+    bm_tap(&M, BM_TAP_POMO_START, 1, now);
+    run(41000);
+    focus_shot("focus-started-break");
+
     bm_tap(&M, BM_TAP_POMO_RESET, 0, now);
     bm_tap(&M, BM_TAP_POMO_WORK, 1, now);
     for (int i = 0; i < 20; i++) bm_tap(&M, BM_TAP_POMO_WORK, 1, now);
@@ -747,6 +751,32 @@ static void scene_requests(void)
     bm_tap(&M, BM_TAP_DENY, 0, now);
     run(2000);
 
+    const char *script =
+        "cat > scripts/seed-ledger.sh <<'SH'\\n#!/bin/sh\\nset -eu\\nfor merchant in acme globex initech umbrella hooli; do\\n"
+        "  curl -sf -X POST http://localhost:4000/api/merchants -H 'content-type: application/json' "
+        "-d @db/seed/$merchant.json\\ndone\\n"
+        "psql \\\"$DATABASE_URL\\\" -f db/seed/ledger.sql\\n"
+        "psql \\\"$DATABASE_URL\\\" -c 'select merchant, count(*) from ledger_entries group by 1 order by 2 desc'\\n"
+        "pnpm --filter payments-api exec vitest run src/reconcile --reporter=verbose\\nSH\\n"
+        "chmod +x scripts/seed-ledger.sh && scripts/seed-ledger.sh";
+    CHECK(send("work", "agent.needs_permission",
+               "{\"request_id\":\"01K8F5REQ0000000000000001E\",\"session\":\"s\",\"project\":\"payments-api\",\"tool\":\"Bash\","
+               "\"detail\":\"cat > scripts/seed-ledger.sh <<'SH' #!/bin/sh set -eu for merchant in acme…\",\"detail_full\":\"%s\","
+               "\"why\":\"Seed the local ledger before the reconciliation tests.\",\"cwd\":\"~/code/payments-api\",\"risk\":\"high\","
+               "\"remote_allowed\":true,\"expires_at\":%lld}",
+               script, BASE_TS + now / 1000 + 600) == BM_OK);
+    run(BM_ATTN_SLIDE_MS + 100);
+    shot("request-detail-full");
+    scroll_to_end();
+    shot("request-detail-full-scrolled");
+    bm_tap(&M, BM_TAP_DETAILS, 0, now);
+    run(600);
+    shot("request-detail-full-sheet");
+    bm_tap(&M, BM_TAP_BACK, 0, now);
+    run(300);
+    bm_tap(&M, BM_TAP_DENY, 0, now);
+    run(2000);
+
     ask("01K8F5REQ0000000000000001B", "high", true, "git push --force origin retries", "Publish the rebased branch");
     shot("request-high");
     CHECK(bm_hold_begin(&M, now));
@@ -777,6 +807,20 @@ static void scene_requests(void)
     scroll_to_end();
     shot("question-long-scrolled");
     bm_tap(&M, BM_TAP_ANSWER, 0, now);
+    run(2000);
+
+    CHECK(send("work", "agent.question",
+               "{\"request_id\":\"01K8F5REQ0000000000000001F\",\"session\":\"s\",\"project\":\"payments-api\",\"detail\":\"How should the retry policy back off?\","
+               "\"options\":[\"Per request\",\"Per merchant\",\"Decide later\"],\"option_descriptions\":["
+               "\"Each failed call waits on its own. Simple, but a slow merchant can still get parallel retries.\","
+               "\"One backoff per merchant shared by all its requests. Kinder to slow merchants; needs a small store.\",\"\"],"
+               "\"expires_at\":%lld}",
+               BASE_TS + now / 1000 + 600) == BM_OK);
+    run(BM_ATTN_SLIDE_MS + 100);
+    shot("question-descriptions");
+    scroll_to_end();
+    shot("question-descriptions-scrolled");
+    bm_tap(&M, BM_TAP_ANSWER, 1, now);
     run(2000);
 }
 

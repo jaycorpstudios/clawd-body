@@ -1,0 +1,20 @@
+{
+  "v": 1,
+  "id": "01K8F400000000000000000041",
+  "ts": 1792900000,
+  "host": "work",
+  "type": "agent.question",
+  "data": {
+    "request_id": "01K8F3Z9QW4Y6R2M7N5P8T0V2B",
+    "session": "7f3a9c1e-2b4d-4e8f-9a01-5c6d7e8f9a0b",
+    "project": "payments-api",
+    "detail": "How should the retry policy back off?",
+    "options": ["Per request", "Per merchant", "Decide later"],
+    "option_descriptions": [
+      "Each failed call waits on its own. Simple, but a slow merchant can still be hammered by parallel requests.",
+      "One backoff per merchant shared by all its requests. Kinder to slow merchants; needs a small shared store.",
+      ""
+    ],
+    "expires_at": 1792900600
+  }
+}

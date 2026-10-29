@@ -59,7 +59,7 @@ One request per connection on the Unix socket: the first line is the op, the res
 | `pair` / `pair-cancel` | — | `DaemonStatus` | Setup |
 | `host` | Display name | `DaemonStatus`; saves `config.json`, re-links | Setup |
 | `settings` | `{ sound?, volume?, brightness? }` | `DaemonStatus`; sends `settings.set` (the buddy's answer shows up in a later `status`) | Setup |
-| `pomodoro` | `{"action":"toggle"}`, `{"action":"reset"}` or `{"action":"durations","work_min"?,"break_min"?}` | `DaemonStatus` with `pomodoro`; sends `pomodoro.state`. Durations change only while stopped | Hilo › Focus |
+| `pomodoro` | `{"action":"toggle"}` (with optional `"phase":"work"\|"break"`: when not running it starts that phase at its full length; while running it pauses like a plain toggle, so a `hilod` that ignores `phase` agrees; 2026-10-29), `{"action":"reset"}` or `{"action":"durations","work_min"?,"break_min"?}` | `DaemonStatus` with `pomodoro`; sends `pomodoro.state`. Durations change only while stopped | Hilo › Focus |
 
 The Pomodoro state is saved in the store (`focus_state`) in the same transaction as the work phases it finished (`focus_cycle`) and restored when `hilod` starts: a restart mid-cycle records the phases that ended while it was down exactly once, and Hilo › Focus has the timer before the buddy reconnects. A buddy with a newer `updated_at` still wins when it reconnects.
 | `face` | — | `DaemonStatus`; reloads `face.png` next to `config.json`, scales it to 120×120 RGB565 (ImageIO/CoreGraphics) and sends it, or clears it if the file is gone | Setup |

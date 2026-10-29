@@ -51,17 +51,39 @@ private func map(_ json: String) throws -> HookAction {
     #expect(p.risk == .high)
 }
 
-@Test func aCommandTooLongToShowWholeIsMacOnly() throws {
+@Test func aLongCommandTravelsWholeInDetailFullAndOnlyTooLongIsMacOnly() throws {
     func request(_ command: String) throws -> PermissionRequest? {
-        let json = #"{"hook_event_name":"PermissionRequest","session_id":"abc","cwd":"\#(repo)","tool_name":"Bash","tool_input":{"command":"\#(command)"}}"#
+        let input = try JSONSerialization.data(withJSONObject: ["command": command])
+        let json = #"{"hook_event_name":"PermissionRequest","session_id":"abc","cwd":"\#(repo)","tool_name":"Bash","tool_input":\#(String(decoding: input, as: UTF8.self))}"#
         guard case .awaitPermission(let p) = try map(json) else { return nil }
         return p
     }
     let words = "echo " + Array(repeating: "word", count: 59).joined(separator: " ")
     let fits = try #require(try request(words + "s"))
-    let cut = try #require(try request(words + "ss"))
-    #expect(fits.remoteAllowed && fits.detail.count == 300)
-    #expect(!cut.remoteAllowed && cut.detail.hasSuffix("…"))
+    #expect(fits.remoteAllowed && fits.detail.count == 300 && fits.detailFull == nil)
+
+    let script = "cat > a.sh <<'SH'\n" + Array(repeating: "echo " + String(repeating: "x", count: 60), count: 20).joined(separator: "\n") + "\nSH\n"
+    let long = try #require(try request(script))
+    #expect(long.remoteAllowed && long.detail.hasSuffix("…") && long.detailFull == script.trimmingCharacters(in: .newlines))
+    #expect(long.detailFull?.contains("\n") == true)
+
+    let tooLong = try #require(try request("echo " + String(repeating: "y", count: 2100)))
+    #expect(!tooLong.remoteAllowed && tooLong.detailFull?.unicodeScalars.count == 2000 && tooLong.detailFull?.hasSuffix("…") == true)
+
+    let wide = try #require(try request("echo " + String(repeating: "😀", count: 1990)))
+    #expect(!wide.remoteAllowed && (wide.detailFull?.utf8.count ?? .max) <= Text.blockBytes)
+}
+
+@Test func aRequestTooBigForOneMessageDropsTheDiffThenTheFullText() throws {
+    let quotes = String(repeating: "\"", count: 1990)
+    let p = PermissionRequest(requestId: rid, session: "abc", project: "payments-api", tool: "Bash", detail: String(quotes.prefix(299)) + "…",
+                              detailFull: quotes, why: String(quotes.prefix(300)),
+                              diff: Array(repeating: DiffLine(.added, String(repeating: "\"", count: 120)), count: 12),
+                              cwd: repo, risk: .low, remoteAllowed: true, expiresAt: 1_600)
+    let fitted = p.fitted()
+    #expect(fitted.diff == nil && fitted.detailFull == quotes && fitted.remoteAllowed)
+    let tight = p.fitted(maxBytes: 2_000)
+    #expect(tight.detailFull == nil && !tight.remoteAllowed)
 }
 
 @Test func singleSelectQuestionIsForwarded() throws {
@@ -73,6 +95,16 @@ private func map(_ json: String) throws -> HookAction {
     guard case .awaitQuestion(let q, _) = action else { Issue.record("expected question"); return }
     #expect(q.options == ["Local SQLite", "Markdown files"])
     #expect(q.detail == "Where should I store Hilo history?")
+}
+
+@Test func optionDescriptionsTravelWithTheQuestion() throws {
+    let action = try map(#"""
+    {"hook_event_name":"PreToolUse","session_id":"abc","cwd":"\#(repo)","tool_name":"AskUserQuestion",
+     "tool_input":{"questions":[{"question":"Back off how?","header":"Retry","multiSelect":false,
+       "options":[{"label":"Per request","description":"Each call waits on its own."},{"label":"Per merchant"}]}]}}
+    """#)
+    guard case .awaitQuestion(let q, _) = action else { Issue.record("expected question"); return }
+    #expect(q.optionDescriptions == ["Each call waits on its own.", ""])
 }
 
 @Test(arguments: [

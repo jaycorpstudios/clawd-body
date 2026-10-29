@@ -37,6 +37,19 @@ import HiloContract
         #expect(p.autoContinue == true && p.updatedAt == 2)
     }
 
+    @Test func startsTheChosenPhaseFromStoppedOrAWaitingPhase() {
+        var p = PomodoroState.stopped(now: 0)
+        #expect(p.ready)
+        p.start(.rest, now: 100)
+        #expect(p.state == .running && p.phase == .rest && p.endsAt == 100 + 5 * 60 && p.cycle == 0 && p.updatedAt == 100 && p.isValid)
+        p.advance(to: 100 + 5 * 60)
+        #expect(p.state == .paused && p.phase == .work && p.ready && p.cycle == 0)
+        p.start(.rest, now: 1000)
+        #expect(p.phase == .rest && p.endsAt == 1000 + 5 * 60 && p.leftS == nil && p.isValid)
+        p.toggle(now: 1010)
+        #expect(!p.ready)
+    }
+
     @Test func phaseAlarmAnnouncesAPhaseThatWaitsPaused() {
         var alarm = PhaseAlarm()
         var p = PomodoroState.stopped(now: 0)

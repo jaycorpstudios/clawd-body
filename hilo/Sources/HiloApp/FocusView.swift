@@ -13,7 +13,7 @@ struct FocusView: View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Focus").font(Theme.title(30))
-                Text("A Pomodoro shared with the buddy: start it here or on its Focus view, and both follow. It keeps running on the buddy when the link drops.")
+                Text("A Pomodoro shared with the buddy: start work or a break here or on its Focus view, and both follow. It keeps running on the buddy when the link drops.")
                     .foregroundStyle(Theme.secondary)
             }
             if !enabled {
@@ -37,8 +37,14 @@ struct FocusView: View {
                 Text(clock(p.left(now: now))).font(Theme.monospaced(64)).monospacedDigit()
                 ProgressView(value: progress(p, now: now)).tint(color(p)).frame(maxWidth: 360)
                 HStack(spacing: 10) {
-                    Button(p.state == .running ? "Pause" : p.state == .paused ? "Resume" : "Start") { model.pomodoro(["action": "toggle"]) }
-                        .buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.space, modifiers: [])
+                    if p.state == .running || !p.ready {
+                        Button(p.state == .running ? "Pause" : "Resume") { model.pomodoro(["action": "toggle"]) }
+                            .buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.space, modifiers: [])
+                    }
+                    if p.state != .running {
+                        start(.work, primary: p.ready && p.phase == .work)
+                        start(.rest, primary: p.ready && p.phase == .rest)
+                    }
                     Button("Reset") { model.pomodoro(["action": "reset"]) }.buttonStyle(SecondaryButtonStyle())
                 }
                 .disabled(!enabled)
@@ -46,6 +52,15 @@ struct FocusView: View {
             .padding(28).frame(maxWidth: .infinity)
             .background(tint(p).fill, in: RoundedRectangle(cornerRadius: 14)).overlay(RoundedRectangle(cornerRadius: 14).stroke(tint(p).edge))
         }
+    }
+
+    /// Older daemons ignore `phase` and just toggle, so they keep their own order.
+    @ViewBuilder private func start(_ phase: PomodoroPhase, primary: Bool) -> some View {
+        let button = Button(phase == .work ? "Start work" : "Start break") {
+            model.pomodoro(["action": "toggle", "phase": phase.rawValue])
+        }
+        if primary { button.buttonStyle(PrimaryButtonStyle()).keyboardShortcut(.space, modifiers: []) }
+        else { button.buttonStyle(SecondaryButtonStyle()) }
     }
 
     private func tint(_ p: PomodoroState) -> (fill: Color, edge: Color) {
